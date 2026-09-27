@@ -79,6 +79,7 @@ class PrescriptionSecurityIntegrationTest {
     @MockitoBean private CreatePrescriptionUseCase createPrescriptionUseCase;
     @MockitoBean private AmendPrescriptionUseCase amendPrescriptionUseCase;
     @MockitoBean private GetPrescriptionUseCase getPrescriptionUseCase;
+    @MockitoBean private com.benhsoan.port.inbound.prescription.GetPrescriptionByCodeUseCase getPrescriptionByCodeUseCase;
     @MockitoBean private GetPrescriptionsByMedicalRecordUseCase getPrescriptionsByMedicalRecordUseCase;
     @MockitoBean private SearchPrescriptionsUseCase searchPrescriptionsUseCase;
     @MockitoBean private DispensePrescriptionUseCase dispensePrescriptionUseCase;
@@ -473,5 +474,38 @@ class PrescriptionSecurityIntegrationTest {
                         .content(body))
                 .andExpect(status().isForbidden());
     }
-}
 
+    @Test
+    void allowsPharmacistsAndAdminsToReadPrescriptionByCode() throws Exception {
+        UUID prescriptionId = UUID.randomUUID();
+        String code = "RX000001";
+        PrescriptionResult result = new PrescriptionResult(
+                prescriptionId, code, UUID.randomUUID(), UUID.randomUUID(), "VISIT-001",
+                UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.PENDING_DISPENSE,
+                null, UUID.randomUUID(), "Dr. B", Instant.now(), null, null, List.of(), List.of());
+        when(getPrescriptionByCodeUseCase.getByCode(code)).thenReturn(result);
+
+        for (String role : new String[] {"ADMIN", "PHARMACIST"}) {
+            mockMvc.perform(get("/prescriptions/code/{prescriptionCode}", code)
+                            .with(user(role.toLowerCase()).authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_PRESCRIPTION_READ"))))
+                    .andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void deniesUsersWithoutPrescriptionReadPermissionFromReadingByCode() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(currentUserPort.getCurrentUserId()).thenReturn(userId);
+
+        mockMvc.perform(get("/prescriptions/code/RX000001")
+                        .with(user("receptionist").authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_APPOINTMENT_READ"))))
+                .andExpect(status().isForbidden());
+
+        org.mockito.Mockito.verify(auditLogRepository).save(org.mockito.ArgumentMatchers.argThat(log ->
+                log.getActionType() == com.benhsoan.domain.auditlog.enums.ActionType.ACCESS_DENIED &&
+                log.getResourceType() == com.benhsoan.domain.auditlog.enums.ResourceType.PERMISSION &&
+                log.getUserId().equals(userId)
+        ));
+    }
+
+}

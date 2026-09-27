@@ -17,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.benhsoan.domain.medicalrecord.MedicalRecord;
-import com.benhsoan.domain.medicalrecord.enums.MedicalRecordStatus;
 import com.benhsoan.domain.medicalrecord.exception.MedicalRecordAccessDeniedException;
 import com.benhsoan.domain.medicalrecord.exception.MedicalRecordArchivedReadOnlyException;
 import com.benhsoan.infrastructure.security.service.PermissionEvaluator;
@@ -107,7 +106,8 @@ class MedicalRecordAuthorizationServiceTest {
         when(currentUserPort.hasRole("ADMIN")).thenReturn(true);
         when(currentUserPort.getCurrentUserId()).thenReturn(userId);
 
-        assertThrows(MedicalRecordAccessDeniedException.class, () -> service.requireContentWriteAccess(medicalRecordId));
+        assertThrows(MedicalRecordAccessDeniedException.class,
+                () -> service.requireContentWriteAccess(medicalRecordId));
         verify(authorizationAuditService).recordContentWriteDenied(userId, medicalRecordId);
     }
 
@@ -172,7 +172,8 @@ class MedicalRecordAuthorizationServiceTest {
         when(currentUserPort.hasRole("ADMIN")).thenReturn(true);
         when(currentUserPort.getCurrentUserId()).thenReturn(userId);
 
-        assertThrows(MedicalRecordAccessDeniedException.class, () -> service.requireDiagnosisWriteAccess(medicalRecordId));
+        assertThrows(MedicalRecordAccessDeniedException.class,
+                () -> service.requireDiagnosisWriteAccess(medicalRecordId));
         verify(authorizationAuditService).recordDiagnosisWriteDenied(userId, medicalRecordId);
     }
 
@@ -184,7 +185,8 @@ class MedicalRecordAuthorizationServiceTest {
         when(currentUserPort.hasRole("DOCTOR")).thenReturn(false);
         when(currentUserPort.getCurrentUserId()).thenReturn(userId);
 
-        assertThrows(MedicalRecordAccessDeniedException.class, () -> service.requireDiagnosisWriteAccess(medicalRecordId));
+        assertThrows(MedicalRecordAccessDeniedException.class,
+                () -> service.requireDiagnosisWriteAccess(medicalRecordId));
         verify(authorizationAuditService).recordDiagnosisWriteDenied(userId, medicalRecordId);
     }
 
@@ -262,7 +264,8 @@ class MedicalRecordAuthorizationServiceTest {
 
         assertThrows(MedicalRecordAccessDeniedException.class, () -> service.requireVisitTemplateReadAccess(visitId));
 
-        verify(authorizationAuditService).recordVisitTemplateAccessDenied(userId, visitId, "Medical record template access denied");
+        verify(authorizationAuditService).recordVisitTemplateAccessDenied(userId, visitId,
+                "Medical record template access denied");
     }
 
     @Test
@@ -284,7 +287,8 @@ class MedicalRecordAuthorizationServiceTest {
         assertThrows(MedicalRecordAccessDeniedException.class,
                 () -> service.requireVisitTemplateVisitAccess(actorId, doctorId, visitId));
 
-        verify(authorizationAuditService).recordVisitTemplateAccessDenied(actorId, visitId, "Medical record template access denied");
+        verify(authorizationAuditService).recordVisitTemplateAccessDenied(actorId, visitId,
+                "Medical record template access denied");
     }
 
     @Test
@@ -305,7 +309,8 @@ class MedicalRecordAuthorizationServiceTest {
         when(currentUserPort.getCurrentUserId()).thenReturn(userId);
 
         assertThrows(MedicalRecordAccessDeniedException.class, service::requireArchiveManageAccess);
-        verify(authorizationAuditService).recordArchiveAccessDenied(userId, "Medical record archive manage access denied");
+        verify(authorizationAuditService).recordArchiveAccessDenied(userId,
+                "Medical record archive manage access denied");
     }
 
     @Test
@@ -326,7 +331,8 @@ class MedicalRecordAuthorizationServiceTest {
         when(currentUserPort.getCurrentUserId()).thenReturn(userId);
 
         assertThrows(MedicalRecordAccessDeniedException.class, service::requireArchiveReadAccess);
-        verify(authorizationAuditService).recordArchiveAccessDenied(userId, "Medical record archive read access denied");
+        verify(authorizationAuditService).recordArchiveAccessDenied(userId,
+                "Medical record archive read access denied");
     }
 
     @Test

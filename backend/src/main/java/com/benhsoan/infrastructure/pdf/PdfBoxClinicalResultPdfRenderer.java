@@ -46,8 +46,10 @@ public class PdfBoxClinicalResultPdfRenderer implements ClinicalResultPdfRendere
         try (PDDocument pdf = new PDDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             FontMetrics metrics = createFontMetrics();
             List<List<String>> pages = paginate(buildLines(document, metrics), document, metrics);
-            for (List<String> page : pages) {
-                BufferedImage pageImage = renderPage(page);
+            BufferedImage logo = document.showLogo() ? LogoImageLoader.load(document.logoUrl()) : null;
+            for (int i = 0; i < pages.size(); i++) {
+                List<String> page = pages.get(i);
+                BufferedImage pageImage = renderPage(page, i == 0 ? logo : null);
                 pdf.addPage(new PDPage(PDRectangle.A4));
                 PDImageXObject image = LosslessFactory.createFromImage(pdf, pageImage);
                 try (PDPageContentStream content = new PDPageContentStream(
@@ -72,11 +74,25 @@ public class PdfBoxClinicalResultPdfRenderer implements ClinicalResultPdfRendere
         }
     }
 
-    private BufferedImage renderPage(List<String> lines) {
+    private BufferedImage renderPage(List<String> lines, BufferedImage logo) {
         BufferedImage image = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = image.createGraphics();
         graphics.setColor(Color.WHITE);
         graphics.fillRect(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
+
+        if (logo != null) {
+            int maxLogoWidth = 140;
+            int maxLogoHeight = 70;
+            int lw = logo.getWidth();
+            int lh = logo.getHeight();
+            double scale = Math.min((double) maxLogoWidth / lw, (double) maxLogoHeight / lh);
+            int drawW = Math.max(1, (int) (lw * scale));
+            int drawH = Math.max(1, (int) (lh * scale));
+            int logoX = IMAGE_WIDTH - LEFT_MARGIN - drawW;
+            int logoY = TOP_MARGIN - 20;
+            graphics.drawImage(logo, logoX, logoY, drawW, drawH, null);
+        }
+
         graphics.setColor(Color.BLACK);
         graphics.setFont(CONTENT_FONT);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
@@ -92,11 +108,27 @@ public class PdfBoxClinicalResultPdfRenderer implements ClinicalResultPdfRendere
 
     List<String> buildLines(ClinicalResultPrintDocument doc, FontMetrics metrics) {
         List<String> lines = new ArrayList<>();
+        boolean hasLogo = doc.showLogo() && doc.logoUrl() != null && !doc.logoUrl().isBlank();
+        int headerWidth = hasLogo ? (CONTENT_WIDTH - 160) : CONTENT_WIDTH;
 
-        lines.add("PHIẾU KẾT QUẢ CẬN LÂM SÀNG");
-        lines.add("Phòng khám: " + defaultText(doc.clinicName()));
-        lines.add("Địa chỉ: " + defaultText(doc.clinicAddress()));
-        lines.add("Điện thoại: " + defaultText(doc.clinicPhone()));
+        String title = doc.title() != null && !doc.title().isBlank()
+                ? doc.title()
+                : "PHIẾU KẾT QUẢ CẬN LÂM SÀNG";
+
+        List<String> headerLines = new ArrayList<>();
+        headerLines.add(title);
+        headerLines.add("Phòng khám: " + defaultText(doc.clinicName()));
+        headerLines.add("Địa chỉ: " + defaultText(doc.clinicAddress()));
+        headerLines.add("Điện thoại: " + defaultText(doc.clinicPhone()));
+        if (doc.legalInfo() != null && !doc.legalInfo().isBlank()) {
+            headerLines.add("Thông tin pháp lý: " + doc.legalInfo());
+        }
+
+        for (String hLine : headerLines) {
+            lines.addAll(wrapWithWidth(hLine, metrics, headerWidth));
+        }
+
+        lines.add("================================================================================");
         lines.add("");
 
         lines.add("THÔNG TIN BỆNH NHÂN & LƯỢT KHÁM");
@@ -112,6 +144,7 @@ public class PdfBoxClinicalResultPdfRenderer implements ClinicalResultPdfRendere
         }
         lines.add("");
 
+        boolean showRefRange = PrintFieldVisibilityHelper.isVisible(doc.fieldVisibility(), "showReferenceRange", true);
         lines.add("KẾT QUẢ XÉT NGHIỆM / CẬN LÂM SÀNG");
         if (doc.items() == null || doc.items().isEmpty()) {
             lines.add("   (Không có kết quả cận lâm sàng nào)");
@@ -122,12 +155,14 @@ public class PdfBoxClinicalResultPdfRenderer implements ClinicalResultPdfRendere
                 if (item.unit() != null && !item.unit().isBlank()) {
                     valStr += " " + item.unit();
                 }
-                String refStr = item.referenceRange() != null && !item.referenceRange().isBlank() ? item.referenceRange() : "-";
+                String refStr = showRefRange
+                        ? ("  |  CSBT: " + (item.referenceRange() != null && !item.referenceRange().isBlank() ? item.referenceRange() : "-"))
+                        : "";
                 String flagStr = "";
                 if (item.abnormalFlag() != null && !"NORMAL".equalsIgnoreCase(item.abnormalFlag()) && !"UNKNOWN".equalsIgnoreCase(item.abnormalFlag())) {
                     flagStr = " [" + mapAbnormalFlag(item.abnormalFlag()) + "]";
                 }
-                lines.add(String.format("   Kết quả: %s  |  CSBT: %s%s", valStr, refStr, flagStr));
+                lines.add(String.format("   Kết quả: %s%s%s", valStr, refStr, flagStr));
                 if (item.conclusion() != null && !item.conclusion().isBlank()) {
                     lines.add("   Kết luận: " + item.conclusion());
                 }
@@ -140,11 +175,24 @@ public class PdfBoxClinicalResultPdfRenderer implements ClinicalResultPdfRendere
             lines.add("");
         }
 
-        lines.add("Thời gian in: " + formatDateTime(doc.printedAt()));
-        lines.add("");
-        lines.add("(Chứng từ điện tử tra cứu từ Cổng bệnh nhân trực tuyến)");
+        if (doc.footerText() != null && !doc.footerText().isBlank()) {
+            lines.add("--------------------------------------------------------------------------------");
+            lines.add(doc.footerText());
+            lines.add("");
+        } else {
+            lines.add("(Chứng từ điện tử tra cứu từ Cổng bệnh nhân trực tuyến)");
+            lines.add("");
+        }
 
-        return lines.stream().flatMap(line -> wrap(line, metrics).stream()).toList();
+        boolean showDoctorSig = PrintFieldVisibilityHelper.isVisible(doc.fieldVisibility(), "showDoctorSignature", true);
+        if (showDoctorSig) {
+            lines.add("BÁC SĨ CHUYÊN KHOA KÝ TÊN: " + defaultText(doc.doctorName()));
+            lines.add("");
+        }
+
+        lines.add("Thời gian in: " + formatDateTime(doc.printedAt()));
+
+        return lines.stream().flatMap(line -> wrapWithWidth(line, metrics, CONTENT_WIDTH).stream()).toList();
     }
 
     List<List<String>> paginate(
@@ -178,17 +226,21 @@ public class PdfBoxClinicalResultPdfRenderer implements ClinicalResultPdfRendere
     }
 
     private List<String> wrap(String line, FontMetrics metrics) {
+        return wrapWithWidth(line, metrics, CONTENT_WIDTH);
+    }
+
+    private List<String> wrapWithWidth(String line, FontMetrics metrics, int maxWidth) {
         if (line.isEmpty()) {
             return List.of("");
         }
         List<String> wrappedLines = new ArrayList<>();
         for (String paragraph : line.split("\\R", -1)) {
-            wrapParagraph(paragraph, metrics, wrappedLines);
+            wrapParagraphWithWidth(paragraph, metrics, wrappedLines, maxWidth);
         }
         return wrappedLines;
     }
 
-    private void wrapParagraph(String paragraph, FontMetrics metrics, List<String> wrappedLines) {
+    private void wrapParagraphWithWidth(String paragraph, FontMetrics metrics, List<String> wrappedLines, int maxWidth) {
         if (paragraph.isEmpty()) {
             wrappedLines.add("");
             return;
@@ -196,7 +248,7 @@ public class PdfBoxClinicalResultPdfRenderer implements ClinicalResultPdfRendere
         StringBuilder currentLine = new StringBuilder();
         for (String word : paragraph.split(" ")) {
             String candidate = currentLine.isEmpty() ? word : currentLine + " " + word;
-            if (metrics.stringWidth(candidate) <= CONTENT_WIDTH) {
+            if (metrics.stringWidth(candidate) <= maxWidth) {
                 currentLine.setLength(0);
                 currentLine.append(candidate);
                 continue;
@@ -205,22 +257,23 @@ public class PdfBoxClinicalResultPdfRenderer implements ClinicalResultPdfRendere
                 wrappedLines.add(currentLine.toString());
                 currentLine.setLength(0);
             }
-            addLongWord(word, metrics, wrappedLines, currentLine);
+            addLongWordWithWidth(word, metrics, wrappedLines, currentLine, maxWidth);
         }
         if (!currentLine.isEmpty()) {
             wrappedLines.add(currentLine.toString());
         }
     }
 
-    private void addLongWord(
+    private void addLongWordWithWidth(
             String word,
             FontMetrics metrics,
             List<String> wrappedLines,
-            StringBuilder currentLine
+            StringBuilder currentLine,
+            int maxWidth
     ) {
         for (int index = 0; index < word.length(); index++) {
             currentLine.append(word.charAt(index));
-            if (metrics.stringWidth(currentLine.toString()) > CONTENT_WIDTH) {
+            if (metrics.stringWidth(currentLine.toString()) > maxWidth) {
                 char overflow = currentLine.charAt(currentLine.length() - 1);
                 currentLine.deleteCharAt(currentLine.length() - 1);
                 wrappedLines.add(currentLine.toString());

@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.benhsoan.domain.auditlog.enums.ActionType;
 import com.benhsoan.domain.backup.BackupRecord;
-import com.benhsoan.domain.backup.BackupScheduleConfiguration;
 import com.benhsoan.domain.backup.BackupVerificationReport;
 import com.benhsoan.domain.backup.enums.BackupStatus;
 import com.benhsoan.domain.backup.exception.BackupNotFoundException;
@@ -39,7 +38,8 @@ public class VerifyBackupIntegrityService implements VerifyBackupIntegrityUseCas
         authorizer.requireAdmin();
 
         BackupRecord latest = backupRecordRepository.findLatestByStatus(BackupStatus.SUCCESS)
-                .orElseThrow(() -> new BackupNotFoundException("Không tìm thấy bản sao lưu thành công nào để kiểm tra tính toàn vẹn."));
+                .orElseThrow(() -> new BackupNotFoundException(
+                        "Không tìm thấy bản sao lưu thành công nào để kiểm tra tính toàn vẹn."));
 
         BackupVerificationReport report = verifyRecord(latest);
 
@@ -68,7 +68,8 @@ public class VerifyBackupIntegrityService implements VerifyBackupIntegrityUseCas
         Instant now = clockPort.now();
 
         BackupVerificationReport report;
-        if (record.getStatus() != BackupStatus.SUCCESS || record.getFileName() == null || record.getFileName().isBlank()) {
+        if (record.getStatus() != BackupStatus.SUCCESS || record.getFileName() == null
+                || record.getFileName().isBlank()) {
             String issueMsg = record.getStatus() == BackupStatus.IN_PROGRESS
                     ? "Bản sao lưu đang được xử lý và chưa hoàn tất tệp dữ liệu."
                     : "Bản sao lưu có trạng thái thất bại hoặc không có tệp dữ liệu để kiểm tra.";
@@ -82,14 +83,12 @@ public class VerifyBackupIntegrityService implements VerifyBackupIntegrityUseCas
                     null,
                     now,
                     issueMsg,
-                    java.util.List.of(issueMsg)
-            );
+                    java.util.List.of(issueMsg));
         } else {
             report = storagePort.verifySnapshot(
                     record.getId(),
                     record.getBackupCode(),
-                    record.getFileName()
-            );
+                    record.getFileName());
         }
 
         String detail = """
@@ -100,8 +99,7 @@ public class VerifyBackupIntegrityService implements VerifyBackupIntegrityUseCas
                 report.readable(),
                 report.dataIntact(),
                 report.tableCount(),
-                report.rowCount()
-        ).trim();
+                report.rowCount()).trim();
         auditLogWriter.write(actorId, ActionType.READ, record.getId(), detail);
 
         return report;

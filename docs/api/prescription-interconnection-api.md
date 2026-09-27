@@ -10,6 +10,26 @@ Base path: `/api/v1`. The live OpenAPI document is available at `/api/v1/api-doc
 
 PHARMACIST is not assigned any interconnection permission.
 
+## Reconciliation (NCL-12-CN-007)
+
+Reconciliation between transmitted and dispensed prescriptions lives on
+`/prescription-reconciliation` and is documented in
+[`ncl-12-cn-007-reconciliation-contract.md`](ncl-12-cn-007-reconciliation-contract.md).
+
+| Endpoint | Permission | Business authorization |
+|---|---|---|
+| `GET /prescription-reconciliation` | `PRESCRIPTION_RECONCILIATION_VIEW` | ADMIN, PHARMACIST |
+| `GET /prescription-reconciliation/{prescriptionId}/notes` | `PRESCRIPTION_RECONCILIATION_VIEW` | ADMIN, PHARMACIST |
+| `POST /prescription-reconciliation/{prescriptionId}/notes` | `PRESCRIPTION_RECONCILIATION_NOTE` | ADMIN, PHARMACIST |
+
+Reconciliation does **not** add a retransmission endpoint and does **not** change the
+authorization of the existing retry endpoint above: retry remains
+`PRESCRIPTION_INTERCONNECTION_RETRY`, ADMIN only, `FAILED` submissions only. A PHARMACIST may view
+reconciliation and record a reconciliation reason, but must retransmit nothing. The
+`retransmissionEligible` flag returned by the reconciliation list is derived strictly from
+`interconnectionStatus == FAILED`, so the frontend can safely offer retry only for the rows the
+existing NCL-12-CN-004 flow would accept.
+
 ## Send and retry response
 
 Both submit operations return HTTP 200 with the following shape. A gateway failure is represented as `FAILED`, so the caller can show the recorded reason without losing the history record.

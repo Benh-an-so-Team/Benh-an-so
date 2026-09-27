@@ -6,8 +6,9 @@ target/
 *.log
 *.iml
 .idea/
-*.mvn
 !mvnw
+!mvnw.cmd
+!.mvn/
 
 # --- Node / Frontend ---
 node_modules/

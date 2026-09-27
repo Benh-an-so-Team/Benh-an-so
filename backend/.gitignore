@@ -5,5 +5,6 @@ target/
 *.log
 *.iml
 .idea/
-*.mvn
 !mvnw
+!mvnw.cmd
+!.mvn/

@@ -62,6 +62,7 @@ import com.benhsoan.port.inbound.prescription.DispensePrescriptionItemsUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionDispenseHistoryUseCase;
 import com.benhsoan.port.inbound.prescription.GetDispenseSuggestionUseCase;
 import com.benhsoan.port.inbound.prescription.ExportPrescriptionUseCase;
+import com.benhsoan.port.inbound.prescription.GetPrescriptionByCodeUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionsByMedicalRecordUseCase;
 import com.benhsoan.port.inbound.prescription.SearchPrescriptionsUseCase;
@@ -96,6 +97,9 @@ class PrescriptionControllerTest {
 
     @MockitoBean
     private GetPrescriptionUseCase getPrescriptionUseCase;
+
+    @MockitoBean
+    private GetPrescriptionByCodeUseCase getPrescriptionByCodeUseCase;
 
     @MockitoBean
     private GetPrescriptionsByMedicalRecordUseCase getPrescriptionsByMedicalRecordUseCase;
@@ -905,5 +909,84 @@ class PrescriptionControllerTest {
                 UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.PENDING_DISPENSE,
                 null, UUID.randomUUID(), "Dr. B", NOW, null, null, List.of(), List.of());
     }
-}
 
+    @Test
+    @DisplayName("GET /prescriptions/code/{code} - 200 with pending prescription for dispensation (TC-01)")
+    void getByCode_whenFoundPending_returnsPrescriptionResponse() throws Exception {
+        UUID prescriptionId = UUID.randomUUID();
+        String code = "RX000003";
+        PrescriptionResult result = new PrescriptionResult(
+                prescriptionId, code, UUID.randomUUID(), UUID.randomUUID(), "VISIT-001",
+                UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.PENDING_DISPENSE,
+                "Uong sau an", UUID.randomUUID(), "Dr. B", NOW, null, null, List.of(), List.of());
+        when(getPrescriptionByCodeUseCase.getByCode(code)).thenReturn(result);
+
+        mockMvc.perform(get("/prescriptions/code/{prescriptionCode}", code))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(prescriptionId.toString()))
+                .andExpect(jsonPath("$.prescriptionCode").value(code))
+                .andExpect(jsonPath("$.status").value("PENDING_DISPENSE"))
+                .andExpect(jsonPath("$.patientName").value("Nguyen Van A"));
+    }
+
+    @Test
+    @DisplayName("GET /prescriptions/code/{code} - 200 with cancelled prescription and reason (TC-02)")
+    void getByCode_whenFoundCancelled_returnsPrescriptionWithCancelReason() throws Exception {
+        UUID prescriptionId = UUID.randomUUID();
+        String code = "RX000004";
+        PrescriptionResult result = new PrescriptionResult(
+                prescriptionId, code, UUID.randomUUID(), UUID.randomUUID(), "VISIT-002",
+                UUID.randomUUID(), "PAT-002", "Tran Thi C", PrescriptionStatus.CANCELLED,
+                null, "Bac si doi phac do dieu tri", UUID.randomUUID(), "Dr. D", NOW, UUID.randomUUID(), NOW, List.of(), List.of());
+        when(getPrescriptionByCodeUseCase.getByCode(code)).thenReturn(result);
+
+        mockMvc.perform(get("/prescriptions/code/{prescriptionCode}", code))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(prescriptionId.toString()))
+                .andExpect(jsonPath("$.prescriptionCode").value(code))
+                .andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.cancelReason").value("Bac si doi phac do dieu tri"));
+    }
+
+    @Test
+    @DisplayName("GET /prescriptions/code/{code} - 404 when prescription code does not exist (TC-03)")
+    void getByCode_whenNotFound_returns404() throws Exception {
+        String code = "RX999999";
+        when(getPrescriptionByCodeUseCase.getByCode(code))
+                .thenThrow(new PrescriptionNotFoundException(code));
+
+        mockMvc.perform(get("/prescriptions/code/{prescriptionCode}", code))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PRESCRIPTION_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("GET /prescriptions/code/{code} - 200 with URL-encoded whitespace in path variable")
+    void getByCode_whenUrlEncoded_handlesCorrectly() throws Exception {
+        UUID prescriptionId = UUID.randomUUID();
+        String code = "RX000003";
+        PrescriptionResult result = new PrescriptionResult(
+                prescriptionId, code, UUID.randomUUID(), UUID.randomUUID(), "VISIT-001",
+                UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.PENDING_DISPENSE,
+                "Uong sau an", UUID.randomUUID(), "Dr. B", NOW, null, null, List.of(), List.of());
+        when(getPrescriptionByCodeUseCase.getByCode("RX000003 ")).thenReturn(result);
+
+        mockMvc.perform(get("/prescriptions/code/{prescriptionCode}", "RX000003 "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(prescriptionId.toString()))
+                .andExpect(jsonPath("$.prescriptionCode").value(code));
+    }
+
+    @Test
+    @DisplayName("GET /prescriptions/code/{code} - 404 when code format is malformed (P3 Fast-fail)")
+    void getByCode_whenMalformedFormat_returns404() throws Exception {
+        String malformedCode = "INVALID_CODE";
+        when(getPrescriptionByCodeUseCase.getByCode(malformedCode))
+                .thenThrow(new PrescriptionNotFoundException(malformedCode));
+
+        mockMvc.perform(get("/prescriptions/code/{prescriptionCode}", malformedCode))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PRESCRIPTION_NOT_FOUND"));
+    }
+
+}

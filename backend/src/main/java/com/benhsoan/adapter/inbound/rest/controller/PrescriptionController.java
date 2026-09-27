@@ -54,6 +54,7 @@ import com.benhsoan.port.inbound.prescription.DispensePrescriptionItemsUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionDispenseHistoryUseCase;
 import com.benhsoan.port.inbound.prescription.GetDispenseSuggestionUseCase;
 import com.benhsoan.port.inbound.prescription.ExportPrescriptionUseCase;
+import com.benhsoan.port.inbound.prescription.GetPrescriptionByCodeUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionsByMedicalRecordUseCase;
 import com.benhsoan.port.inbound.prescription.SearchPrescriptionsUseCase;
@@ -84,6 +85,7 @@ public class PrescriptionController {
 
         private final AmendPrescriptionUseCase amendPrescriptionUseCase;
         private final GetPrescriptionUseCase getPrescriptionUseCase;
+        private final GetPrescriptionByCodeUseCase getPrescriptionByCodeUseCase;
         private final GetPrescriptionsByMedicalRecordUseCase getPrescriptionsByMedicalRecordUseCase;
         private final SearchPrescriptionsUseCase searchPrescriptionsUseCase;
         private final DispensePrescriptionUseCase dispensePrescriptionUseCase;
@@ -139,6 +141,17 @@ public class PrescriptionController {
         @RequirePermission("PRESCRIPTION_READ")
         public PrescriptionResponse getById(@PathVariable UUID id) {
                 return mapper.toResponse(getPrescriptionUseCase.getById(id));
+        }
+
+        @GetMapping("/code/{prescriptionCode}")
+        @RequirePermission("PRESCRIPTION_READ")
+        @Operation(summary = "Tra cứu đơn thuốc bằng mã đơn khi cấp phát")
+        @ApiResponse(responseCode = "200", description = "Tìm thấy đơn thuốc tương ứng")
+        @ApiResponse(responseCode = "400", description = "Mã đơn thuốc không hợp lệ")
+        @ApiResponse(responseCode = "403", description = "Không có quyền đọc đơn thuốc")
+        @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn thuốc theo mã")
+        public PrescriptionResponse getByCode(@PathVariable String prescriptionCode) {
+                return mapper.toResponse(getPrescriptionByCodeUseCase.getByCode(prescriptionCode));
         }
 
         @GetMapping("/{id}/print")

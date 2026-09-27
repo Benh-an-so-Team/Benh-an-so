@@ -35,7 +35,9 @@ import com.benhsoan.port.inbound.reporting.GetDoctorVisitsReportUseCase;
 import com.benhsoan.port.inbound.reporting.GetOperationalSummaryUseCase;
 import com.benhsoan.port.inbound.reporting.GetRevenueBreakdownReportUseCase;
 import com.benhsoan.port.inbound.reporting.GetTopMedicinesReportUseCase;
+import com.benhsoan.adapter.inbound.rest.response.reporting.SatisfactionReportResponse;
 import com.benhsoan.port.inbound.reporting.GetOperationalTimelineUseCase;
+import com.benhsoan.port.inbound.survey.GetSatisfactionReportUseCase;
 
 import lombok.RequiredArgsConstructor;
 
@@ -56,6 +58,7 @@ public class ReportsController {
     private final ExportOperationalReportUseCase exportOperationalReportUseCase;
     private final GetRevenueBreakdownReportUseCase getRevenueBreakdownReportUseCase;
     private final GetAppointmentEffectivenessReportUseCase getAppointmentEffectivenessReportUseCase;
+    private final GetSatisfactionReportUseCase getSatisfactionReportUseCase;
     private final ReportingRestMapper mapper;
 
     @GetMapping("/summary")
@@ -153,6 +156,20 @@ public class ReportsController {
         validateRange(fromDate, toDate);
 
         return mapper.toResponse(getDiseasePatternReportUseCase.getDiseasePatternReport(fromDate, toDate, doctorId));
+    }
+
+    @GetMapping("/satisfaction")
+    @RequirePermission("REPORT_VIEW")
+    public SatisfactionReportResponse getSatisfaction(
+            @RequestParam String from,
+            @RequestParam String to,
+            @RequestParam(required = false) UUID doctorId
+    ) {
+        LocalDate fromDate = parseDate(from, "from");
+        LocalDate toDate = parseDate(to, "to");
+        validateRange(fromDate, toDate);
+
+        return mapper.toResponse(getSatisfactionReportUseCase.getReport(fromDate, toDate, doctorId));
     }
 
     @GetMapping("/export")

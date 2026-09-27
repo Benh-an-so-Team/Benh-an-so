@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import com.benhsoan.domain.auditlog.enums.ActionType;
 import com.benhsoan.domain.backup.BackupRecord;
 import com.benhsoan.domain.backup.BackupScheduleConfiguration;
-import com.benhsoan.domain.backup.enums.BackupStatus;
 import com.benhsoan.domain.backup.enums.BackupType;
 import com.benhsoan.domain.backup.exception.BackupExecutionException;
 import com.benhsoan.port.dto.result.BackupResult;
@@ -67,7 +66,8 @@ public class ScheduledBackupExecutionService implements ExecuteScheduledBackupUs
     public BackupResult executeNow() {
         Instant now = clockPort.now();
 
-        // Concurrency Guard: check if any recent backup is already IN_PROGRESS (within 60m threshold)
+        // Concurrency Guard: check if any recent backup is already IN_PROGRESS (within
+        // 60m threshold)
         Instant inProgressThreshold = now.minus(60, java.time.temporal.ChronoUnit.MINUTES);
         boolean hasInProgress = backupRecordRepository.hasActiveInProgressBackup(inProgressThreshold);
         if (hasInProgress) {
@@ -81,8 +81,7 @@ public class ScheduledBackupExecutionService implements ExecuteScheduledBackupUs
                 BackupType.SCHEDULED,
                 "Sao lưu tự động định kỳ theo lịch",
                 SYSTEM_USER_ID,
-                now
-        );
+                now);
 
         BackupScheduleConfiguration config = scheduleRepository.find()
                 .orElseGet(() -> BackupScheduleConfiguration.createDefault(SYSTEM_USER_ID, now));
@@ -126,7 +125,6 @@ public class ScheduledBackupExecutionService implements ExecuteScheduledBackupUs
                 record.getBackupCode(),
                 record.getFileName(),
                 record.getFileSize(),
-                record.getBackupType()
-        ).trim();
+                record.getBackupType()).trim();
     }
 }

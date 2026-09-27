@@ -1,7 +1,6 @@
 package com.benhsoan.application.ucservice.auth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,7 +27,6 @@ import org.springframework.data.domain.Pageable;
 import com.benhsoan.domain.auth.Role;
 import com.benhsoan.domain.auth.User;
 import com.benhsoan.domain.auth.UserSession;
-import com.benhsoan.domain.clinic.ClinicConfiguration;
 import com.benhsoan.port.dto.result.auth.ActiveSessionResult;
 import com.benhsoan.port.outbound.repository.auth.RoleRepository;
 import com.benhsoan.port.outbound.repository.auth.UserRepository;
@@ -43,12 +41,18 @@ class GetActiveSessionsServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-09-24T08:00:00Z");
 
-    @Mock private UserSessionRepository userSessionRepository;
-    @Mock private ClinicConfigurationRepository clinicConfigurationRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private RoleRepository roleRepository;
-    @Mock private CurrentUserPort currentUserPort;
-    @Mock private ClockPort clockPort;
+    @Mock
+    private UserSessionRepository userSessionRepository;
+    @Mock
+    private ClinicConfigurationRepository clinicConfigurationRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private RoleRepository roleRepository;
+    @Mock
+    private CurrentUserPort currentUserPort;
+    @Mock
+    private ClockPort clockPort;
 
     private GetActiveSessionsService service;
 
@@ -60,8 +64,7 @@ class GetActiveSessionsServiceTest {
                 userRepository,
                 roleRepository,
                 currentUserPort,
-                clockPort
-        );
+                clockPort);
         when(clockPort.now()).thenReturn(NOW);
     }
 
@@ -76,14 +79,14 @@ class GetActiveSessionsServiceTest {
         UserSession session = UserSession.restore(
                 currentSessionId, userId, "hash", null,
                 NOW.plus(Duration.ofDays(7)), NOW, NOW, null,
-                "192.168.1.50", "Mozilla/5.0"
-        );
+                "192.168.1.50", "Mozilla/5.0");
 
         when(clinicConfigurationRepository.find()).thenReturn(Optional.empty());
         when(userSessionRepository.findActiveSessions(eq(NOW), any(Instant.class), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(session), pageable, 1));
 
-        User user = User.restore(userId, "doctor_a", "hash", "Doctor A", "doctor@clinic.com", null, roleId, true, null, NOW);
+        User user = User.restore(userId, "doctor_a", "hash", "Doctor A", "doctor@clinic.com", null, roleId, true, null,
+                NOW);
         when(userRepository.findAllById(List.of(userId))).thenReturn(List.of(user));
 
         Role role = Role.restore(roleId, "DOCTOR", "Doctor role", true, NOW, NOW, java.util.Collections.emptySet());

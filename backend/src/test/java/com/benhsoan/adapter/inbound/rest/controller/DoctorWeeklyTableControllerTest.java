@@ -59,6 +59,11 @@ import com.benhsoan.port.inbound.appointment.GetUnconfirmedAppointmentsUseCase;
 import com.benhsoan.port.inbound.appointment.MarkAppointmentNoShowUseCase;
 import com.benhsoan.port.inbound.appointment.RescheduleAppointmentUseCase;
 import com.benhsoan.port.inbound.appointment.SearchAppointmentsUseCase;
+import com.benhsoan.adapter.inbound.rest.mapper.AppointmentSeriesRestMapper;
+import com.benhsoan.port.inbound.appointment.CreateAppointmentSeriesUseCase;
+import com.benhsoan.port.inbound.appointment.GetAppointmentSeriesByIdUseCase;
+import com.benhsoan.port.inbound.appointment.GetPatientAppointmentSeriesUseCase;
+import com.benhsoan.port.inbound.appointment.PreviewAppointmentSeriesUseCase;
 import com.benhsoan.port.inbound.appointment.SendAppointmentReminderManuallyUseCase;
 import com.benhsoan.port.outbound.authSecurity.JwtTokenPort;
 import com.benhsoan.port.outbound.repository.audit.AuditLogRepository;
@@ -79,7 +84,7 @@ import com.benhsoan.application.ucservice.anonymization.AnonymizationModeState;
 
 @WebMvcTest(controllers = AppointmentController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({AppointmentRestMapper.class, AnonymizationModeState.class, GlobalExceptionHandler.class, RequirePermissionAspect.class,
+@Import({AppointmentRestMapper.class, AppointmentSeriesRestMapper.class, AnonymizationModeState.class, GlobalExceptionHandler.class, RequirePermissionAspect.class,
         PermissionEvaluator.class, DoctorWeeklyTableControllerTest.AspectTestConfig.class})
 class DoctorWeeklyTableControllerTest {
 
@@ -107,6 +112,10 @@ class DoctorWeeklyTableControllerTest {
     @MockitoBean private RescheduleAppointmentUseCase rescheduleAppointmentUseCase;
     @MockitoBean private SendAppointmentReminderManuallyUseCase sendAppointmentReminderManuallyUseCase;
     @MockitoBean private GetDoctorWeeklyScheduleTableUseCase getDoctorWeeklyScheduleTableUseCase;
+    @MockitoBean private PreviewAppointmentSeriesUseCase previewAppointmentSeriesUseCase;
+    @MockitoBean private CreateAppointmentSeriesUseCase createAppointmentSeriesUseCase;
+    @MockitoBean private GetAppointmentSeriesByIdUseCase getAppointmentSeriesByIdUseCase;
+    @MockitoBean private GetPatientAppointmentSeriesUseCase getPatientAppointmentSeriesUseCase;
 
     @MockitoBean private JwtTokenPort jwtTokenPort;
     @MockitoBean private UserRepository userRepository;

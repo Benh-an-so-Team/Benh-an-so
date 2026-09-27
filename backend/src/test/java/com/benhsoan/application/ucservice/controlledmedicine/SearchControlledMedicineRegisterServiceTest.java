@@ -3,7 +3,6 @@ package com.benhsoan.application.ucservice.controlledmedicine;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 
 import com.benhsoan.domain.auth.User;
 import com.benhsoan.domain.controlledmedicine.ControlledMedicineRegister;
@@ -31,8 +29,8 @@ class SearchControlledMedicineRegisterServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-09-21T10:00:00Z");
 
-    private final ControlledMedicineRegisterRepository registerRepository =
-            mock(ControlledMedicineRegisterRepository.class);
+    private final ControlledMedicineRegisterRepository registerRepository = mock(
+            ControlledMedicineRegisterRepository.class);
     private final PatientRepository patientRepository = mock(PatientRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
 
@@ -43,8 +41,7 @@ class SearchControlledMedicineRegisterServiceTest {
         service = new SearchControlledMedicineRegisterService(
                 registerRepository,
                 patientRepository,
-                userRepository
-        );
+                userRepository);
     }
 
     @Test
@@ -68,8 +65,7 @@ class SearchControlledMedicineRegisterServiceTest {
                 pharmacistId,
                 5,
                 NOW,
-                NOW
-        );
+                NOW);
 
         Patient patient = mock(Patient.class);
         when(patient.getId()).thenReturn(patientId);
@@ -90,8 +86,7 @@ class SearchControlledMedicineRegisterServiceTest {
         when(userRepository.findAllById(any())).thenReturn(List.of(doctor, pharmacist));
 
         Page<ControlledMedicineRegisterResult> result = service.search(
-                new SearchControlledMedicineRegisterQuery(null, null, null, null, 0, 20)
-        );
+                new SearchControlledMedicineRegisterQuery(null, null, null, null, 0, 20));
 
         ControlledMedicineRegisterResult item = result.getContent().getFirst();
         assertEquals(registerId, item.id());

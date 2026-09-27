@@ -45,13 +45,24 @@ public class PdfBoxInvoicePdfRenderer implements InvoicePdfRenderer {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(VIETNAM_ZONE);
 
+    private static final DecimalFormat MONEY_FORMAT;
+
+    static {
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.of("vi", "VN"));
+        symbols.setGroupingSeparator('.');
+        MONEY_FORMAT = new DecimalFormat("#,##0", symbols);
+    }
+
     @Override
     public byte[] render(InvoicePrintDocument document) {
         try (PDDocument pdf = new PDDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             FontMetrics metrics = createFontMetrics();
             List<List<String>> pages = paginate(buildLines(document, metrics), document, metrics);
-            for (List<String> page : pages) {
-                BufferedImage pageImage = renderPage(page);
+            BufferedImage logo = document.showLogo() ? LogoImageLoader.load(document.logoUrl()) : null;
+
+            for (int i = 0; i < pages.size(); i++) {
+                List<String> page = pages.get(i);
+                BufferedImage pageImage = renderPage(page, i == 0 ? logo : null);
                 pdf.addPage(new PDPage(PDRectangle.A4));
                 PDImageXObject image = LosslessFactory.createFromImage(pdf, pageImage);
                 try (PDPageContentStream content = new PDPageContentStream(
@@ -76,11 +87,25 @@ public class PdfBoxInvoicePdfRenderer implements InvoicePdfRenderer {
         }
     }
 
-    private BufferedImage renderPage(List<String> lines) {
+    private BufferedImage renderPage(List<String> lines, BufferedImage logo) {
         BufferedImage image = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = image.createGraphics();
         graphics.setColor(Color.WHITE);
         graphics.fillRect(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
+
+        if (logo != null) {
+            int maxLogoWidth = 140;
+            int maxLogoHeight = 70;
+            int lw = logo.getWidth();
+            int lh = logo.getHeight();
+            double scale = Math.min((double) maxLogoWidth / lw, (double) maxLogoHeight / lh);
+            int drawW = Math.max(1, (int) (lw * scale));
+            int drawH = Math.max(1, (int) (lh * scale));
+            int logoX = IMAGE_WIDTH - LEFT_MARGIN - drawW;
+            int logoY = TOP_MARGIN - 20;
+            graphics.drawImage(logo, logoX, logoY, drawW, drawH, null);
+        }
+
         graphics.setColor(Color.BLACK);
         graphics.setFont(CONTENT_FONT);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
@@ -96,15 +121,33 @@ public class PdfBoxInvoicePdfRenderer implements InvoicePdfRenderer {
 
     List<String> buildLines(InvoicePrintDocument doc, FontMetrics metrics) {
         List<String> lines = new ArrayList<>();
+        boolean hasLogo = doc.showLogo() && doc.logoUrl() != null && !doc.logoUrl().isBlank();
+        int headerWidth = hasLogo ? (CONTENT_WIDTH - 160) : CONTENT_WIDTH;
 
-        String title = "HÓA ĐƠN THU TIỀN KHÁM CHỮA BỆNH";
-        if (doc.invoiceType() != null && doc.invoiceType().toUpperCase().contains("ADJUSTMENT")) {
-            title = "HÓA ĐƠN ĐIỀU CHỈNH THU TIỀN";
+        String title = doc.title() != null && !doc.title().isBlank()
+                ? doc.title()
+                : (doc.invoiceType() != null && doc.invoiceType().toUpperCase().contains("ADJUSTMENT")
+                        ? "HÓA ĐƠN ĐIỀU CHỈNH THU TIỀN"
+                        : "HÓA ĐƠN THU TIỀN KHÁM CHỮA BỆNH");
+
+        if (doc.reprintCount() > 0) {
+            title += " [BẢN IN LẠI LẦN " + doc.reprintCount() + "]";
         }
-        lines.add(title);
-        lines.add("Phòng khám: " + defaultText(doc.clinicName()));
-        lines.add("Địa chỉ: " + defaultText(doc.clinicAddress()));
-        lines.add("Điện thoại: " + defaultText(doc.clinicPhone()));
+
+        List<String> headerLines = new ArrayList<>();
+        headerLines.add(title);
+        headerLines.add("Phòng khám: " + defaultText(doc.clinicName()));
+        headerLines.add("Địa chỉ: " + defaultText(doc.clinicAddress()));
+        headerLines.add("Điện thoại: " + defaultText(doc.clinicPhone()));
+        if (doc.legalInfo() != null && !doc.legalInfo().isBlank()) {
+            headerLines.add("Thông tin pháp lý: " + doc.legalInfo());
+        }
+
+        for (String hLine : headerLines) {
+            lines.addAll(wrapWithWidth(hLine, metrics, headerWidth));
+        }
+
+        lines.add("================================================================================");
         lines.add("");
 
         lines.add("THÔNG TIN HÓA ĐƠN");
@@ -122,7 +165,9 @@ public class PdfBoxInvoicePdfRenderer implements InvoicePdfRenderer {
 
         lines.add("THÔNG TIN BỆNH NHÂN & LƯỢT KHÁM");
         lines.add("Bệnh nhân: " + defaultText(doc.patientName()) + " (Mã BN: " + defaultText(doc.patientCode()) + ")");
-        lines.add("Ngày sinh: " + defaultText(doc.patientDateOfBirth()) + " | Giới tính: " + defaultText(doc.patientGender()) + " | SĐT: " + defaultText(doc.patientPhone()));
+        boolean showPhone = PrintFieldVisibilityHelper.isVisible(doc.fieldVisibility(), "showPatientPhone", true);
+        String phonePart = showPhone ? (" | SĐT: " + defaultText(doc.patientPhone())) : "";
+        lines.add("Ngày sinh: " + defaultText(doc.patientDateOfBirth()) + " | Giới tính: " + defaultText(doc.patientGender()) + phonePart);
         lines.add("Mã lượt khám: " + defaultText(doc.visitCode()) + " | Ngày khám: " + formatDateTime(doc.visitAt()));
         lines.add("Bác sĩ phụ trách: " + defaultText(doc.doctorName()) + " | Chuyên khoa: " + defaultText(doc.specialtyName()));
         lines.add("");
@@ -141,9 +186,22 @@ public class PdfBoxInvoicePdfRenderer implements InvoicePdfRenderer {
         lines.add("");
         lines.add("TỔNG TIỀN THANH TOÁN: " + formatMoney(doc.totalAmount()) + " đ");
         lines.add("");
-        lines.add("(Chứng từ điện tử tra cứu từ Cổng bệnh nhân trực tuyến)");
 
-        return lines.stream().flatMap(line -> wrap(line, metrics).stream()).toList();
+        if (doc.footerText() != null && !doc.footerText().isBlank()) {
+            lines.add("--------------------------------------------------------------------------------");
+            lines.add(doc.footerText());
+            lines.add("");
+        } else {
+            lines.add("(Chứng từ điện tử tra cứu từ Cổng bệnh nhân trực tuyến)");
+        }
+
+        boolean showCashierSig = PrintFieldVisibilityHelper.isVisible(doc.fieldVisibility(), "showCashierSignature", true);
+        if (showCashierSig) {
+            lines.add("NGƯỜI THU TIỀN: " + defaultText(doc.createdByName()));
+            lines.add("");
+        }
+
+        return lines.stream().flatMap(line -> wrapWithWidth(line, metrics, CONTENT_WIDTH).stream()).toList();
     }
 
     List<List<String>> paginate(
@@ -168,65 +226,93 @@ public class PdfBoxInvoicePdfRenderer implements InvoicePdfRenderer {
     }
 
     private List<String> continuationHeader(InvoicePrintDocument document, FontMetrics metrics) {
+        String contTitle = "HÓA ĐƠN THU TIỀN (tiếp theo)";
+        if (document.reprintCount() > 0) {
+            contTitle += " [BẢN IN LẠI LẦN " + document.reprintCount() + "]";
+        }
         return List.of(
-                "HÓA ĐƠN THU TIỀN (tiếp theo)",
-                "Mã hóa đơn: " + defaultText(document.invoiceCode()),
-                "Bệnh nhân: " + defaultText(document.patientName()) + " (" + defaultText(document.patientCode()) + ")",
-                ""
+                contTitle,
+                "Mã hóa đơn: " + defaultText(document.invoiceCode()) + "  |  Bệnh nhân: " + defaultText(document.patientName()),
+                "--------------------------------------------------------------------------------"
         ).stream().flatMap(line -> wrap(line, metrics).stream()).toList();
     }
 
     private List<String> wrap(String line, FontMetrics metrics) {
+        return wrapWithWidth(line, metrics, CONTENT_WIDTH);
+    }
+
+    private List<String> wrapWithWidth(String line, FontMetrics metrics, int maxWidth) {
         if (line.isEmpty()) {
             return List.of("");
         }
         List<String> wrappedLines = new ArrayList<>();
         for (String paragraph : line.split("\\R", -1)) {
-            wrapParagraph(paragraph, metrics, wrappedLines);
+            wrapParagraphWithWidth(paragraph, metrics, wrappedLines, maxWidth);
         }
         return wrappedLines;
     }
 
-    private void wrapParagraph(String paragraph, FontMetrics metrics, List<String> wrappedLines) {
+    private void wrapParagraphWithWidth(String paragraph, FontMetrics metrics, List<String> wrappedLines, int maxWidth) {
         if (paragraph.isEmpty()) {
             wrappedLines.add("");
             return;
         }
         StringBuilder currentLine = new StringBuilder();
-        for (String word : paragraph.split(" ")) {
-            String candidate = currentLine.isEmpty() ? word : currentLine + " " + word;
+        for (String token : splitTokens(paragraph)) {
+            String candidate = currentLine.isEmpty() ? token : currentLine + " " + token;
             if (metrics.stringWidth(candidate) <= CONTENT_WIDTH) {
-                currentLine.setLength(0);
-                currentLine.append(candidate);
+                currentLine = new StringBuilder(candidate);
                 continue;
             }
             if (!currentLine.isEmpty()) {
                 wrappedLines.add(currentLine.toString());
-                currentLine.setLength(0);
+                currentLine = new StringBuilder();
             }
-            addLongWord(word, metrics, wrappedLines, currentLine);
+            if (metrics.stringWidth(token) <= CONTENT_WIDTH) {
+                currentLine.append(token);
+                continue;
+            }
+            for (String subWord : splitLongWord(token, metrics)) {
+                if (currentLine.isEmpty()) {
+                    currentLine.append(subWord);
+                    continue;
+                }
+                String nextCandidate = currentLine + " " + subWord;
+                if (metrics.stringWidth(nextCandidate) <= CONTENT_WIDTH) {
+                    currentLine = new StringBuilder(nextCandidate);
+                } else {
+                    wrappedLines.add(currentLine.toString());
+                    currentLine = new StringBuilder(subWord);
+                }
+            }
         }
         if (!currentLine.isEmpty()) {
             wrappedLines.add(currentLine.toString());
         }
     }
 
-    private void addLongWord(
-            String word,
-            FontMetrics metrics,
-            List<String> wrappedLines,
-            StringBuilder currentLine
-    ) {
-        for (int index = 0; index < word.length(); index++) {
-            currentLine.append(word.charAt(index));
-            if (metrics.stringWidth(currentLine.toString()) > CONTENT_WIDTH) {
-                char overflow = currentLine.charAt(currentLine.length() - 1);
-                currentLine.deleteCharAt(currentLine.length() - 1);
-                wrappedLines.add(currentLine.toString());
-                currentLine.setLength(0);
-                currentLine.append(overflow);
+    private List<String> splitTokens(String paragraph) {
+        return List.of(paragraph.split("\\s+"));
+    }
+
+    private List<String> splitLongWord(String word, FontMetrics metrics) {
+        List<String> parts = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        for (char ch : word.toCharArray()) {
+            String candidate = current.toString() + ch;
+            if (metrics.stringWidth(candidate) <= CONTENT_WIDTH) {
+                current.append(ch);
+            } else {
+                if (!current.isEmpty()) {
+                    parts.add(current.toString());
+                }
+                current = new StringBuilder().append(ch);
             }
         }
+        if (!current.isEmpty()) {
+            parts.add(current.toString());
+        }
+        return parts;
     }
 
     private String formatDateTime(Instant instant) {
@@ -240,25 +326,21 @@ public class PdfBoxInvoicePdfRenderer implements InvoicePdfRenderer {
         if (amount == null) {
             return "0";
         }
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.of("vi", "VN"));
-        symbols.setGroupingSeparator('.');
-        symbols.setDecimalSeparator(',');
-        DecimalFormat df = new DecimalFormat("#,###", symbols);
-        return df.format(amount);
+        return MONEY_FORMAT.format(amount);
     }
 
     private String defaultText(String text) {
-        return (text == null || text.isBlank()) ? "-" : text.trim();
+        return text != null && !text.isBlank() ? text : "-";
     }
 
     private String mapLineType(String lineType) {
         if (lineType == null) {
-            return "Chi phí";
+            return "Dịch vụ";
         }
         return switch (lineType.toUpperCase()) {
-            case "SERVICE" -> "Dịch vụ khám/CLS";
             case "MEDICINE" -> "Thuốc";
-            default -> "Khác";
+            case "SERVICE" -> "Dịch vụ khám/chữa bệnh";
+            default -> lineType;
         };
     }
 }

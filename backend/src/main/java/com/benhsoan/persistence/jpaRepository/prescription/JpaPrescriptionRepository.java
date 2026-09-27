@@ -83,4 +83,5 @@ public interface JpaPrescriptionRepository
     @Modifying
     @Query("delete from PrescriptionEntity prescription where prescription.medicalRecordId = :medicalRecordId")
     void deleteByMedicalRecordId(@Param("medicalRecordId") UUID medicalRecordId);
+
 }

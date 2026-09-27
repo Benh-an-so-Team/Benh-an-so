@@ -41,6 +41,7 @@ final class DomainExceptionHttpStatusMapper {
                     PATIENT_IMPORT_LOG_NOT_FOUND,
                     PATIENT_PORTAL_NOTIFICATION_NOT_FOUND,
                     PRESCRIPTION_TEMPLATE_NOT_FOUND,
+                    PRINT_TEMPLATE_NOT_FOUND,
                     PAYMENT_NOT_FOUND,
                     PORTAL_LOOKUP_NOT_FOUND,
                     PRESCRIPTION_ITEM_NOT_FOUND,
@@ -55,7 +56,8 @@ final class DomainExceptionHttpStatusMapper {
                     USER_NOT_FOUND,
                     VISIT_NOT_FOUND,
                     VITAL_SIGN_NOT_FOUND,
-                    WAITLIST_ENTRY_NOT_FOUND -> HttpStatus.NOT_FOUND;
+                    WAITLIST_ENTRY_NOT_FOUND,
+                    SATISFACTION_SURVEY_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case ACCOUNT_DISABLED,
                     ACCOUNT_LOCKED,
                     DOCTOR_INACTIVE,
@@ -198,7 +200,8 @@ final class DomainExceptionHttpStatusMapper {
                     USER_ALREADY_EXISTS,
                     VISIT_ALREADY_CANCELLED,
                     VISIT_ALREADY_COMPLETED,
-                    VISIT_INVALID_STATUS -> HttpStatus.CONFLICT;
+                    VISIT_INVALID_STATUS,
+                    SATISFACTION_SURVEY_ALREADY_EXISTS -> HttpStatus.CONFLICT;
             case BACKUP_EXECUTION_FAILED -> HttpStatus.INTERNAL_SERVER_ERROR;
             case REPORT_DATA_EMPTY,
                     CONTRAINDICATION_DATA_MISSING -> HttpStatus.UNPROCESSABLE_ENTITY;

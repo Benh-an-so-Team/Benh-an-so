@@ -25,7 +25,14 @@ public record InvoicePrintDocument(
         String createdByName,
         List<InvoicePrintLine> lines,
         BigDecimal totalAmount,
-        Instant printedAt
+        Instant printedAt,
+        String title,
+        String logoUrl,
+        String legalInfo,
+        String footerText,
+        boolean showLogo,
+        int reprintCount,
+        String fieldVisibility
 ) {
 
     public InvoicePrintDocument {
@@ -40,6 +47,122 @@ public record InvoicePrintDocument(
                 );
             }
         }
+    }
+
+    public InvoicePrintDocument(
+            String clinicName,
+            String clinicAddress,
+            String clinicPhone,
+            String invoiceCode,
+            String invoiceType,
+            String originalInvoiceCode,
+            String adjustmentReason,
+            String patientCode,
+            String patientName,
+            String patientDateOfBirth,
+            String patientGender,
+            String patientPhone,
+            String visitCode,
+            Instant visitAt,
+            String doctorName,
+            String specialtyName,
+            Instant createdAt,
+            String createdByName,
+            List<InvoicePrintLine> lines,
+            BigDecimal totalAmount,
+            Instant printedAt,
+            String title,
+            String logoUrl,
+            String legalInfo,
+            String footerText,
+            boolean showLogo,
+            int reprintCount
+    ) {
+        this(
+                clinicName,
+                clinicAddress,
+                clinicPhone,
+                invoiceCode,
+                invoiceType,
+                originalInvoiceCode,
+                adjustmentReason,
+                patientCode,
+                patientName,
+                patientDateOfBirth,
+                patientGender,
+                patientPhone,
+                visitCode,
+                visitAt,
+                doctorName,
+                specialtyName,
+                createdAt,
+                createdByName,
+                lines,
+                totalAmount,
+                printedAt,
+                title,
+                logoUrl,
+                legalInfo,
+                footerText,
+                showLogo,
+                reprintCount,
+                null
+        );
+    }
+
+    public InvoicePrintDocument(
+            String clinicName,
+            String clinicAddress,
+            String clinicPhone,
+            String invoiceCode,
+            String invoiceType,
+            String originalInvoiceCode,
+            String adjustmentReason,
+            String patientCode,
+            String patientName,
+            String patientDateOfBirth,
+            String patientGender,
+            String patientPhone,
+            String visitCode,
+            Instant visitAt,
+            String doctorName,
+            String specialtyName,
+            Instant createdAt,
+            String createdByName,
+            List<InvoicePrintLine> lines,
+            BigDecimal totalAmount,
+            Instant printedAt
+    ) {
+        this(
+                clinicName,
+                clinicAddress,
+                clinicPhone,
+                invoiceCode,
+                invoiceType,
+                originalInvoiceCode,
+                adjustmentReason,
+                patientCode,
+                patientName,
+                patientDateOfBirth,
+                patientGender,
+                patientPhone,
+                visitCode,
+                visitAt,
+                doctorName,
+                specialtyName,
+                createdAt,
+                createdByName,
+                lines,
+                totalAmount,
+                printedAt,
+                null,
+                null,
+                null,
+                null,
+                true,
+                0,
+                null
+        );
     }
 
     public record InvoicePrintLine(
