@@ -1,6 +1,7 @@
 package com.benhsoan.persistence.adapterRepository.billing;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.benhsoan.port.outbound.repository.billing.CashierShiftCodeSequenceRepository;
 
@@ -15,6 +16,7 @@ public class CashierShiftCodeSequenceRepositoryAdapter
     private final EntityManager entityManager;
 
     @Override
+    @Transactional
     public long reserveNextValue(String prefix) {
         entityManager.createNativeQuery("""
                 INSERT INTO cashier_shift_code_sequences (code_prefix, `last_value`)
