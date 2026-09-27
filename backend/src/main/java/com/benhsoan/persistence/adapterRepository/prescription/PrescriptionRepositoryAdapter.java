@@ -202,6 +202,16 @@ public class PrescriptionRepositoryAdapter
                 .map(this::toDomain);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Prescription> findReplacementOf(UUID originalPrescriptionId) {
+        if (originalPrescriptionId == null) {
+            return Optional.empty();
+        }
+        return jpaRepository.findByReplacesPrescriptionId(originalPrescriptionId)
+                .map(this::toDomain);
+    }
+
     private Prescription toDomain(PrescriptionEntity entity) {
         List<PrescriptionItemEntity> itemEntities = itemJpaRepository
                 .findByPrescriptionIdOrderByCreatedAtAsc(entity.getId());

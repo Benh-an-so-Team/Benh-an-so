@@ -100,7 +100,7 @@ class DiagnosisCatalogFlywayMySqlIntegrationTest {
                 Integer.class
         ));
         assertEquals(1, jdbc.queryForObject(
-                "SELECT COUNT(*) FROM information_schema.statistics "
+                "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics "
                         + "WHERE table_schema = DATABASE() AND table_name = 'diagnosis_catalog' "
                         + "AND index_name = 'idx_diagnosis_catalog_active_name_norm'",
                 Integer.class

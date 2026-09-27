@@ -72,6 +72,7 @@ class PatientChronicDiseaseFlywayMySqlIntegrationTest {
     @BeforeEach
     void setUp() {
         when(currentUserPort.getCurrentUserId()).thenReturn(DOCTOR_ID);
+        jdbc.update("DELETE FROM patient_chronic_diseases");
     }
 
     @Test

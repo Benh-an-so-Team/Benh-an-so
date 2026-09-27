@@ -78,6 +78,7 @@ class BackupRecordLifecycleTransactionIntegrationTest {
         jdbcTemplate.execute("""
                 CREATE TABLE backup_records_test (
                     id VARCHAR(36) PRIMARY KEY,
+                    backup_code VARCHAR(50) NULL,
                     status VARCHAR(30) NOT NULL
                 ) ENGINE=InnoDB
                 """);
@@ -189,9 +190,9 @@ class BackupRecordLifecycleTransactionIntegrationTest {
         public BackupRecord save(BackupRecord record) {
             records.put(record.getId(), record);
             jdbcTemplate.update("""
-                    INSERT INTO backup_records_test (id, status) VALUES (?, ?)
-                    ON DUPLICATE KEY UPDATE status = VALUES(status)
-                    """, record.getId().toString(), record.getStatus().name());
+                    INSERT INTO backup_records_test (id, backup_code, status) VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE status = VALUES(status), backup_code = VALUES(backup_code)
+                    """, record.getId().toString(), record.getBackupCode(), record.getStatus().name());
             return record;
         }
 

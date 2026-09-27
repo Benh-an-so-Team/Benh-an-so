@@ -71,4 +71,13 @@ public class PrescriptionEntity {
 
     @Column(name = "interconnection_receipt_code", length = 50)
     private String interconnectionReceiptCode;
+
+    @Column(name = "replaces_prescription_id", columnDefinition = "BINARY(16)")
+    private UUID replacesPrescriptionId;
+
+    @Column(name = "replaces_prescription_code", length = 30)
+    private String replacesPrescriptionCode;
+
+    @Column(name = "replacement_reason", length = 500)
+    private String replacementReason;
 }

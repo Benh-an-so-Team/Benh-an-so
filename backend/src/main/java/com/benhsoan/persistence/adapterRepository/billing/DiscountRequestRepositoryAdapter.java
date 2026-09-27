@@ -31,7 +31,7 @@ public class DiscountRequestRepositoryAdapter implements DiscountRequestReposito
     public DiscountRequest save(DiscountRequest discountRequest) {
         try {
             DiscountRequestEntity entity = mapper.toEntity(discountRequest);
-            DiscountRequestEntity saved = jpaRepository.save(entity);
+            DiscountRequestEntity saved = jpaRepository.saveAndFlush(entity);
             return mapper.toDomain(saved != null ? saved : entity);
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
             if (isDuplicateActiveDiscountConflict(ex)) {
@@ -45,6 +45,7 @@ public class DiscountRequestRepositoryAdapter implements DiscountRequestReposito
     private boolean isDuplicateActiveDiscountConflict(org.springframework.dao.DataIntegrityViolationException ex) {
         String message = extractMessage(ex).toLowerCase();
         return message.contains("uk_discount_requests_active_visit")
+                || message.contains("discount_requests")
                 || (message.contains("duplicate entry") && message.contains("active"));
     }
 

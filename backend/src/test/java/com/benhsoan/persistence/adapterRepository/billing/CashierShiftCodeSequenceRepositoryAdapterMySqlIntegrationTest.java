@@ -88,7 +88,7 @@ class CashierShiftCodeSequenceRepositoryAdapterMySqlIntegrationTest {
             );
         }
         assertEquals(2L, jdbc.queryForObject(
-                "SELECT last_value FROM cashier_shift_code_sequences WHERE code_prefix = ?",
+                "SELECT `last_value` FROM cashier_shift_code_sequences WHERE code_prefix = ?",
                 Long.class,
                 "CS"
         ));

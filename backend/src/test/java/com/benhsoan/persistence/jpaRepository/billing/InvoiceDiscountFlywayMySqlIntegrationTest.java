@@ -72,11 +72,14 @@ class InvoiceDiscountFlywayMySqlIntegrationTest {
         UUID visitId = UUID.randomUUID();
         jdbcTemplate.update(
                 """
-                INSERT INTO visits (id, visit_code, patient_id, visit_type, visit_at, status, created_at, updated_at)
-                VALUES (UUID_TO_BIN(?), ?, ?, 'OUTPATIENT', NOW(), 'COMPLETED', NOW(), NOW())
+                INSERT INTO visits (id, visit_code, patient_id, doctor_id, visit_type, status, visit_at, reason, created_by, created_at, updated_at)
+                VALUES (UUID_TO_BIN(?), ?, ?, ?, 'OUTPATIENT', 'COMPLETED', NOW(), 'Kham benh', ?, NOW(), NOW())
                 """,
                 visitId.toString(),
-                "VISIT-" + visitId.toString().substring(0, 8)
+                "VISIT-" + visitId.toString().substring(0, 8),
+                patientId,
+                userId,
+                userId
         );
 
         // 2. Insert approved discount request (100% free)
@@ -121,10 +124,10 @@ class InvoiceDiscountFlywayMySqlIntegrationTest {
                 """
                 INSERT INTO invoices (
                     id, invoice_code, visit_id, payment_id, invoice_type, total_amount, discount_amount,
-                    discount_request_id, status, created_by, issued_at
+                    discount_request_id, created_by, created_at
                 ) VALUES (
                     UUID_TO_BIN(?), ?, UUID_TO_BIN(?), UUID_TO_BIN(?), 'ORIGINAL', 0.00, 250000.00,
-                    UUID_TO_BIN(?), 'ISSUED', ?, NOW()
+                    UUID_TO_BIN(?), ?, NOW()
                 )
                 """,
                 invoiceId.toString(),
@@ -138,15 +141,15 @@ class InvoiceDiscountFlywayMySqlIntegrationTest {
         // 5. Insert positive charge lines
         jdbcTemplate.update(
                 """
-                INSERT INTO invoice_lines (id, invoice_id, line_type, item_name, quantity, unit_price, amount)
-                VALUES (UUID_TO_BIN(UUID()), UUID_TO_BIN(?), 'EXAM_FEE', 'Khám lâm sàng', 1, 100000.00, 100000.00)
+                INSERT INTO invoice_lines (id, invoice_id, line_type, item_name, quantity, unit_price, amount, created_at)
+                VALUES (UUID_TO_BIN(UUID()), UUID_TO_BIN(?), 'EXAM_FEE', 'Khám lâm sàng', 1, 100000.00, 100000.00, NOW())
                 """,
                 invoiceId.toString()
         );
         jdbcTemplate.update(
                 """
-                INSERT INTO invoice_lines (id, invoice_id, line_type, item_name, quantity, unit_price, amount)
-                VALUES (UUID_TO_BIN(UUID()), UUID_TO_BIN(?), 'MEDICINE_FEE', 'Thuốc men', 1, 150000.00, 150000.00)
+                INSERT INTO invoice_lines (id, invoice_id, line_type, item_name, quantity, unit_price, amount, created_at)
+                VALUES (UUID_TO_BIN(UUID()), UUID_TO_BIN(?), 'MEDICINE_FEE', 'Thuốc men', 1, 150000.00, 150000.00, NOW())
                 """,
                 invoiceId.toString()
         );
@@ -154,8 +157,8 @@ class InvoiceDiscountFlywayMySqlIntegrationTest {
         // 6. Insert negative DISCOUNT line (-250000.00) - allowed by updated chk_invoice_lines_type & amounts
         jdbcTemplate.update(
                 """
-                INSERT INTO invoice_lines (id, invoice_id, line_type, item_name, quantity, unit_price, amount)
-                VALUES (UUID_TO_BIN(UUID()), UUID_TO_BIN(?), 'DISCOUNT', 'Miễn phí 100% người có công', 1, -250000.00, -250000.00)
+                INSERT INTO invoice_lines (id, invoice_id, line_type, item_name, quantity, unit_price, amount, created_at)
+                VALUES (UUID_TO_BIN(UUID()), UUID_TO_BIN(?), 'DISCOUNT', 'Miễn phí 100% người có công', 1, -250000.00, -250000.00, NOW())
                 """,
                 invoiceId.toString()
         );

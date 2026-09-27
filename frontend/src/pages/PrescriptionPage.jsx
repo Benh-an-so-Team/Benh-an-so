@@ -4819,7 +4819,6 @@ function PrescriptionPage() {
         }}
         prescription={selectedPrescriptionForReturn}
         onSuccess={() => {
-          loadPrescriptions()
           if (loadData) loadData()
         }}
       />

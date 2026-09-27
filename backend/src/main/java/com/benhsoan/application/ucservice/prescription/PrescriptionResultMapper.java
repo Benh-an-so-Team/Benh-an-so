@@ -88,7 +88,14 @@ public class PrescriptionResultMapper {
                         .stream()
                         .map(this::toWarningResult)
                         .toList(),
-                safeMissingData
+                safeMissingData,
+                prescription.getReplacesPrescriptionId(),
+                prescription.getReplacesPrescriptionCode(),
+                prescription.getReplacementReason(),
+                // The reverse link is resolved by GetPrescriptionService, which can
+                // afford the extra lookup; list/detail flows leave it null.
+                null,
+                null
         );
     }
 

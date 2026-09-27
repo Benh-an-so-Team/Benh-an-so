@@ -1,17 +1,4 @@
-const browserGlobals = {
-  Blob: 'readonly',
-  FormData: 'readonly',
-  URL: 'readonly',
-  clearInterval: 'readonly',
-  clearTimeout: 'readonly',
-  console: 'readonly',
-  document: 'readonly',
-  localStorage: 'readonly',
-  navigator: 'readonly',
-  setInterval: 'readonly',
-  setTimeout: 'readonly',
-  window: 'readonly',
-}
+import globals from 'globals'
 
 export default [
   {
@@ -27,15 +14,31 @@ export default [
           jsx: true,
         },
       },
-      globals: browserGlobals,
+      globals: {
+        ...globals.browser,
+        Buffer: 'readonly',
+      },
     },
     rules: {
       'no-undef': 'error',
       'no-unused-vars': ['warn', {
+        args: 'after-used',
         argsIgnorePattern: '^_',
         caughtErrors: 'none',
-        varsIgnorePattern: '^(React|[A-Z])',
+        ignoreRestSiblings: true,
+        varsIgnorePattern: '^(React|[A-Z]|_)',
       }],
+    },
+  },
+  {
+    files: ['**/*.test.{js,jsx}', 'scripts/**/*.{js,mjs}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      'no-unused-vars': 'off',
     },
   },
 ]

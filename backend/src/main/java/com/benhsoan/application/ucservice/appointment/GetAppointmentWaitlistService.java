@@ -1,7 +1,11 @@
 package com.benhsoan.application.ucservice.appointment;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,12 +14,6 @@ import com.benhsoan.port.dto.query.appointment.GetAppointmentWaitlistQuery;
 import com.benhsoan.port.dto.result.appointment.AppointmentWaitlistResult;
 import com.benhsoan.port.inbound.appointment.GetAppointmentWaitlistUseCase;
 import com.benhsoan.port.outbound.repository.appointment.AppointmentWaitlistRepository;
-
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import com.benhsoan.port.outbound.time.ClockPort;
 
 @Service
