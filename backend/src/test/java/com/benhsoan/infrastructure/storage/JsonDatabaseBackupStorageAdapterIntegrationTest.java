@@ -105,7 +105,9 @@ class JsonDatabaseBackupStorageAdapterIntegrationTest {
         jdbc.update("UPDATE medical_record_template_versions SET template_name = ? WHERE id = ?", "CORRUPTED", fixture.templateVersionId());
         jdbc.update("UPDATE medical_record_template_sections SET label = ? WHERE id = ?", "CORRUPTED", fixture.templateSectionId());
         jdbc.update("UPDATE visits SET queue_item_id = NULL WHERE id = ?", fixture.visitId());
-        jdbc.update("UPDATE invoices SET original_invoice_id = ? WHERE id = ?", fixture.adjustmentInvoiceId(), fixture.adjustmentInvoiceId());
+        String otherInvoiceId = UUID.randomUUID().toString();
+        jdbc.update("INSERT INTO invoices VALUES (?, ?, ?, ?, ?)", otherInvoiceId, "INV-OTHER", null, null, "ORIGINAL");
+        jdbc.update("UPDATE invoices SET original_invoice_id = ? WHERE id = ?", otherInvoiceId, fixture.adjustmentInvoiceId());
 
         transactions.executeWithoutResult(status -> adapter.restoreSnapshot("BKP-MYSQL-FK.json"));
 
