@@ -441,6 +441,7 @@ public class JsonDatabaseBackupStorageAdapter implements DatabaseBackupStoragePo
         String deleteLeafRows = "DELETE child FROM " + table.name() + " child "
                 + "LEFT JOIN " + table.name() + " dependent ON dependent." + deferredUpdate.columnName()
                 + " = child." + deferredUpdate.primaryKeyColumn() + " "
+                + "AND dependent." + deferredUpdate.primaryKeyColumn() + " <> child." + deferredUpdate.primaryKeyColumn() + " "
                 + "WHERE child." + deferredUpdate.columnName() + " IS NOT NULL "
                 + "AND dependent." + deferredUpdate.primaryKeyColumn() + " IS NULL";
         while (jdbcTemplate.update(deleteLeafRows) > 0) {

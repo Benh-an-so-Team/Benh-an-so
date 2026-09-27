@@ -89,10 +89,10 @@ class MedicalRecordTemplateSchemaIntegrationTest {
     @Test
     void schemaEnforcesTemplateVersionAndSectionUniqueness() {
         jdbc.update("""
-                INSERT INTO specialties (id, code, name, active, created_by, created_at, updated_at)
-                VALUES (UUID_TO_BIN(?), 'TEMP_TEST', 'Temp Test Specialty', TRUE, UUID_TO_BIN(?), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                INSERT INTO specialties (id, code, name, active, created_at, updated_at)
+                VALUES (UUID_TO_BIN(?), 'TEMP_TEST', 'Temp Test Specialty', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 ON DUPLICATE KEY UPDATE name = 'Temp Test Specialty'
-                """, TEST_SPECIALTY_ID, ADMIN_ID);
+                """, TEST_SPECIALTY_ID);
         jdbc.update("UPDATE medical_records SET applied_template_version_id = NULL WHERE applied_template_version_id IN (SELECT id FROM medical_record_template_versions WHERE specialty_id = UUID_TO_BIN(?))", TEST_SPECIALTY_ID);
         jdbc.update("DELETE FROM medical_record_template_sections WHERE template_version_id IN (SELECT id FROM medical_record_template_versions WHERE specialty_id = UUID_TO_BIN(?))", TEST_SPECIALTY_ID);
         jdbc.update("DELETE FROM medical_record_template_versions WHERE specialty_id = UUID_TO_BIN(?)", TEST_SPECIALTY_ID);
