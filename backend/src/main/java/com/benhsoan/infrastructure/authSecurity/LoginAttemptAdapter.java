@@ -82,59 +82,78 @@ public class LoginAttemptAdapter implements LoginAttemptPort {
         repository.deleteById(identifier);
     }
 
+    private static final int MAX_RECORD_FAILED_RETRIES = 15;
+
     @Override
     public LoginAttemptResult recordLoginFailed(String identifier) {
         Instant now = clockPort.now();
         Instant newBlockedUntil = now.plusMillis(blockDurationMs);
 
-        for (int i = 0; i < 3; i++) {
-            LoginAttemptResult result = executeInTransaction(status -> {
-                int updatedRows = repository.atomicIncrement(identifier, now, maxAttempts, newBlockedUntil);
-                if (updatedRows > 0) {
-                    LoginAttemptEntity entity = repository.findById(identifier).orElse(null);
-                    if (entity == null) {
-                        return null;
-                    }
-                    boolean blocked = entity.getBlockedUntil() != null && now.isBefore(entity.getBlockedUntil());
-                    boolean newlyBlocked = blocked && (entity.getAttempts() == maxAttempts);
-                    long retryAfter = calculateRetryAfterSeconds(entity.getBlockedUntil(), now);
-                    return new LoginAttemptResult(
-                            entity.getAttempts(),
-                            blocked,
-                            newlyBlocked,
-                            blocked ? entity.getBlockedUntil() : null,
-                            retryAfter);
-                } else {
-                    LoginAttemptEntity newEntity = new LoginAttemptEntity();
-                    newEntity.setIdentifier(identifier);
-                    newEntity.setAttempts(1);
-                    newEntity.setUpdatedAt(now);
-                    if (maxAttempts <= 1) {
-                        newEntity.setBlockedUntil(newBlockedUntil);
-                    } else {
-                        newEntity.setBlockedUntil(null);
-                    }
+        for (int i = 0; i < MAX_RECORD_FAILED_RETRIES; i++) {
+            LoginAttemptResult result = null;
+            try {
+                result = executeInTransaction(status -> {
                     try {
-                        repository.saveAndFlush(newEntity);
-                        boolean blocked = newEntity.getBlockedUntil() != null
-                                && now.isBefore(newEntity.getBlockedUntil());
-                        boolean newlyBlocked = blocked && (newEntity.getAttempts() == maxAttempts);
-                        long retryAfter = calculateRetryAfterSeconds(newEntity.getBlockedUntil(), now);
-                        return new LoginAttemptResult(
-                                newEntity.getAttempts(),
-                                blocked,
-                                newlyBlocked,
-                                blocked ? newEntity.getBlockedUntil() : null,
-                                retryAfter);
-                    } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+                        int updatedRows = repository.atomicIncrement(identifier, now, maxAttempts, newBlockedUntil);
+                        if (updatedRows > 0) {
+                            LoginAttemptEntity entity = repository.findById(identifier).orElse(null);
+                            if (entity == null) {
+                                return null;
+                            }
+                            boolean blocked = entity.getBlockedUntil() != null && now.isBefore(entity.getBlockedUntil());
+                            boolean newlyBlocked = blocked && (entity.getAttempts() == maxAttempts);
+                            long retryAfter = calculateRetryAfterSeconds(entity.getBlockedUntil(), now);
+                            return new LoginAttemptResult(
+                                    entity.getAttempts(),
+                                    blocked,
+                                    newlyBlocked,
+                                    blocked ? entity.getBlockedUntil() : null,
+                                    retryAfter);
+                        } else {
+                            LoginAttemptEntity newEntity = new LoginAttemptEntity();
+                            newEntity.setIdentifier(identifier);
+                            newEntity.setAttempts(1);
+                            newEntity.setUpdatedAt(now);
+                            if (maxAttempts <= 1) {
+                                newEntity.setBlockedUntil(newBlockedUntil);
+                            } else {
+                                newEntity.setBlockedUntil(null);
+                            }
+                            try {
+                                repository.saveAndFlush(newEntity);
+                                boolean blocked = newEntity.getBlockedUntil() != null
+                                        && now.isBefore(newEntity.getBlockedUntil());
+                                boolean newlyBlocked = blocked && (newEntity.getAttempts() == maxAttempts);
+                                long retryAfter = calculateRetryAfterSeconds(newEntity.getBlockedUntil(), now);
+                                return new LoginAttemptResult(
+                                        newEntity.getAttempts(),
+                                        blocked,
+                                        newlyBlocked,
+                                        blocked ? newEntity.getBlockedUntil() : null,
+                                        retryAfter);
+                            } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+                                status.setRollbackOnly();
+                                return null;
+                            }
+                        }
+                    } catch (org.springframework.dao.ConcurrencyFailureException | org.springframework.dao.DataIntegrityViolationException ex) {
                         status.setRollbackOnly();
                         return null;
                     }
-                }
-            });
+                });
+            } catch (org.springframework.dao.DataAccessException ex) {
+                result = null;
+            }
 
             if (result != null) {
                 return result;
+            }
+
+            try {
+                Thread.sleep(5 + (long) (Math.random() * 15));
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
             }
         }
 
