@@ -84,26 +84,43 @@ class MedicalRecordTemplateSchemaIntegrationTest {
                 """));
     }
 
+    private static final String TEST_SPECIALTY_ID = "f0000000-0000-0000-0000-000000000099";
+
     @Test
     void schemaEnforcesTemplateVersionAndSectionUniqueness() {
-        insertTemplate("f0000000-0000-0000-0000-000000000011", "General examination", "general examination", true);
+        jdbc.update("""
+                INSERT INTO specialties (id, code, name, name_key, active, created_at, updated_at)
+                VALUES (UUID_TO_BIN(?), 'TEMP_TEST', 'Temp Test Specialty', 'temp test specialty', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE name = 'Temp Test Specialty'
+                """, TEST_SPECIALTY_ID);
+        jdbc.update("UPDATE medical_records SET applied_template_version_id = NULL WHERE applied_template_version_id IN (SELECT id FROM medical_record_template_versions WHERE specialty_id = UUID_TO_BIN(?))", TEST_SPECIALTY_ID);
+        jdbc.update("DELETE FROM medical_record_template_sections WHERE template_version_id IN (SELECT id FROM medical_record_template_versions WHERE specialty_id = UUID_TO_BIN(?))", TEST_SPECIALTY_ID);
+        jdbc.update("DELETE FROM medical_record_template_versions WHERE specialty_id = UUID_TO_BIN(?)", TEST_SPECIALTY_ID);
+        jdbc.update("DELETE FROM medical_record_templates WHERE specialty_id = UUID_TO_BIN(?)", TEST_SPECIALTY_ID);
+
+        insertTemplate("f0000000-0000-0000-0000-000000000011", TEST_SPECIALTY_ID, "General examination", "general examination", true);
 
         assertThrows(DataIntegrityViolationException.class, () ->
-                insertTemplate("f0000000-0000-0000-0000-000000000012", " GENERAL EXAMINATION ", "general examination", false));
+                insertTemplate("f0000000-0000-0000-0000-000000000012", TEST_SPECIALTY_ID, " GENERAL EXAMINATION ", "general examination", false));
         assertThrows(DataIntegrityViolationException.class, () ->
-                insertTemplate("f0000000-0000-0000-0000-000000000013", "General follow-up", "general follow-up", true));
+                insertTemplate("f0000000-0000-0000-0000-000000000013", TEST_SPECIALTY_ID, "General follow-up", "general follow-up", true));
 
         String templateId = "f0000000-0000-0000-0000-000000000011";
         String versionId = "f0000000-0000-0000-0000-000000000021";
-        insertVersion(versionId, templateId, 1);
+        insertVersion(versionId, templateId, TEST_SPECIALTY_ID, 1);
         assertThrows(DataIntegrityViolationException.class, () ->
-                insertVersion("f0000000-0000-0000-0000-000000000022", templateId, 1));
+                insertVersion("f0000000-0000-0000-0000-000000000022", templateId, TEST_SPECIALTY_ID, 1));
 
         insertSection("f0000000-0000-0000-0000-000000000031", versionId, "CHIEF_COMPLAINT", 1);
         assertThrows(DataIntegrityViolationException.class, () ->
                 insertSection("f0000000-0000-0000-0000-000000000032", versionId, "CHIEF_COMPLAINT", 2));
         assertThrows(DataIntegrityViolationException.class, () ->
                 insertSection("f0000000-0000-0000-0000-000000000033", versionId, "SYMPTOMS", 1));
+
+        jdbc.update("DELETE FROM medical_record_template_sections WHERE template_version_id IN (SELECT id FROM medical_record_template_versions WHERE specialty_id = UUID_TO_BIN(?))", TEST_SPECIALTY_ID);
+        jdbc.update("DELETE FROM medical_record_template_versions WHERE specialty_id = UUID_TO_BIN(?)", TEST_SPECIALTY_ID);
+        jdbc.update("DELETE FROM medical_record_templates WHERE specialty_id = UUID_TO_BIN(?)", TEST_SPECIALTY_ID);
+        jdbc.update("DELETE FROM specialties WHERE id = UUID_TO_BIN(?)", TEST_SPECIALTY_ID);
     }
 
     @Test
@@ -130,24 +147,24 @@ class MedicalRecordTemplateSchemaIntegrationTest {
         assertEquals("Persistence follow-up", reloaded.getCurrentVersion().getTemplateName());
     }
 
-    private void insertTemplate(String id, String name, String nameKey, boolean defaultTemplate) {
+    private void insertTemplate(String id, String specialtyId, String name, String nameKey, boolean defaultTemplate) {
         jdbc.update("""
                 INSERT INTO medical_record_templates (
                     id, specialty_id, name, name_key, active, is_default, current_version_no, created_by, created_at
                 ) VALUES (
                     UUID_TO_BIN(?), UUID_TO_BIN(?), ?, ?, TRUE, ?, 1, UUID_TO_BIN(?), CURRENT_TIMESTAMP
                 )
-                """, id, GENERAL_SPECIALTY_ID, name, nameKey, defaultTemplate, ADMIN_ID);
+                """, id, specialtyId, name, nameKey, defaultTemplate, ADMIN_ID);
     }
 
-    private void insertVersion(String id, String templateId, int versionNo) {
+    private void insertVersion(String id, String templateId, String specialtyId, int versionNo) {
         jdbc.update("""
                 INSERT INTO medical_record_template_versions (
                     id, template_id, version_no, specialty_id, template_name, created_by, created_at
                 ) VALUES (
                     UUID_TO_BIN(?), UUID_TO_BIN(?), ?, UUID_TO_BIN(?), 'General examination', UUID_TO_BIN(?), CURRENT_TIMESTAMP
                 )
-                """, id, templateId, versionNo, GENERAL_SPECIALTY_ID, ADMIN_ID);
+                """, id, templateId, versionNo, specialtyId, ADMIN_ID);
     }
 
     private void insertSection(String id, String versionId, String fieldCode, int displayOrder) {
