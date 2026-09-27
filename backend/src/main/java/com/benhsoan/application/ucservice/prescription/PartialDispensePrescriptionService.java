@@ -312,6 +312,9 @@ public class PartialDispensePrescriptionService implements DispensePrescriptionI
         if (prescription.getStatus() == PrescriptionStatus.DISPENSED) {
             throw new PrescriptionAlreadyDispensedException();
         }
+        if (prescription.getStatus() == PrescriptionStatus.REPLACED) {
+            throw new PrescriptionInvalidStatusException("Replaced prescriptions cannot be dispensed.");
+        }
     }
 
     private Map<UUID, Integer> resolveRequestedQuantities(

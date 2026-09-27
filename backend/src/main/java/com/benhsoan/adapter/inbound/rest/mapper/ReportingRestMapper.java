@@ -30,6 +30,10 @@ import com.benhsoan.port.dto.result.RevenueBreakdownReportResult;
 import com.benhsoan.port.dto.result.ServiceGroupRevenueResult;
 import com.benhsoan.port.dto.result.TopMedicineItemResult;
 import com.benhsoan.port.dto.result.TopMedicinesReportResult;
+import com.benhsoan.adapter.inbound.rest.response.reporting.DoctorSatisfactionSummaryResponse;
+import com.benhsoan.adapter.inbound.rest.response.reporting.SatisfactionReportResponse;
+import com.benhsoan.port.dto.result.survey.DoctorSatisfactionItemResult;
+import com.benhsoan.port.dto.result.survey.SatisfactionReportResult;
 
 @Component
 public class ReportingRestMapper {
@@ -179,6 +183,31 @@ public class ReportingRestMapper {
                 result.status(),
                 result.count(),
                 result.percentage()
+        );
+    }
+
+    public SatisfactionReportResponse toResponse(SatisfactionReportResult result) {
+        if (result == null) {
+            return null;
+        }
+        return new SatisfactionReportResponse(
+                result.from(),
+                result.to(),
+                result.generatedAt(),
+                result.totalSurveys(),
+                result.averageScore(),
+                result.scoreDistribution(),
+                result.doctors().stream().map(this::toResponse).toList()
+        );
+    }
+
+    private DoctorSatisfactionSummaryResponse toResponse(DoctorSatisfactionItemResult item) {
+        return new DoctorSatisfactionSummaryResponse(
+                item.doctorId(),
+                item.doctorUsername(),
+                item.doctorName(),
+                item.totalSurveys(),
+                item.averageScore()
         );
     }
 }

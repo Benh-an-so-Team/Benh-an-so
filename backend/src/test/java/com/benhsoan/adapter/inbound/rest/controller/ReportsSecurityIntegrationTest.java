@@ -65,6 +65,7 @@ import com.benhsoan.port.inbound.reporting.GetOperationalSummaryUseCase;
 import com.benhsoan.port.inbound.reporting.GetRevenueBreakdownReportUseCase;
 import com.benhsoan.port.inbound.reporting.GetTopMedicinesReportUseCase;
 import com.benhsoan.port.inbound.reporting.GetOperationalTimelineUseCase;
+import com.benhsoan.port.inbound.survey.GetSatisfactionReportUseCase;
 import com.benhsoan.port.outbound.authSecurity.JwtTokenPort;
 import com.benhsoan.port.outbound.authSecurity.LoginAttemptPort;
 import com.benhsoan.port.outbound.authSecurity.PasswordEncoderPort;
@@ -110,6 +111,7 @@ class ReportsSecurityIntegrationTest {
     @MockitoBean private ExportOperationalReportUseCase exportOperationalReportUseCase;
     @MockitoBean private GetRevenueBreakdownReportUseCase getRevenueBreakdownReportUseCase;
     @MockitoBean private GetAppointmentEffectivenessReportUseCase getAppointmentEffectivenessReportUseCase;
+    @MockitoBean private GetSatisfactionReportUseCase getSatisfactionReportUseCase;
     @MockitoBean private JwtTokenPort jwtTokenPort;
     @MockitoBean private UserRepository userRepository;
     @MockitoBean private UserSessionRepository userSessionRepository;

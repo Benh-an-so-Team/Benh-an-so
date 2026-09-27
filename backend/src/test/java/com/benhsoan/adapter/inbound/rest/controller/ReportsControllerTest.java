@@ -46,6 +46,10 @@ import com.benhsoan.port.inbound.reporting.GetRevenueBreakdownReportUseCase;
 import com.benhsoan.port.inbound.reporting.GetTopMedicinesReportUseCase;
 import com.benhsoan.port.inbound.reporting.GetOperationalTimelineUseCase;
 import com.benhsoan.port.inbound.reporting.GetAppointmentEffectivenessReportUseCase;
+import com.benhsoan.port.inbound.survey.GetSatisfactionReportUseCase;
+import com.benhsoan.port.dto.result.survey.SatisfactionReportResult;
+import com.benhsoan.port.dto.result.survey.DoctorSatisfactionItemResult;
+import java.util.Map;
 import com.benhsoan.domain.appointment.enums.AppointmentStatus;
 import com.benhsoan.port.dto.result.AppointmentEffectivenessReportResult;
 import com.benhsoan.port.dto.result.AppointmentStatusCountResult;
@@ -75,6 +79,7 @@ class ReportsControllerTest {
     @MockitoBean private ExportOperationalReportUseCase exportOperationalReportUseCase;
     @MockitoBean private GetRevenueBreakdownReportUseCase getRevenueBreakdownReportUseCase;
     @MockitoBean private GetAppointmentEffectivenessReportUseCase getAppointmentEffectivenessReportUseCase;
+    @MockitoBean private GetSatisfactionReportUseCase getSatisfactionReportUseCase;
     @MockitoBean private CurrentUserPort currentUserPort;
     @MockitoBean private UserRepository userRepository;
     @MockitoBean private UserSessionRepository userSessionRepository;
@@ -847,5 +852,31 @@ class ReportsControllerTest {
                         .param("to", "2026-02-01"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Date range must not exceed 366 days."));
+    }
+
+    @Test
+    void returnsSatisfactionReport() throws Exception {
+        UUID docId = UUID.randomUUID();
+        SatisfactionReportResult reportResult = new SatisfactionReportResult(
+                LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 9, 25),
+                Instant.parse("2026-09-25T14:00:00Z"),
+                50L,
+                4.7,
+                Map.of(1, 0L, 2, 1L, 3, 2L, 4, 15L, 5, 32L),
+                List.of(new DoctorSatisfactionItemResult(docId, "dr.anh", "Dr. Nguyen Minh Anh", 50L, 4.7))
+        );
+
+        when(getSatisfactionReportUseCase.getReport(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 25), null))
+                .thenReturn(reportResult);
+
+        mockMvc.perform(get("/reports/satisfaction")
+                        .param("from", "2026-09-01")
+                        .param("to", "2026-09-25"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSurveys").value(50))
+                .andExpect(jsonPath("$.averageScore").value(4.7))
+                .andExpect(jsonPath("$.scoreDistribution['5']").value(32))
+                .andExpect(jsonPath("$.doctors[0].doctorName").value("Dr. Nguyen Minh Anh"));
     }
 }

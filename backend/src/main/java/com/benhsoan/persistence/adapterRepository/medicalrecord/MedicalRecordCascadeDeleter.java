@@ -17,7 +17,9 @@ import com.benhsoan.persistence.jpaRepository.medicalrecord.JpaMedicalRecordDiag
 import com.benhsoan.persistence.jpaRepository.prescription.JpaPrescriptionAllergyWarningLogRepository;
 import com.benhsoan.persistence.jpaRepository.prescription.JpaPrescriptionAmendmentRepository;
 import com.benhsoan.persistence.jpaRepository.prescription.JpaPrescriptionDispenseItemRepository;
+import com.benhsoan.persistence.jpaRepository.prescription.JpaPrescriptionInterconnectionLogRepository;
 import com.benhsoan.persistence.jpaRepository.prescription.JpaPrescriptionItemRepository;
+import com.benhsoan.persistence.jpaRepository.prescription.JpaPrescriptionReconciliationNoteRepository;
 import com.benhsoan.persistence.jpaRepository.prescription.JpaPrescriptionRepository;
 import com.benhsoan.persistence.jpaRepository.prescription.JpaPrescriptionWarningLogRepository;
 
@@ -45,6 +47,8 @@ public class MedicalRecordCascadeDeleter {
     private final JpaPrescriptionWarningLogRepository prescriptionWarningLogRepository;
     private final JpaPrescriptionAllergyWarningLogRepository prescriptionAllergyWarningLogRepository;
     private final JpaPrescriptionDispenseItemRepository prescriptionDispenseItemRepository;
+    private final JpaPrescriptionInterconnectionLogRepository prescriptionInterconnectionLogRepository;
+    private final JpaPrescriptionReconciliationNoteRepository prescriptionReconciliationNoteRepository;
 
     @Transactional
     public void deleteByMedicalRecordId(UUID medicalRecordId) {
@@ -74,6 +78,8 @@ public class MedicalRecordCascadeDeleter {
             prescriptionAmendmentRepository.deleteByPrescriptionIdIn(prescriptionIds);
             prescriptionWarningLogRepository.deleteByPrescriptionIdIn(prescriptionIds);
             prescriptionAllergyWarningLogRepository.deleteByPrescriptionIdIn(prescriptionIds);
+            prescriptionInterconnectionLogRepository.deleteByPrescriptionIdIn(prescriptionIds);
+            prescriptionReconciliationNoteRepository.deleteByPrescriptionIdIn(prescriptionIds);
             prescriptionItemRepository.deleteAllByPrescriptionIdIn(prescriptionIds);
         }
         prescriptionRepository.deleteByMedicalRecordId(medicalRecordId);

@@ -150,7 +150,7 @@ export default function InventoryStockReportPage() {
     if (isAuthorized) {
       handleFetchReport()
     }
-  }, [isAuthorized]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthorized])
 
   // Xử lý chọn nhanh kỳ báo cáo
   const handleQuickPreset = (preset) => {

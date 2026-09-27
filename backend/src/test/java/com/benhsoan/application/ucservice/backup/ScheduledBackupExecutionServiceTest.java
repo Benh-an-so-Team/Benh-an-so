@@ -13,8 +13,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -60,8 +58,7 @@ class ScheduledBackupExecutionServiceTest {
                 backupCodeGenerator,
                 auditLogWriter,
                 resultMapper,
-                clockPort
-        );
+                clockPort);
 
         when(clockPort.now()).thenReturn(NOW);
         when(backupCodeGenerator.generate()).thenReturn("BKP-20260924-0001");
@@ -78,7 +75,7 @@ class ScheduledBackupExecutionServiceTest {
         config.updateSchedule(true, "09:00", SYSTEM_USER_ID, NOW);
         when(scheduleRepository.find()).thenReturn(Optional.of(config));
 
-        BackupSnapshot snapshot = new BackupSnapshot("BKP-20260924-0001.json", new byte[]{1, 2, 3});
+        BackupSnapshot snapshot = new BackupSnapshot("BKP-20260924-0001.json", new byte[] { 1, 2, 3 });
         when(snapshotExportService.export("BKP-20260924-0001")).thenReturn(snapshot);
 
         createdRecord.markSuccess("BKP-20260924-0001.json", 3L);
@@ -133,7 +130,7 @@ class ScheduledBackupExecutionServiceTest {
     void executeNowQueriesWithSixtyMinuteStaleThreshold() {
         BackupScheduleConfiguration config = BackupScheduleConfiguration.createDefault(SYSTEM_USER_ID, NOW);
         when(scheduleRepository.find()).thenReturn(Optional.of(config));
-        BackupSnapshot snapshot = new BackupSnapshot("BKP-20260924-0001.json", new byte[]{1});
+        BackupSnapshot snapshot = new BackupSnapshot("BKP-20260924-0001.json", new byte[] { 1 });
         when(snapshotExportService.export("BKP-20260924-0001")).thenReturn(snapshot);
         when(lifecycleService.markSuccess(any(), any())).thenReturn(createdRecord);
 
@@ -162,7 +159,7 @@ class ScheduledBackupExecutionServiceTest {
         config.updateSchedule(true, "09:00", SYSTEM_USER_ID, NOW);
         when(scheduleRepository.find()).thenReturn(Optional.of(config));
 
-        BackupSnapshot snapshot = new BackupSnapshot("BKP-20260924-0001.json", new byte[]{1});
+        BackupSnapshot snapshot = new BackupSnapshot("BKP-20260924-0001.json", new byte[] { 1 });
         when(snapshotExportService.export("BKP-20260924-0001")).thenReturn(snapshot);
         when(lifecycleService.markSuccess(any(), any())).thenReturn(createdRecord);
 

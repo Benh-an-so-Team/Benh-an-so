@@ -47,8 +47,11 @@ public class PdfBoxVisitSummaryPdfRenderer implements VisitSummaryPdfRenderer {
         try (PDDocument pdf = new PDDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             FontMetrics metrics = createFontMetrics();
             List<List<String>> pages = paginate(buildLines(document, metrics), document, metrics);
-            for (List<String> page : pages) {
-                BufferedImage pageImage = renderPage(page);
+            BufferedImage logo = document.showLogo() ? LogoImageLoader.load(document.logoUrl()) : null;
+
+            for (int i = 0; i < pages.size(); i++) {
+                List<String> page = pages.get(i);
+                BufferedImage pageImage = renderPage(page, i == 0 ? logo : null);
                 pdf.addPage(new PDPage(PDRectangle.A4));
                 PDImageXObject image = LosslessFactory.createFromImage(pdf, pageImage);
                 try (PDPageContentStream content = new PDPageContentStream(
@@ -73,11 +76,25 @@ public class PdfBoxVisitSummaryPdfRenderer implements VisitSummaryPdfRenderer {
         }
     }
 
-    private BufferedImage renderPage(List<String> lines) {
+    private BufferedImage renderPage(List<String> lines, BufferedImage logo) {
         BufferedImage image = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = image.createGraphics();
         graphics.setColor(Color.WHITE);
         graphics.fillRect(0, 0, IMAGE_WIDTH, IMAGE_HEIGHT);
+
+        if (logo != null) {
+            int maxLogoWidth = 140;
+            int maxLogoHeight = 70;
+            int lw = logo.getWidth();
+            int lh = logo.getHeight();
+            double scale = Math.min((double) maxLogoWidth / lw, (double) maxLogoHeight / lh);
+            int drawW = Math.max(1, (int) (lw * scale));
+            int drawH = Math.max(1, (int) (lh * scale));
+            int logoX = IMAGE_WIDTH - LEFT_MARGIN - drawW;
+            int logoY = TOP_MARGIN - 20;
+            graphics.drawImage(logo, logoX, logoY, drawW, drawH, null);
+        }
+
         graphics.setColor(Color.BLACK);
         graphics.setFont(CONTENT_FONT);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -92,60 +109,101 @@ public class PdfBoxVisitSummaryPdfRenderer implements VisitSummaryPdfRenderer {
 
     List<String> buildLines(VisitSummaryPrintDocument d, FontMetrics metrics) {
         List<String> lines = new ArrayList<>();
-        lines.add("PHIẾU TÓM TẮT LƯỢT KHÁM");
+        boolean hasLogo = d.showLogo() && d.logoUrl() != null && !d.logoUrl().isBlank();
+        int headerWidth = hasLogo ? (CONTENT_WIDTH - 160) : CONTENT_WIDTH;
+
+        String title = d.title() != null && !d.title().isBlank()
+                ? d.title()
+                : "PHIẾU TÓM TẮT LƯỢT KHÁM";
+
+        List<String> headerLines = new ArrayList<>();
+        headerLines.add(title);
+        headerLines.add("PHÒNG KHÁM: " + nvl(d.clinicName()));
+        headerLines.add("Địa chỉ: " + nvl(d.clinicAddress()));
+        headerLines.add("Điện thoại: " + nvl(d.clinicPhone()));
+        if (d.legalInfo() != null && !d.legalInfo().isBlank()) {
+            headerLines.add("Thông tin pháp lý: " + d.legalInfo());
+        }
+
+        for (String hLine : headerLines) {
+            lines.addAll(wrapWithWidth(hLine, metrics, headerWidth));
+        }
+
         lines.add("================================================================================");
-        lines.add("PHÒNG KHÁM: " + nvl(d.clinicName()));
-        lines.add("Địa chỉ: " + nvl(d.clinicAddress()));
-        lines.add("Điện thoại: " + nvl(d.clinicPhone()));
         lines.add("");
+
         lines.add("1. THÔNG TIN BỆNH NHÂN");
         lines.add("- Mã bệnh nhân: " + nvl(d.patientCode()) + "  |  Họ và tên: " + nvl(d.patientName()));
         lines.add("- Ngày sinh: " + nvl(d.patientDateOfBirth()) + "  |  Giới tính: " + nvl(d.patientGender()) + "  |  SĐT: " + nvl(d.patientPhone()));
         lines.add("");
+
         lines.add("2. THÔNG TIN LƯỢT KHÁM");
         lines.add("- Mã lượt khám: " + nvl(d.visitCode()));
         lines.add("- Thời gian khám: " + (d.visitAt() == null ? "-" : DATE_TIME_FORMATTER.format(d.visitAt())));
         lines.add("- Bác sĩ khám: " + nvl(d.doctorName()));
         lines.add("");
-        lines.add("3. CHẨN ĐOÁN");
-        if (d.diagnoses() == null || d.diagnoses().isEmpty()) {
-            lines.add("- Chưa ghi nhận chẩn đoán");
-        } else {
-            for (VisitSummaryPrintDocument.Diagnosis diagnosis : d.diagnoses()) {
-                String type = diagnosis.isPrimary() ? "(Chẩn đoán chính)" : "(Chẩn đoán kèm theo)";
-                lines.add("- [" + nvl(diagnosis.code()) + "] " + nvl(diagnosis.name()) + " " + type);
+
+        boolean showDiagnosis = PrintFieldVisibilityHelper.isVisible(d.fieldVisibility(), "showDiagnosis", true);
+        if (showDiagnosis) {
+            lines.add("3. CHẨN ĐOÁN");
+            if (d.diagnoses() == null || d.diagnoses().isEmpty()) {
+                lines.add("- Chưa ghi nhận chẩn đoán");
+            } else {
+                for (VisitSummaryPrintDocument.Diagnosis diagnosis : d.diagnoses()) {
+                    String type = diagnosis.isPrimary() ? "(Chẩn đoán chính)" : "(Chẩn đoán kèm theo)";
+                    lines.add("- [" + nvl(diagnosis.code()) + "] " + nvl(diagnosis.name()) + " " + type);
+                }
             }
+            lines.add("");
         }
-        lines.add("");
-        lines.add("4. CHỈ ĐỊNH CẬN LÂM SÀNG");
-        if (d.clinicalOrders() == null || d.clinicalOrders().isEmpty()) {
-            lines.add("- Không có chỉ định cận lâm sàng trong lượt khám");
-        } else {
-            int idx = 1;
-            for (VisitSummaryPrintDocument.ClinicalOrder order : d.clinicalOrders()) {
-                String instruction = (order.instruction() != null && !order.instruction().isBlank())
-                        ? " - Ghi chú: " + order.instruction() : "";
-                String status = formatOrderStatus(order.status());
-                String codeStr = (order.serviceCode() != null && !order.serviceCode().isBlank())
-                        ? " (Mã: " + order.serviceCode() + ")" : "";
-                lines.add(idx++ + ". " + nvl(order.serviceName()) + codeStr + instruction + status);
+
+        boolean showOrders = PrintFieldVisibilityHelper.isVisible(d.fieldVisibility(), "showClinicalOrders", true);
+        if (showOrders) {
+            lines.add("4. CHỈ ĐỊNH CẬN LÂM SÀNG");
+            if (d.clinicalOrders() == null || d.clinicalOrders().isEmpty()) {
+                lines.add("- Không có chỉ định cận lâm sàng trong lượt khám");
+            } else {
+                int idx = 1;
+                for (VisitSummaryPrintDocument.ClinicalOrder order : d.clinicalOrders()) {
+                    String instruction = (order.instruction() != null && !order.instruction().isBlank())
+                            ? " - Ghi chú: " + order.instruction() : "";
+                    String status = formatOrderStatus(order.status());
+                    String codeStr = (order.serviceCode() != null && !order.serviceCode().isBlank())
+                            ? " (Mã: " + order.serviceCode() + ")" : "";
+                    lines.add(idx++ + ". " + nvl(order.serviceName()) + codeStr + instruction + status);
+                }
             }
+            lines.add("");
         }
-        lines.add("");
+
         lines.add("5. KẾ HOẠCH ĐIỀU TRỊ & LỜI DẶN CỦA BÁC SĨ");
         lines.add("- Hướng điều trị: " + (d.treatmentPlan() != null && !d.treatmentPlan().isBlank() ? d.treatmentPlan() : "Theo dõi ngoại trú"));
         lines.add("- Lời dặn: " + (d.doctorInstructions() != null && !d.doctorInstructions().isBlank() ? d.doctorInstructions() : "Tuân thủ hướng dẫn dùng thuốc và tái khám đúng hẹn"));
         lines.add("");
-        lines.add("6. HẸN TÁI KHÁM");
-        lines.add("- Mốc tái khám: " + formatRevisitDate(d.revisitDate()));
-        lines.add("");
+
+        boolean showRevisit = PrintFieldVisibilityHelper.isVisible(d.fieldVisibility(), "showRevisitDate", true);
+        if (showRevisit) {
+            lines.add("6. HẸN TÁI KHÁM");
+            lines.add("- Mốc tái khám: " + formatRevisitDate(d.revisitDate()));
+            lines.add("");
+        }
+
+        if (d.footerText() != null && !d.footerText().isBlank()) {
+            lines.add("--------------------------------------------------------------------------------");
+            lines.add(d.footerText());
+            lines.add("");
+        }
+
         lines.add("================================================================================");
-        lines.add("BÁC SĨ PHỤ TRÁCH LƯỢT KHÁM: " + nvl(d.signedByName()) + " (Đã ký xác nhận điện tử: "
-                + (d.signedAt() == null ? "-" : DATE_TIME_FORMATTER.format(d.signedAt())) + ")");
+        boolean showDoctorSig = PrintFieldVisibilityHelper.isVisible(d.fieldVisibility(), "showDoctorSignature", true);
+        if (showDoctorSig) {
+            lines.add("BÁC SĨ PHỤ TRÁCH LƯỢT KHÁM: " + nvl(d.signedByName()) + " (Đã ký xác nhận điện tử: "
+                    + (d.signedAt() == null ? "-" : DATE_TIME_FORMATTER.format(d.signedAt())) + ")");
+        }
         lines.add("Người in: " + nvl(d.printedByName()) + "  |  Thời điểm in: "
                 + (d.printedAt() == null ? "-" : DATE_TIME_FORMATTER.format(d.printedAt())));
 
-        return lines.stream().flatMap(line -> wrap(line, metrics).stream()).toList();
+        return lines.stream().flatMap(line -> wrapWithWidth(line, metrics, CONTENT_WIDTH).stream()).toList();
     }
 
     private String formatOrderStatus(String status) {
@@ -190,67 +248,95 @@ public class PdfBoxVisitSummaryPdfRenderer implements VisitSummaryPdfRenderer {
     }
 
     private List<String> continuationHeader(VisitSummaryPrintDocument document, FontMetrics metrics) {
+        String title = document.title() != null && !document.title().isBlank()
+                ? document.title()
+                : "PHIẾU TÓM TẮT LƯỢT KHÁM";
         return List.of(
-                "PHIẾU TÓM TẮT LƯỢT KHÁM (tiếp theo)",
+                title + " (tiếp theo)",
                 "Bệnh nhân: " + nvl(document.patientName()) + " (" + nvl(document.patientCode()) + ")",
                 "--------------------------------------------------------------------------------"
         ).stream().flatMap(line -> wrap(line, metrics).stream()).toList();
     }
 
     private List<String> wrap(String line, FontMetrics metrics) {
+        return wrapWithWidth(line, metrics, CONTENT_WIDTH);
+    }
+
+    private List<String> wrapWithWidth(String line, FontMetrics metrics, int maxWidth) {
         if (line.isEmpty()) {
             return List.of("");
         }
         List<String> wrappedLines = new ArrayList<>();
         for (String paragraph : line.split("\\R", -1)) {
-            wrapParagraph(paragraph, metrics, wrappedLines);
+            wrapParagraphWithWidth(paragraph, metrics, wrappedLines, maxWidth);
         }
         return wrappedLines;
     }
 
-    private void wrapParagraph(String paragraph, FontMetrics metrics, List<String> wrappedLines) {
+    private void wrapParagraphWithWidth(String paragraph, FontMetrics metrics, List<String> wrappedLines, int maxWidth) {
         if (paragraph.isEmpty()) {
             wrappedLines.add("");
             return;
         }
         StringBuilder currentLine = new StringBuilder();
-        for (String word : paragraph.split(" ")) {
-            String candidate = currentLine.isEmpty() ? word : currentLine + " " + word;
+        for (String token : splitTokens(paragraph)) {
+            String candidate = currentLine.isEmpty() ? token : currentLine + " " + token;
             if (metrics.stringWidth(candidate) <= CONTENT_WIDTH) {
-                currentLine.setLength(0);
-                currentLine.append(candidate);
+                currentLine = new StringBuilder(candidate);
                 continue;
             }
             if (!currentLine.isEmpty()) {
                 wrappedLines.add(currentLine.toString());
-                currentLine.setLength(0);
+                currentLine = new StringBuilder();
             }
-            addLongWord(word, metrics, wrappedLines, currentLine);
+            if (metrics.stringWidth(token) <= CONTENT_WIDTH) {
+                currentLine.append(token);
+                continue;
+            }
+            for (String subWord : splitLongWord(token, metrics)) {
+                if (currentLine.isEmpty()) {
+                    currentLine.append(subWord);
+                    continue;
+                }
+                String nextCandidate = currentLine + " " + subWord;
+                if (metrics.stringWidth(nextCandidate) <= CONTENT_WIDTH) {
+                    currentLine = new StringBuilder(nextCandidate);
+                } else {
+                    wrappedLines.add(currentLine.toString());
+                    currentLine = new StringBuilder(subWord);
+                }
+            }
         }
         if (!currentLine.isEmpty()) {
             wrappedLines.add(currentLine.toString());
         }
     }
 
-    private void addLongWord(
-            String word,
-            FontMetrics metrics,
-            List<String> wrappedLines,
-            StringBuilder currentLine
-    ) {
-        StringBuilder chunk = new StringBuilder();
-        for (char ch : word.toCharArray()) {
-            String candidate = chunk.toString() + ch;
-            if (metrics.stringWidth(candidate) > CONTENT_WIDTH && !chunk.isEmpty()) {
-                wrappedLines.add(chunk.toString());
-                chunk.setLength(0);
-            }
-            chunk.append(ch);
-        }
-        currentLine.append(chunk);
+    private List<String> splitTokens(String paragraph) {
+        return List.of(paragraph.split("\\s+"));
     }
 
-    private String nvl(String value) {
-        return value == null || value.isBlank() ? "-" : value;
+    private List<String> splitLongWord(String word, FontMetrics metrics) {
+        List<String> parts = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        for (char ch : word.toCharArray()) {
+            String candidate = current.toString() + ch;
+            if (metrics.stringWidth(candidate) <= CONTENT_WIDTH) {
+                current.append(ch);
+            } else {
+                if (!current.isEmpty()) {
+                    parts.add(current.toString());
+                }
+                current = new StringBuilder().append(ch);
+            }
+        }
+        if (!current.isEmpty()) {
+            parts.add(current.toString());
+        }
+        return parts;
+    }
+
+    private String nvl(String val) {
+        return val != null ? val : "-";
     }
 }

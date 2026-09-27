@@ -3,9 +3,9 @@ package com.benhsoan.infrastructure.storage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import org.mockito.ArgumentMatchers;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -89,7 +89,7 @@ class JsonDatabaseBackupStorageAdapterVerificationTest {
         Files.write(file, json);
 
         // Mock database column metadata to match "id" -> Types.BINARY
-        when(jdbcTemplate.query(anyString(), any(ResultSetExtractor.class)))
+        when(jdbcTemplate.query(anyString(), ArgumentMatchers.<ResultSetExtractor<Map<String, Integer>>>any()))
                 .thenReturn(Map.of("id", java.sql.Types.BINARY));
 
         UUID id = UUID.randomUUID();
@@ -125,7 +125,7 @@ class JsonDatabaseBackupStorageAdapterVerificationTest {
                 new JsonDatabaseBackupStorageAdapter.BackupDocument(manifest, data));
         Files.write(file, json);
 
-        when(jdbcTemplate.query(anyString(), any(ResultSetExtractor.class)))
+        when(jdbcTemplate.query(anyString(), ArgumentMatchers.<ResultSetExtractor<Map<String, Integer>>>any()))
                 .thenReturn(Map.of("id", java.sql.Types.BINARY));
 
         UUID id = UUID.randomUUID();

@@ -148,3 +148,27 @@ Base: `/prescriptions`
 
 - `PHARMACIST`/`ADMIN` role enforced in the service; `@RequirePermission("PRESCRIPTION_UPDATE_STATUS")` on the dispense endpoint and `PRESCRIPTION_DISPENSE_HISTORY_READ` on history. History is authorized contextually (a `DOCTOR` may only read the dispense history of their own visits); `MANAGER` is granted the dedicated history-read permission without full prescription read access.
 
+---
+
+## 6. Relationship to reconciliation (NCL-12-CN-007)
+
+Partial dispensing is a valid operational state and is **not** a reconciliation discrepancy.
+
+NCL-12-CN-007 (`docs/api/ncl-12-cn-007-reconciliation-contract.md`) compares the interconnection state
+against the dispensing state and recognises exactly two discrepancy categories:
+
+- transmitted but not dispensed, and
+- dispensed but not successfully transmitted.
+
+`PARTIALLY_DISPENSED` counts as **dispensed**, so:
+
+- `SUCCESS` + `PARTIALLY_DISPENSED` reconciles to `CONSISTENT` (no discrepancy), and
+- `NOT_SENT`/`FAILED` + `PARTIALLY_DISPENSED` reconciles to the discrepancy
+  `DISPENSED_NOT_TRANSMITTED`.
+
+Reconciliation does **not** compare quantities: `prescribedQuantity`, `dispensedQuantity` and
+`remainingQuantity` stay available on the dispensing/payment endpoints documented above and are not
+exposed by the reconciliation API. Completing a partially dispensed prescription still follows
+section 3.1 (`POST /prescriptions/{id}/partial-dispense`); that completion can later change the
+reconciliation outcome to `CONSISTENT` because the reconciliation state is derived, never stored.
+

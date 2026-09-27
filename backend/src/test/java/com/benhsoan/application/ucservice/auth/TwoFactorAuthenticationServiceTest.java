@@ -2,7 +2,6 @@ package com.benhsoan.application.ucservice.auth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,20 +50,34 @@ class TwoFactorAuthenticationServiceTest {
     private static final UUID USER_ID = UUID.randomUUID();
     private static final UUID ROLE_ID = UUID.randomUUID();
 
-    @Mock private TwoFactorChallengeRepository challengeRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private RoleRepository roleRepository;
-    @Mock private UserSessionRepository userSessionRepository;
-    @Mock private PasswordEncoderPort passwordEncoderPort;
-    @Mock private JwtTokenPort jwtTokenPort;
-    @Mock private TokenHashPort tokenHashPort;
-    @Mock private RefreshTokenGeneratorPort refreshTokenGeneratorPort;
-    @Mock private VerificationCodeGeneratorPort codeGeneratorPort;
-    @Mock private TwoFactorCodeDeliveryPort codeDeliveryPort;
-    @Mock private AuditLogRepository auditLogRepository;
-    @Mock private TwoFactorSecurityAuditWriter auditWriter;
-    @Mock private PatientRecoveryCooldownPort cooldownPort;
-    @Mock private ClockPort clockPort;
+    @Mock
+    private TwoFactorChallengeRepository challengeRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private RoleRepository roleRepository;
+    @Mock
+    private UserSessionRepository userSessionRepository;
+    @Mock
+    private PasswordEncoderPort passwordEncoderPort;
+    @Mock
+    private JwtTokenPort jwtTokenPort;
+    @Mock
+    private TokenHashPort tokenHashPort;
+    @Mock
+    private RefreshTokenGeneratorPort refreshTokenGeneratorPort;
+    @Mock
+    private VerificationCodeGeneratorPort codeGeneratorPort;
+    @Mock
+    private TwoFactorCodeDeliveryPort codeDeliveryPort;
+    @Mock
+    private AuditLogRepository auditLogRepository;
+    @Mock
+    private TwoFactorSecurityAuditWriter auditWriter;
+    @Mock
+    private PatientRecoveryCooldownPort cooldownPort;
+    @Mock
+    private ClockPort clockPort;
 
     private TwoFactorAuthenticationService service;
 
@@ -98,13 +111,14 @@ class TwoFactorAuthenticationServiceTest {
         when(jwtTokenPort.generateToken(any(), any(), any(), any(), any())).thenReturn("access");
         when(jwtTokenPort.getExpiredAt("access")).thenReturn(NOW.plusSeconds(3600));
 
-        LoginResult result = service.verify(new VerifyTwoFactorCommand(challenge.getId().toString(), "123456", "1.2.3.4"));
+        LoginResult result = service
+                .verify(new VerifyTwoFactorCommand(challenge.getId().toString(), "123456", "1.2.3.4"));
 
         assertEquals("access", result.accessToken());
         assertEquals("refresh", result.refreshToken());
         verify(challengeRepository).markConsumed(challenge.getId(), NOW);
-        org.mockito.ArgumentCaptor<com.benhsoan.domain.auditlog.AuditLog> captor =
-                org.mockito.ArgumentCaptor.forClass(com.benhsoan.domain.auditlog.AuditLog.class);
+        org.mockito.ArgumentCaptor<com.benhsoan.domain.auditlog.AuditLog> captor = org.mockito.ArgumentCaptor
+                .forClass(com.benhsoan.domain.auditlog.AuditLog.class);
         verify(auditLogRepository).save(captor.capture());
         assertEquals("1.2.3.4", captor.getValue().getIpAddress());
     }
@@ -132,14 +146,16 @@ class TwoFactorAuthenticationServiceTest {
         when(passwordEncoderPort.matches("000000", "hashed_code")).thenReturn(false);
 
         assertThrows(InvalidVerificationCodeException.class,
-                () -> service.verify(new VerifyTwoFactorCommand(challenge.getId().toString(), "000000", "203.0.113.7")));
+                () -> service
+                        .verify(new VerifyTwoFactorCommand(challenge.getId().toString(), "000000", "203.0.113.7")));
 
         verify(auditWriter).recordInvalidCode(challenge.getId(), USER_ID, "203.0.113.7", NOW);
     }
 
     @Test
     void verifyExpiredCode_throwsAndAudits() {
-        TwoFactorChallenge challenge = TwoFactorChallenge.create(USER_ID, "hashed_code", NOW.minusSeconds(1), NOW.minusSeconds(301));
+        TwoFactorChallenge challenge = TwoFactorChallenge.create(USER_ID, "hashed_code", NOW.minusSeconds(1),
+                NOW.minusSeconds(301));
         when(clockPort.now()).thenReturn(NOW);
         when(challengeRepository.findById(challenge.getId())).thenReturn(Optional.of(challenge));
 
@@ -320,6 +336,7 @@ class TwoFactorAuthenticationServiceTest {
 
         TwoFactorResendResult result = service.resend(new ResendTwoFactorCommand(challenge.getId().toString()));
 
+        assertEquals(challenge.getId(), result.twoFactorToken());
         assertEquals("new_hash", challenge.getCodeHash());
         verify(cooldownPort).recordRequest(challenge.getId().toString(), later, 60L);
     }

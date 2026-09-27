@@ -69,9 +69,17 @@ application process with `SERVER_PORT=8081` and
       "quantity": 9,
       "instructions": "Uong sau an"
     }
-  ]
+  ],
+  "replacesPrescriptionCode": null
 }
 ```
+
+`replacesPrescriptionCode` is optional and defaults to `null` for an ordinary
+submission, so the NCL-12-CN-004 payload is unchanged. When it is supplied the
+submission is a replacement (NCL-12-CN-008) and the gateway additionally marks the
+named prescription as cancelled, because that prescription is no longer the
+effective one. It must match `RX` followed by at least six digits and must differ
+from `prescriptionCode`.
 
 ### Required request fields
 
@@ -123,7 +131,14 @@ All error responses use this shape:
 | `400` | `VALIDATION_FAILED` | Request is missing or contains invalid data. |
 | `400` | `IDEMPOTENCY_KEY_MISMATCH` | Header key differs from `prescriptionCode`. |
 | `409` | `IDEMPOTENCY_KEY_REUSED` | Key was accepted before with a different request body. |
+| `409` | `PRESCRIPTION_CANCELLED` | The submitted `prescriptionCode` was cancelled because a replacement superseded it (NCL-12-CN-008). |
 | `500` | `MOCK_GATEWAY_ERROR` | Deliberate mock-gateway failure. |
+
+A cancelled prescription is refused **after** the idempotency lookup, so an
+idempotent replay of a previously accepted submission still returns its original
+receipt. The cancellation is only recorded when a replacement submission is
+actually accepted, so a failing gateway never cancels anything: `VALIDATION_ERROR`,
+`SERVER_ERROR` and `NO_RESPONSE` all throw before the cancellation is stored.
 
 A connection timeout or unavailable gateway does not have an HTTP response;
 the clinic application records it as an interconnection failure and may retry.

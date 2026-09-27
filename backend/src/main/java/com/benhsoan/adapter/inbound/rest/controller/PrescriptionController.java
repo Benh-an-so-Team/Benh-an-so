@@ -30,6 +30,7 @@ import com.benhsoan.adapter.inbound.rest.request.prescription.CreatePrescription
 import com.benhsoan.adapter.inbound.rest.request.prescription.DispensePrescriptionRequest;
 import com.benhsoan.adapter.inbound.rest.request.prescription.PartialDispensePrescriptionRequest;
 import com.benhsoan.adapter.inbound.rest.request.prescription.ReturnMedicationRequest;
+import com.benhsoan.adapter.inbound.rest.request.prescription.ReplacePrescriptionRequest;
 import com.benhsoan.adapter.inbound.rest.response.prescription.ContraindicationCheckResponse;
 import com.benhsoan.adapter.inbound.rest.response.prescription.MaxDailyDoseCheckResponse;
 import com.benhsoan.adapter.inbound.rest.response.prescription.DispenseHistoryResponse;
@@ -38,6 +39,7 @@ import com.benhsoan.adapter.inbound.rest.response.prescription.DispenseSuggestio
 import com.benhsoan.adapter.inbound.rest.response.prescription.DrugInteractionWarningResponse;
 import com.benhsoan.adapter.inbound.rest.response.prescription.PartialDispensePrescriptionResponse;
 import com.benhsoan.adapter.inbound.rest.response.prescription.PrescriptionResponse;
+import com.benhsoan.adapter.inbound.rest.response.prescription.PrescriptionReplacementResponse;
 import com.benhsoan.adapter.inbound.rest.response.prescription.ReturnMedicationResponse;
 import com.benhsoan.domain.prescription.enums.PrescriptionStatus;
 import com.benhsoan.infrastructure.security.annotation.RequirePermission;
@@ -54,11 +56,13 @@ import com.benhsoan.port.inbound.prescription.DispensePrescriptionItemsUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionDispenseHistoryUseCase;
 import com.benhsoan.port.inbound.prescription.GetDispenseSuggestionUseCase;
 import com.benhsoan.port.inbound.prescription.ExportPrescriptionUseCase;
+import com.benhsoan.port.inbound.prescription.GetPrescriptionByCodeUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionsByMedicalRecordUseCase;
 import com.benhsoan.port.inbound.prescription.SearchPrescriptionsUseCase;
 import com.benhsoan.port.inbound.prescription.SendPrescriptionInterconnectionUseCase;
 import com.benhsoan.port.inbound.prescription.RetryPrescriptionInterconnectionUseCase;
+import com.benhsoan.port.inbound.prescription.ReplaceInterconnectedPrescriptionUseCase;
 import com.benhsoan.port.inbound.prescription.ReturnMedicationUseCase;
 import com.benhsoan.port.dto.result.PrescriptionInterconnectionResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -84,6 +88,7 @@ public class PrescriptionController {
 
         private final AmendPrescriptionUseCase amendPrescriptionUseCase;
         private final GetPrescriptionUseCase getPrescriptionUseCase;
+        private final GetPrescriptionByCodeUseCase getPrescriptionByCodeUseCase;
         private final GetPrescriptionsByMedicalRecordUseCase getPrescriptionsByMedicalRecordUseCase;
         private final SearchPrescriptionsUseCase searchPrescriptionsUseCase;
         private final DispensePrescriptionUseCase dispensePrescriptionUseCase;
@@ -100,6 +105,8 @@ public class PrescriptionController {
         private final SendPrescriptionInterconnectionUseCase sendPrescriptionInterconnectionUseCase;
         private final RetryPrescriptionInterconnectionUseCase retryPrescriptionInterconnectionUseCase;
         private final ReturnMedicationUseCase returnMedicationUseCase;
+
+        private final ReplaceInterconnectedPrescriptionUseCase replaceInterconnectedPrescriptionUseCase;
 
         private final PrescriptionRestMapper mapper;
 
@@ -139,6 +146,17 @@ public class PrescriptionController {
         @RequirePermission("PRESCRIPTION_READ")
         public PrescriptionResponse getById(@PathVariable UUID id) {
                 return mapper.toResponse(getPrescriptionUseCase.getById(id));
+        }
+
+        @GetMapping("/code/{prescriptionCode}")
+        @RequirePermission("PRESCRIPTION_READ")
+        @Operation(summary = "Tra cứu đơn thuốc bằng mã đơn khi cấp phát")
+        @ApiResponse(responseCode = "200", description = "Tìm thấy đơn thuốc tương ứng")
+        @ApiResponse(responseCode = "400", description = "Mã đơn thuốc không hợp lệ")
+        @ApiResponse(responseCode = "403", description = "Không có quyền đọc đơn thuốc")
+        @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn thuốc theo mã")
+        public PrescriptionResponse getByCode(@PathVariable String prescriptionCode) {
+                return mapper.toResponse(getPrescriptionByCodeUseCase.getByCode(prescriptionCode));
         }
 
         @GetMapping("/{id}/print")
@@ -221,6 +239,23 @@ public class PrescriptionController {
                         @PathVariable UUID id,
                         @Valid @RequestBody CancelPrescriptionRequest request) {
                 return mapper.toResponse(cancelPrescriptionUseCase.cancel(mapper.toCommand(id, request)));
+        }
+
+        @PostMapping("/{id}/replacement")
+        @ResponseStatus(HttpStatus.CREATED)
+        @RequirePermission("PRESCRIPTION_UPDATE")
+        @Operation(summary = "Phát hành đơn thuốc thay thế cho đơn đã liên thông, kèm lý do")
+        @ApiResponse(responseCode = "201", description = "Đơn thay thế đã được phát hành và đơn gốc chuyển sang đã bị thay thế")
+        @ApiResponse(responseCode = "400", description = "Thiếu lý do thay thế hoặc dữ liệu đơn không hợp lệ")
+        @ApiResponse(responseCode = "403", description = "Không có quyền thay thế đơn hoặc không phải bác sĩ kê đơn gốc")
+        @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn thuốc gốc")
+        @ApiResponse(responseCode = "409", description = "Đơn gốc chưa liên thông, đã cấp phát, đã hủy hoặc đã bị thay thế")
+        public PrescriptionReplacementResponse replace(
+                        @PathVariable UUID id,
+                        @Valid @RequestBody ReplacePrescriptionRequest request) {
+                return mapper.toResponse(
+                                replaceInterconnectedPrescriptionUseCase.replace(
+                                                mapper.toReplacementCommand(id, request)));
         }
 
         @PostMapping("/{id}/interconnection")

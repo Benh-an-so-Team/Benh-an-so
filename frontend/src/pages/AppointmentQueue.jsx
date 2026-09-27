@@ -2116,6 +2116,24 @@ function AppointmentQueue() {
               </Card>
             ),
           },
+          {
+            key: 'completed_history',
+            label: (
+              <span>
+                <CheckCircleOutlined /> Lịch Sử Bệnh Nhân Đã Khám
+              </span>
+            ),
+            children: (
+              <CompletedTodayList
+                items={doctorQueueGroups.completed}
+                getPatientInfo={getPatientInfo}
+                permissions={permissions}
+                selectedDate={selectedDate}
+                onOpenEncounter={openEncounter}
+                onOpenHistory={openPatientHistory}
+              />
+            ),
+          },
           ...(!permissions.isDoctorOnly
             ? [
                 {
@@ -2138,7 +2156,7 @@ function AppointmentQueue() {
             : []),
         ].filter((item) => {
           if (permissions.isAdmin) return true
-          if (permissions.isDoctor) return ['doctor_queue', 'completed_history', 'waitlist'].includes(item.key)
+          if (permissions.isDoctor) return ['doctor_queue', 'completed_history'].includes(item.key) || item.key === 'waitlist'
           return ['appointments', 'reception_queue', 'waitlist'].includes(item.key)
         })}
       />

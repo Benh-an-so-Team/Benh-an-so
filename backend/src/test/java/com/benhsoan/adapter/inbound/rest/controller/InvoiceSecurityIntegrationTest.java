@@ -83,6 +83,7 @@ class InvoiceSecurityIntegrationTest {
     @MockitoBean private GetInvoiceByIdUseCase getInvoiceByIdUseCase;
     @MockitoBean private GetInvoiceAdjustmentsUseCase getInvoiceAdjustmentsUseCase;
     @MockitoBean private RecordInvoiceReprintUseCase recordInvoiceReprintUseCase;
+    @MockitoBean private com.benhsoan.port.inbound.billing.PrintInvoiceUseCase printInvoiceUseCase;
     @MockitoBean private JwtTokenPort jwtTokenPort;
     @MockitoBean private UserRepository userRepository;
     @MockitoBean private UserSessionRepository userSessionRepository;
@@ -407,6 +408,28 @@ class InvoiceSecurityIntegrationTest {
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/invoices/{invoiceId}/adjustments", invoiceId)
+                        .with(user("pharmacist").authorities(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_PRESCRIPTION_UPDATE_STATUS"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void printInvoiceRequiresInvoiceReadPermission() throws Exception {
+        UUID invoiceId = UUID.randomUUID();
+        when(printInvoiceUseCase.print(invoiceId)).thenReturn(
+                new com.benhsoan.port.dto.result.portal.InvoicePrintResult(
+                        "hoa-don-INV-001.pdf",
+                        "application/pdf",
+                        "%PDF-1.7 mock content".getBytes()
+                )
+        );
+
+        mockMvc.perform(get("/invoices/{invoiceId}/print", invoiceId)
+                        .with(user("receptionist").authorities(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_INVOICE_READ"))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/invoices/{invoiceId}/print", invoiceId)
                         .with(user("pharmacist").authorities(
                                 new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_PRESCRIPTION_UPDATE_STATUS"))))
                 .andExpect(status().isForbidden());

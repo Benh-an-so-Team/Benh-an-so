@@ -1,16 +1,5 @@
 package com.benhsoan.application.ucservice.appointment;
 
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.benhsoan.domain.appointment.enums.WaitlistStatus;
-import com.benhsoan.port.dto.query.appointment.GetAppointmentWaitlistQuery;
-import com.benhsoan.port.dto.result.appointment.AppointmentWaitlistResult;
-import com.benhsoan.port.inbound.appointment.GetAppointmentWaitlistUseCase;
-import com.benhsoan.port.outbound.repository.appointment.AppointmentWaitlistRepository;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -39,8 +28,7 @@ public class GetAppointmentWaitlistService implements GetAppointmentWaitlistUseC
 
     public GetAppointmentWaitlistService(
             AppointmentWaitlistRepository appointmentWaitlistRepository,
-            AppointmentWaitlistResultMapper resultMapper
-    ) {
+            AppointmentWaitlistResultMapper resultMapper) {
         this(appointmentWaitlistRepository, resultMapper, Instant::now);
     }
 
@@ -48,8 +36,7 @@ public class GetAppointmentWaitlistService implements GetAppointmentWaitlistUseC
     public GetAppointmentWaitlistService(
             AppointmentWaitlistRepository appointmentWaitlistRepository,
             AppointmentWaitlistResultMapper resultMapper,
-            @Autowired(required = false) ClockPort clockPort
-    ) {
+            @Autowired(required = false) ClockPort clockPort) {
         this.appointmentWaitlistRepository = appointmentWaitlistRepository;
         this.resultMapper = resultMapper;
         this.clockPort = clockPort != null ? clockPort : Instant::now;
@@ -78,5 +65,3 @@ public class GetAppointmentWaitlistService implements GetAppointmentWaitlistUseC
                 .toList();
     }
 }
-
-

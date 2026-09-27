@@ -19,6 +19,7 @@ import com.benhsoan.domain.auth.User;
 import com.benhsoan.domain.billing.Invoice;
 import com.benhsoan.domain.billing.exception.InvoiceNotFoundException;
 import com.benhsoan.domain.clinic.ClinicConfiguration;
+import com.benhsoan.domain.clinic.DocumentPrintTemplate;
 import com.benhsoan.domain.patient.Patient;
 import com.benhsoan.domain.patient.exception.PatientNotFoundException;
 import com.benhsoan.domain.specialty.Specialty;
@@ -41,152 +42,210 @@ import com.benhsoan.port.outbound.time.ClockPort;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import lombok.RequiredArgsConstructor;
-
-/**
- * NCL-14-CN-007 CV-02: Generates a readable PDF document for an invoice requested
- * by the patient on the portal (TC-02), verifying QTN-23 ownership (TC-03) and recording
- * EXPORT audit event.
- */
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class ExportPatientPortalInvoiceService implements ExportPatientPortalInvoiceUseCase {
 
-    private static final String ONLINE_PORTAL = "ONLINE_PORTAL";
-    private static final String PDF_CONTENT_TYPE = "application/pdf";
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        private static final String ONLINE_PORTAL = "ONLINE_PORTAL";
+        private static final String PDF_CONTENT_TYPE = "application/pdf";
+        private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    private final InvoiceRepository invoiceRepository;
-    private final VisitRepository visitRepository;
-    private final PatientRepository patientRepository;
-    private final UserRepository userRepository;
-    private final SpecialtyRepository specialtyRepository;
-    private final ClinicConfigurationRepository clinicConfigurationRepository;
-    private final InvoicePdfRenderer invoicePdfRenderer;
-    private final PatientAccessGuard patientAccessGuard;
-    private final AuditLogRepository auditLogRepository;
-    private final CurrentUserPort currentUserPort;
-    private final ClockPort clockPort;
-    private final ObjectMapper objectMapper;
+        private final InvoiceRepository invoiceRepository;
+        private final VisitRepository visitRepository;
+        private final PatientRepository patientRepository;
+        private final UserRepository userRepository;
+        private final SpecialtyRepository specialtyRepository;
+        private final ClinicConfigurationRepository clinicConfigurationRepository;
+        private final com.benhsoan.port.outbound.repository.clinic.DocumentPrintTemplateRepository documentPrintTemplateRepository;
+        private final InvoicePdfRenderer invoicePdfRenderer;
+        private final PatientAccessGuard patientAccessGuard;
+        private final AuditLogRepository auditLogRepository;
+        private final CurrentUserPort currentUserPort;
+        private final ClockPort clockPort;
+        private final ObjectMapper objectMapper;
 
-    @Override
-    public InvoicePrintResult export(UUID invoiceId) {
-        Invoice invoice = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
-
-        Visit visit = visitRepository.findById(invoice.getVisitId())
-                .orElseThrow(() -> new VisitNotFoundException(invoice.getVisitId()));
-
-        // TC-03 / QTN-23: Check ownership and write ACCESS_DENIED audit if unauthorized
-        patientAccessGuard.requirePatientOwnership(
-                visit.getPatientId(),
-                ResourceType.INVOICE,
-                invoiceId
-        );
-
-        Patient patient = patientRepository.findById(visit.getPatientId())
-                .orElseThrow(() -> new PatientNotFoundException(visit.getPatientId()));
-
-        ClinicConfiguration clinic = clinicConfigurationRepository.find().orElse(null);
-        String clinicName = clinic != null ? clinic.getClinicName() : "Phòng khám Đa khoa";
-        String clinicAddress = clinic != null ? clinic.getAddress() : "-";
-        String clinicPhone = clinic != null ? clinic.getPhone() : "-";
-
-        String originalInvoiceCode = null;
-        if (invoice.getOriginalInvoiceId() != null) {
-            originalInvoiceCode = invoiceRepository.findById(invoice.getOriginalInvoiceId())
-                    .map(Invoice::getInvoiceCode)
-                    .orElse(null);
+        @org.springframework.beans.factory.annotation.Autowired
+        public ExportPatientPortalInvoiceService(
+                        InvoiceRepository invoiceRepository,
+                        VisitRepository visitRepository,
+                        PatientRepository patientRepository,
+                        UserRepository userRepository,
+                        SpecialtyRepository specialtyRepository,
+                        ClinicConfigurationRepository clinicConfigurationRepository,
+                        com.benhsoan.port.outbound.repository.clinic.DocumentPrintTemplateRepository documentPrintTemplateRepository,
+                        InvoicePdfRenderer invoicePdfRenderer,
+                        PatientAccessGuard patientAccessGuard,
+                        AuditLogRepository auditLogRepository,
+                        CurrentUserPort currentUserPort,
+                        ClockPort clockPort,
+                        ObjectMapper objectMapper) {
+                this.invoiceRepository = invoiceRepository;
+                this.visitRepository = visitRepository;
+                this.patientRepository = patientRepository;
+                this.userRepository = userRepository;
+                this.specialtyRepository = specialtyRepository;
+                this.clinicConfigurationRepository = clinicConfigurationRepository;
+                this.documentPrintTemplateRepository = documentPrintTemplateRepository;
+                this.invoicePdfRenderer = invoicePdfRenderer;
+                this.patientAccessGuard = patientAccessGuard;
+                this.auditLogRepository = auditLogRepository;
+                this.currentUserPort = currentUserPort;
+                this.clockPort = clockPort;
+                this.objectMapper = objectMapper;
         }
 
-        String creatorName = userRepository.findById(invoice.getCreatedBy())
-                .map(User::getFullName)
-                .orElse("-");
-
-        String doctorName = userRepository.findById(visit.getDoctorId())
-                .map(User::getFullName)
-                .orElse("-");
-
-        String specialtyName = specialtyRepository.findById(visit.getSpecialtyId())
-                .map(Specialty::getName)
-                .orElse("-");
-
-        List<InvoicePrintLine> printLines = new ArrayList<>();
-        if (invoice.getLines() != null) {
-            for (int i = 0; i < invoice.getLines().size(); i++) {
-                var line = invoice.getLines().get(i);
-                printLines.add(new InvoicePrintLine(
-                        i + 1,
-                        line.getItemName(),
-                        line.getLineType() != null ? line.getLineType().name() : "SERVICE",
-                        line.getQuantity(),
-                        line.getUnitPrice(),
-                        line.getAmount()
-                ));
-            }
+        public ExportPatientPortalInvoiceService(
+                        InvoiceRepository invoiceRepository,
+                        VisitRepository visitRepository,
+                        PatientRepository patientRepository,
+                        UserRepository userRepository,
+                        SpecialtyRepository specialtyRepository,
+                        ClinicConfigurationRepository clinicConfigurationRepository,
+                        InvoicePdfRenderer invoicePdfRenderer,
+                        PatientAccessGuard patientAccessGuard,
+                        AuditLogRepository auditLogRepository,
+                        CurrentUserPort currentUserPort,
+                        ClockPort clockPort,
+                        ObjectMapper objectMapper) {
+                this(invoiceRepository, visitRepository, patientRepository, userRepository,
+                                specialtyRepository, clinicConfigurationRepository, null,
+                                invoicePdfRenderer, patientAccessGuard, auditLogRepository,
+                                currentUserPort, clockPort, objectMapper);
         }
 
-        String dobStr = patient.getDateOfBirth() != null ? DATE_FORMATTER.format(patient.getDateOfBirth()) : "-";
-        String genderStr = patient.getGender() != null ? patient.getGender().name() : "-";
+        @Override
+        public InvoicePrintResult export(UUID invoiceId) {
+                Invoice invoice = invoiceRepository.findById(invoiceId)
+                                .orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
 
-        Instant now = clockPort.now();
-        UUID currentUserId = currentUserPort.getCurrentUserId();
+                Visit visit = visitRepository.findById(invoice.getVisitId())
+                                .orElseThrow(() -> new VisitNotFoundException(invoice.getVisitId()));
 
-        InvoicePrintDocument printDoc = new InvoicePrintDocument(
-                clinicName,
-                clinicAddress,
-                clinicPhone,
-                invoice.getInvoiceCode(),
-                invoice.getType() != null ? invoice.getType().name() : "ORIGINAL",
-                originalInvoiceCode,
-                invoice.getAdjustmentReason(),
-                patient.getPatientCode(),
-                patient.getFullName(),
-                dobStr,
-                genderStr,
-                patient.getPhone(),
-                visit.getVisitCode(),
-                visit.getVisitAt(),
-                doctorName,
-                specialtyName,
-                invoice.getCreatedAt(),
-                creatorName,
-                printLines,
-                invoice.getTotalAmount(),
-                now
-        );
+                // TC-03 / QTN-23: Check ownership and write ACCESS_DENIED audit if unauthorized
+                patientAccessGuard.requirePatientOwnership(
+                                visit.getPatientId(),
+                                ResourceType.INVOICE,
+                                invoiceId);
 
-        byte[] pdfContent = invoicePdfRenderer.render(printDoc);
+                Patient patient = patientRepository.findById(visit.getPatientId())
+                                .orElseThrow(() -> new PatientNotFoundException(visit.getPatientId()));
 
-        // Audit EXPORT operation
-        auditLogRepository.save(AuditLog.create(
-                currentUserId,
-                ActionType.EXPORT,
-                ResourceType.INVOICE,
-                invoice.getId(),
-                auditDetail(visit, invoice, now),
-                null,
-                now
-        ));
+                ClinicConfiguration clinic = clinicConfigurationRepository.find().orElse(null);
+                String clinicName = clinic != null ? clinic.getClinicName() : "Phòng khám Đa khoa";
+                String clinicAddress = clinic != null ? clinic.getAddress() : "-";
+                String clinicPhone = clinic != null ? clinic.getPhone() : "-";
 
-        String fileName = "hoa-don-" + invoice.getInvoiceCode() + ".pdf";
-        return new InvoicePrintResult(fileName, PDF_CONTENT_TYPE, pdfContent);
-    }
+                String originalInvoiceCode = null;
+                if (invoice.getOriginalInvoiceId() != null) {
+                        originalInvoiceCode = invoiceRepository.findById(invoice.getOriginalInvoiceId())
+                                        .map(Invoice::getInvoiceCode)
+                                        .orElse(null);
+                }
 
-    private String auditDetail(Visit visit, Invoice invoice, Instant exportedAt) {
-        Map<String, Object> detail = new LinkedHashMap<>();
-        detail.put("channel", ONLINE_PORTAL);
-        detail.put("invoiceId", invoice.getId().toString());
-        detail.put("invoiceCode", invoice.getInvoiceCode());
-        detail.put("visitId", visit.getId().toString());
-        detail.put("patientId", visit.getPatientId().toString());
-        detail.put("exportedAt", exportedAt.toString());
+                String creatorName = userRepository.findById(invoice.getCreatedBy())
+                                .map(User::getFullName)
+                                .orElse("-");
 
-        try {
-            return objectMapper.writeValueAsString(detail);
-        } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Could not serialize invoice export audit detail.", exception);
+                String doctorName = userRepository.findById(visit.getDoctorId())
+                                .map(User::getFullName)
+                                .orElse("-");
+
+                String specialtyName = specialtyRepository.findById(visit.getSpecialtyId())
+                                .map(Specialty::getName)
+                                .orElse("-");
+
+                List<InvoicePrintLine> printLines = new ArrayList<>();
+                if (invoice.getLines() != null) {
+                        for (int i = 0; i < invoice.getLines().size(); i++) {
+                                var line = invoice.getLines().get(i);
+                                printLines.add(new InvoicePrintLine(
+                                                i + 1,
+                                                line.getItemName(),
+                                                line.getLineType() != null ? line.getLineType().name() : "SERVICE",
+                                                line.getQuantity(),
+                                                line.getUnitPrice(),
+                                                line.getAmount()));
+                        }
+                }
+
+                String dobStr = patient.getDateOfBirth() != null ? DATE_FORMATTER.format(patient.getDateOfBirth())
+                                : "-";
+                String genderStr = patient.getGender() != null ? patient.getGender().name() : "-";
+
+                Instant now = clockPort.now();
+                UUID currentUserId = currentUserPort.getCurrentUserId();
+
+                DocumentPrintTemplate template = documentPrintTemplateRepository != null
+                                ? documentPrintTemplateRepository.findByDocumentType(
+                                                com.benhsoan.domain.clinic.enums.PrintDocumentType.INVOICE).orElse(null)
+                                : null;
+
+                String title = template != null ? template.getTitle() : null;
+                String logoUrl = template != null ? template.getLogoUrl() : null;
+                String legalInfo = template != null ? template.getLegalInfo() : null;
+                String footerText = template != null ? template.getFooterText() : null;
+                boolean showLogo = template == null || template.isShowLogo();
+                String fieldVisibility = template != null ? template.getFieldVisibility() : null;
+
+                InvoicePrintDocument printDoc = new InvoicePrintDocument(
+                                clinicName,
+                                clinicAddress,
+                                clinicPhone,
+                                invoice.getInvoiceCode(),
+                                invoice.getType() != null ? invoice.getType().name() : "ORIGINAL",
+                                originalInvoiceCode,
+                                invoice.getAdjustmentReason(),
+                                patient.getPatientCode(),
+                                patient.getFullName(),
+                                dobStr,
+                                genderStr,
+                                patient.getPhone(),
+                                visit.getVisitCode(),
+                                visit.getVisitAt(),
+                                doctorName,
+                                specialtyName,
+                                invoice.getCreatedAt(),
+                                creatorName,
+                                printLines,
+                                invoice.getTotalAmount(),
+                                now,
+                                title,
+                                logoUrl,
+                                legalInfo,
+                                footerText,
+                                showLogo,
+                                invoice.getReprintCount(),
+                                fieldVisibility);
+
+                byte[] pdfContent = invoicePdfRenderer.render(printDoc);
+
+                // Audit EXPORT operation
+                auditLogRepository.save(AuditLog.create(
+                                currentUserId,
+                                ActionType.EXPORT,
+                                ResourceType.INVOICE,
+                                invoice.getId(),
+                                auditDetail(visit, invoice, now),
+                                null,
+                                now));
+
+                String fileName = "hoa-don-" + invoice.getInvoiceCode() + ".pdf";
+                return new InvoicePrintResult(fileName, PDF_CONTENT_TYPE, pdfContent);
         }
-    }
+
+        private String auditDetail(Visit visit, Invoice invoice, Instant exportedAt) {
+                Map<String, Object> detail = new LinkedHashMap<>();
+                detail.put("channel", ONLINE_PORTAL);
+                detail.put("invoiceId", invoice.getId().toString());
+                detail.put("invoiceCode", invoice.getInvoiceCode());
+                detail.put("visitId", visit.getId().toString());
+                detail.put("patientId", visit.getPatientId().toString());
+                detail.put("exportedAt", exportedAt.toString());
+
+                try {
+                        return objectMapper.writeValueAsString(detail);
+                } catch (JsonProcessingException exception) {
+                        throw new IllegalStateException("Could not serialize invoice export audit detail.", exception);
+                }
+        }
 }

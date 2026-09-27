@@ -17,10 +17,89 @@ public record PrescriptionPrintDocument(
         UUID doctorId,
         String doctorName,
         Instant prescribedAt,
-        List<Item> items
+        List<Item> items,
+        String title,
+        String logoUrl,
+        String legalInfo,
+        String footerText,
+        boolean showLogo,
+        String fieldVisibility
 ) {
     public PrescriptionPrintDocument {
-        items = List.copyOf(items);
+        items = items == null ? List.of() : List.copyOf(items);
+    }
+
+    public PrescriptionPrintDocument(
+            String clinicName,
+            String clinicAddress,
+            String clinicPhone,
+            String prescriptionCode,
+            UUID patientId,
+            String patientCode,
+            String patientName,
+            UUID doctorId,
+            String doctorName,
+            Instant prescribedAt,
+            List<Item> items,
+            String title,
+            String logoUrl,
+            String legalInfo,
+            String footerText,
+            boolean showLogo
+    ) {
+        this(
+                clinicName,
+                clinicAddress,
+                clinicPhone,
+                prescriptionCode,
+                patientId,
+                patientCode,
+                patientName,
+                doctorId,
+                doctorName,
+                prescribedAt,
+                items,
+                title,
+                logoUrl,
+                legalInfo,
+                footerText,
+                showLogo,
+                null
+        );
+    }
+
+    public PrescriptionPrintDocument(
+            String clinicName,
+            String clinicAddress,
+            String clinicPhone,
+            String prescriptionCode,
+            UUID patientId,
+            String patientCode,
+            String patientName,
+            UUID doctorId,
+            String doctorName,
+            Instant prescribedAt,
+            List<Item> items
+    ) {
+        this(
+                clinicName,
+                clinicAddress,
+                clinicPhone,
+                prescriptionCode,
+                patientId,
+                patientCode,
+                patientName,
+                doctorId,
+                doctorName,
+                prescribedAt,
+                items,
+                null,
+                null,
+                null,
+                null,
+                true,
+                null
+        );
     }
 
     public record Item(

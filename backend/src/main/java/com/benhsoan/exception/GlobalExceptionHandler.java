@@ -455,6 +455,15 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         String msg = extractIntegrityViolationMessage(ex).toLowerCase();
+        if (msg.contains("uq_patient_satisfaction_surveys_visit")) {
+            return build(
+                    HttpStatus.CONFLICT,
+                    "SATISFACTION_SURVEY_ALREADY_EXISTS",
+                    "Lượt khám này đã được gửi khảo sát hài lòng.",
+                    request.getRequestURI()
+            );
+        }
+
         if (msg.contains("uk_patient_active_allergen")
                 || (msg.contains("duplicate entry") && msg.contains("active_normalized_name"))) {
             return build(

@@ -47,6 +47,9 @@ import com.benhsoan.port.inbound.prescription.GetPrescriptionAllergyWarningLogsU
 import com.benhsoan.port.inbound.prescription.SearchPrescriptionsUseCase;
 import com.benhsoan.port.inbound.prescription.SendPrescriptionInterconnectionUseCase;
 import com.benhsoan.port.inbound.prescription.RetryPrescriptionInterconnectionUseCase;
+import com.benhsoan.port.inbound.prescription.ReplaceInterconnectedPrescriptionUseCase;
+import com.benhsoan.port.dto.command.prescription.ReplacePrescriptionCommand;
+import com.benhsoan.port.dto.result.PrescriptionReplacementResult;
 import com.benhsoan.port.inbound.prescription.ReturnMedicationUseCase;
 import com.benhsoan.port.dto.result.PrescriptionInterconnectionResult;
 import com.benhsoan.port.dto.command.prescription.CancelPrescriptionCommand;
@@ -79,6 +82,7 @@ class PrescriptionSecurityIntegrationTest {
     @MockitoBean private CreatePrescriptionUseCase createPrescriptionUseCase;
     @MockitoBean private AmendPrescriptionUseCase amendPrescriptionUseCase;
     @MockitoBean private GetPrescriptionUseCase getPrescriptionUseCase;
+    @MockitoBean private com.benhsoan.port.inbound.prescription.GetPrescriptionByCodeUseCase getPrescriptionByCodeUseCase;
     @MockitoBean private GetPrescriptionsByMedicalRecordUseCase getPrescriptionsByMedicalRecordUseCase;
     @MockitoBean private SearchPrescriptionsUseCase searchPrescriptionsUseCase;
     @MockitoBean private DispensePrescriptionUseCase dispensePrescriptionUseCase;
@@ -94,6 +98,7 @@ class PrescriptionSecurityIntegrationTest {
     @MockitoBean private ExportPrescriptionUseCase exportPrescriptionUseCase;
     @MockitoBean private SendPrescriptionInterconnectionUseCase sendPrescriptionInterconnectionUseCase;
     @MockitoBean private RetryPrescriptionInterconnectionUseCase retryPrescriptionInterconnectionUseCase;
+    @MockitoBean private ReplaceInterconnectedPrescriptionUseCase replaceInterconnectedPrescriptionUseCase;
     @MockitoBean private ReturnMedicationUseCase returnMedicationUseCase;
     @MockitoBean private com.benhsoan.port.inbound.prescription.SearchPrescriptionInterconnectionsUseCase searchPrescriptionInterconnectionsUseCase;
     @MockitoBean private JwtTokenPort jwtTokenPort;
@@ -379,6 +384,61 @@ class PrescriptionSecurityIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /prescriptions/{id}/replacement requires PRESCRIPTION_UPDATE permission (NCL-12-CN-008)")
+    void replacePrescriptionRequiresPrescriptionUpdatePermission() throws Exception {
+        UUID originalId = UUID.randomUUID();
+        PrescriptionResult original = new PrescriptionResult(
+                originalId, "RX000001", UUID.randomUUID(), UUID.randomUUID(), "VISIT-001",
+                UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.REPLACED,
+                "Note", UUID.randomUUID(), "Dr. A", Instant.now(), null, null, List.of(), List.of());
+        PrescriptionResult replacement = new PrescriptionResult(
+                UUID.randomUUID(), "RX000002", UUID.randomUUID(), UUID.randomUUID(), "VISIT-001",
+                UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.PENDING_DISPENSE,
+                "Note", UUID.randomUUID(), "Dr. A", Instant.now(), null, null, List.of(), List.of());
+        when(replaceInterconnectedPrescriptionUseCase.replace(any(ReplacePrescriptionCommand.class)))
+                .thenReturn(new PrescriptionReplacementResult(
+                        original,
+                        replacement,
+                        new PrescriptionInterconnectionResult(
+                                replacement.id(), "RX000002", InterconnectionStatus.SUCCESS,
+                                "LT-20260925-000001", null, Instant.now())));
+
+        String body = """
+                {
+                  "replacementReason": "Sai liều lượng",
+                  "items": [
+                    { "medicineId": "%s", "dosage": "1 vien", "frequency": 2,
+                      "route": "ORAL", "durationDays": 5, "quantity": 10 }
+                  ]
+                }
+                """.formatted(UUID.randomUUID());
+
+        // A doctor holding PRESCRIPTION_UPDATE is allowed
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .with(user("doctor").authorities(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_PRESCRIPTION_UPDATE")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated());
+
+        // A user holding only PRESCRIPTION_READ is rejected
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .with(user("reader").authorities(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_PRESCRIPTION_READ")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+
+        // The pharmacist permission PRESCRIPTION_UPDATE_STATUS does not grant replacement
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .with(user("pharmacist").authorities(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_PRESCRIPTION_UPDATE_STATUS")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("GET /prescriptions/{id}/dispense-history requires PRESCRIPTION_DISPENSE_HISTORY_READ (NCL-06-CN-008, TC-05)")
     void dispenseHistoryRequiresDispenseHistoryReadPermission() throws Exception {
         UUID prescriptionId = UUID.randomUUID();
@@ -473,5 +533,38 @@ class PrescriptionSecurityIntegrationTest {
                         .content(body))
                 .andExpect(status().isForbidden());
     }
-}
 
+    @Test
+    void allowsPharmacistsAndAdminsToReadPrescriptionByCode() throws Exception {
+        UUID prescriptionId = UUID.randomUUID();
+        String code = "RX000001";
+        PrescriptionResult result = new PrescriptionResult(
+                prescriptionId, code, UUID.randomUUID(), UUID.randomUUID(), "VISIT-001",
+                UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.PENDING_DISPENSE,
+                null, UUID.randomUUID(), "Dr. B", Instant.now(), null, null, List.of(), List.of());
+        when(getPrescriptionByCodeUseCase.getByCode(code)).thenReturn(result);
+
+        for (String role : new String[] {"ADMIN", "PHARMACIST"}) {
+            mockMvc.perform(get("/prescriptions/code/{prescriptionCode}", code)
+                            .with(user(role.toLowerCase()).authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_PRESCRIPTION_READ"))))
+                    .andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void deniesUsersWithoutPrescriptionReadPermissionFromReadingByCode() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(currentUserPort.getCurrentUserId()).thenReturn(userId);
+
+        mockMvc.perform(get("/prescriptions/code/RX000001")
+                        .with(user("receptionist").authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_APPOINTMENT_READ"))))
+                .andExpect(status().isForbidden());
+
+        org.mockito.Mockito.verify(auditLogRepository).save(org.mockito.ArgumentMatchers.argThat(log ->
+                log.getActionType() == com.benhsoan.domain.auditlog.enums.ActionType.ACCESS_DENIED &&
+                log.getResourceType() == com.benhsoan.domain.auditlog.enums.ResourceType.PERMISSION &&
+                log.getUserId().equals(userId)
+        ));
+    }
+
+}

@@ -389,7 +389,7 @@ function PharmacyPage() {
           quantity: Number(item.quantity),
           unit: item.unit || 'viên',
           reason: confirmationNote || item.specialControlReason || 'Cấp phát thuốc theo đơn hợp lệ',
-          confirmedByName: currentUser?.fullName || currentUser?.name || 'Dược sĩ cấp phát',
+          confirmedByName: user?.fullName || user?.name || 'Dược sĩ cấp phát',
         })
       }
 

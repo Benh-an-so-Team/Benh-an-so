@@ -9,7 +9,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.benhsoan.domain.prescription.MaxDailyDoseCalculator.Item;
-import com.benhsoan.domain.prescription.MaxDailyDoseEvaluationResult;
 
 class MaxDailyDoseCalculatorTest {
 
@@ -18,20 +17,17 @@ class MaxDailyDoseCalculatorTest {
             String strengthValueMg,
             String singleDoseQuantity,
             int frequency,
-            String maxDailyDoseMg
-    ) {
+            String maxDailyDoseMg) {
         return new Item(
                 ingredient,
                 strengthValueMg == null ? null : new BigDecimal(strengthValueMg),
                 singleDoseQuantity == null ? null : new BigDecimal(singleDoseQuantity),
                 frequency,
-                maxDailyDoseMg == null ? null : new BigDecimal(maxDailyDoseMg)
-        );
+                maxDailyDoseMg == null ? null : new BigDecimal(maxDailyDoseMg));
     }
 
     @Test
     void exceedsMaxDailyDose_emitsWarning() {
-        // 500 mg x 2 tablets x 3 times/day = 3000 mg vs max 2000 mg
         MaxDailyDoseEvaluationResult result = MaxDailyDoseCalculator.evaluate(
                 List.of(item("Paracetamol", "500", "2", 3, "2000")));
 
@@ -63,8 +59,7 @@ class MaxDailyDoseCalculatorTest {
     void aggregatesMultipleItemsOfSameIngredient() {
         MaxDailyDoseEvaluationResult result = MaxDailyDoseCalculator.evaluate(List.of(
                 item("Paracetamol", "500", "2", 2, "2500"),
-                item("Paracetamol", "500", "1", 2, "2500")
-        ));
+                item("Paracetamol", "500", "1", 2, "2500")));
 
         assertEquals(1, result.warnings().size());
         assertEquals(0, new BigDecimal("3000").compareTo(result.warnings().getFirst().totalDailyDoseMg()));
@@ -74,8 +69,7 @@ class MaxDailyDoseCalculatorTest {
     void aggregatesAcrossDifferentMedicineRowsSharingIngredientIgnoringCase() {
         MaxDailyDoseEvaluationResult result = MaxDailyDoseCalculator.evaluate(List.of(
                 item("paracetamol", "500", "1", 3, "2000"),
-                item("Paracetamol", "500", "1", 3, "2000")
-        ));
+                item("Paracetamol", "500", "1", 3, "2000")));
 
         assertEquals(1, result.warnings().size());
         assertEquals(0, new BigDecimal("3000").compareTo(result.warnings().getFirst().totalDailyDoseMg()));
@@ -85,8 +79,7 @@ class MaxDailyDoseCalculatorTest {
     void differentIngredientsAreCheckedIndependently() {
         MaxDailyDoseEvaluationResult result = MaxDailyDoseCalculator.evaluate(List.of(
                 item("Paracetamol", "500", "4", 3, "2000"),
-                item("Ibuprofen", "200", "1", 2, "1200")
-        ));
+                item("Ibuprofen", "200", "1", 2, "1200")));
 
         assertEquals(1, result.warnings().size());
         assertEquals("Paracetamol", result.warnings().getFirst().activeIngredient());
@@ -106,8 +99,7 @@ class MaxDailyDoseCalculatorTest {
     void mixedNullAndNonNullMaxDailyDose_isMissingData() {
         MaxDailyDoseEvaluationResult result = MaxDailyDoseCalculator.evaluate(List.of(
                 item("Paracetamol", "500", "1", 1, "2000"),
-                item("Paracetamol", "500", "1", 1, null)
-        ));
+                item("Paracetamol", "500", "1", 1, null)));
 
         assertTrue(result.warnings().isEmpty());
         assertEquals(1, result.missingData().size());
@@ -117,8 +109,7 @@ class MaxDailyDoseCalculatorTest {
     void conflictingNonNullMaxDailyDose_isMissingData() {
         MaxDailyDoseEvaluationResult result = MaxDailyDoseCalculator.evaluate(List.of(
                 item("Paracetamol", "500", "1", 1, "2000"),
-                item("Paracetamol", "500", "1", 1, "4000")
-        ));
+                item("Paracetamol", "500", "1", 1, "4000")));
 
         assertTrue(result.warnings().isEmpty());
         assertEquals(1, result.missingData().size());
@@ -161,11 +152,11 @@ class MaxDailyDoseCalculatorTest {
 
     @Test
     void sameNumericMaxDoseDifferentScale_isNotConflict() {
-        // 2000.000 and 2000 are numerically equal and must not be treated as a conflict.
+        // 2000.000 and 2000 are numerically equal and must not be treated as a
+        // conflict.
         MaxDailyDoseEvaluationResult result = MaxDailyDoseCalculator.evaluate(List.of(
                 item("Paracetamol", "500", "1", 1, "2000.000"),
-                item("Paracetamol", "500", "1", 1, "2000")
-        ));
+                item("Paracetamol", "500", "1", 1, "2000")));
 
         assertTrue(result.missingData().isEmpty());
         assertTrue(result.warnings().isEmpty());
@@ -175,8 +166,7 @@ class MaxDailyDoseCalculatorTest {
     void sameNumericMaxDoseTrailingZeros_isNotConflict() {
         MaxDailyDoseEvaluationResult result = MaxDailyDoseCalculator.evaluate(List.of(
                 item("Paracetamol", "500", "1", 1, "2000.0"),
-                item("Paracetamol", "500", "1", 1, "2000.00")
-        ));
+                item("Paracetamol", "500", "1", 1, "2000.00")));
 
         assertTrue(result.missingData().isEmpty());
     }
@@ -185,8 +175,7 @@ class MaxDailyDoseCalculatorTest {
     void differentNumericMaxDose_isConflict() {
         MaxDailyDoseEvaluationResult result = MaxDailyDoseCalculator.evaluate(List.of(
                 item("Paracetamol", "500", "1", 1, "2000.000"),
-                item("Paracetamol", "500", "1", 1, "2000.001")
-        ));
+                item("Paracetamol", "500", "1", 1, "2000.001")));
 
         assertEquals(1, result.missingData().size());
     }
@@ -197,8 +186,7 @@ class MaxDailyDoseCalculatorTest {
         // daily total = 2500 → must emit a warning, not missing data.
         MaxDailyDoseEvaluationResult result = MaxDailyDoseCalculator.evaluate(List.of(
                 item("Paracetamol", "500", "2", 2, "2000.000"),
-                item("Paracetamol", "500", "1", 1, "2000")
-        ));
+                item("Paracetamol", "500", "1", 1, "2000")));
 
         assertTrue(result.missingData().isEmpty());
         assertEquals(1, result.warnings().size());

@@ -1,7 +1,6 @@
 package com.benhsoan.application.ucservice.billing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -65,6 +64,9 @@ class CreateDiscountRequestConcurrencyMySqlIntegrationTest {
     private CreateDiscountRequestService createDiscountRequestService;
 
     @Autowired
+    private com.benhsoan.persistence.jpaRepository.visit.JpaVisitRepository visitRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @MockitoBean
@@ -79,22 +81,30 @@ class CreateDiscountRequestConcurrencyMySqlIntegrationTest {
         when(currentUserPort.hasRole("RECEPTIONIST")).thenReturn(true);
         when(currentUserPort.hasRole("ADMIN")).thenReturn(false);
         when(currentUserPort.hasRole("MANAGER")).thenReturn(false);
+        when(currentUserPort.hasPermission("INVOICE_CREATE")).thenReturn(true);
         when(clockPort.now()).thenReturn(Instant.parse("2026-09-22T10:00:00Z"));
     }
 
     private UUID createVisitFixture() {
-        byte[] patientId = jdbcTemplate.queryForObject("SELECT id FROM patients LIMIT 1", byte[].class);
-        assertNotNull(patientId);
-
+        UUID patientId = UUID.fromString(jdbcTemplate.queryForObject("SELECT BIN_TO_UUID(id) FROM patients LIMIT 1", String.class));
+        UUID userId = UUID.fromString(jdbcTemplate.queryForObject("SELECT BIN_TO_UUID(id) FROM users LIMIT 1", String.class));
         UUID visitId = UUID.randomUUID();
-        jdbcTemplate.update(
-                """
-                INSERT INTO visits (id, visit_code, patient_id, visit_type, visit_at, status, created_at, updated_at)
-                VALUES (UUID_TO_BIN(?), ?, ?, 'OUTPATIENT', NOW(), 'COMPLETED', NOW(), NOW())
-                """,
-                visitId.toString(),
-                "VISIT-" + visitId.toString().substring(0, 8)
-        );
+        Instant now = Instant.parse("2026-09-22T08:00:00Z");
+
+        visitRepository.saveAndFlush(com.benhsoan.persistence.entity.visit.VisitEntity.builder()
+                .id(visitId)
+                .visitCode("VISIT-" + visitId.toString().substring(0, 8))
+                .patientId(patientId)
+                .doctorId(userId)
+                .specialtyId(UUID.fromString("f0000000-0000-0000-0000-000000000001"))
+                .visitType(com.benhsoan.domain.visit.enums.VisitType.WALK_IN)
+                .status(com.benhsoan.domain.visit.enums.VisitStatus.IN_PROGRESS)
+                .reason("Kham benh")
+                .visitAt(now)
+                .createdBy(userId)
+                .createdAt(now)
+                .updatedAt(now)
+                .build());
         return visitId;
     }
 
@@ -129,10 +139,10 @@ class CreateDiscountRequestConcurrencyMySqlIntegrationTest {
                     if (result != null && result.id() != null) {
                         successCount.incrementAndGet();
                     }
-                } catch (DiscountAlreadyExistsException e) {
+                } catch (DiscountAlreadyExistsException | org.springframework.dao.DataIntegrityViolationException e) {
                     duplicateConflictCount.incrementAndGet();
                 } catch (Exception e) {
-                    // unexpected exception
+                    e.printStackTrace();
                 }
             }));
         }

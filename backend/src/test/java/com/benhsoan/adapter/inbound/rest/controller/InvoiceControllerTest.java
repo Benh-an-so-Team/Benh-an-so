@@ -83,6 +83,7 @@ class InvoiceControllerTest {
     @MockitoBean private GetInvoiceByIdUseCase getInvoiceByIdUseCase;
     @MockitoBean private GetInvoiceAdjustmentsUseCase getInvoiceAdjustmentsUseCase;
     @MockitoBean private RecordInvoiceReprintUseCase recordInvoiceReprintUseCase;
+    @MockitoBean private com.benhsoan.port.inbound.billing.PrintInvoiceUseCase printInvoiceUseCase;
     @MockitoBean private CurrentUserPort currentUserPort;
     @MockitoBean private UserRepository userRepository;
     @MockitoBean private UserSessionRepository userSessionRepository;
@@ -692,5 +693,22 @@ class InvoiceControllerTest {
         assertEquals(PaymentMethod.BANK_TRANSFER, cmd.paymentMethod());
         assertEquals(1, cmd.paymentMethods().size());
         assertEquals("VCB-LEGACY-001", cmd.paymentMethods().get(0).referenceNumber());
+    }
+
+    @Test
+    void printsInvoiceReturnsPdf() throws Exception {
+        UUID invoiceId = UUID.randomUUID();
+        when(printInvoiceUseCase.print(invoiceId)).thenReturn(
+                new com.benhsoan.port.dto.result.portal.InvoicePrintResult(
+                        "hoa-don-INV-001.pdf",
+                        "application/pdf",
+                        "%PDF-1.7 mock content".getBytes()
+                )
+        );
+
+        mockMvc.perform(get("/invoices/{invoiceId}/print", invoiceId))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Content-Disposition", "attachment; filename=\"hoa-don-INV-001.pdf\""))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_PDF));
     }
 }

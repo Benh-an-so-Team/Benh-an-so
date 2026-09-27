@@ -137,7 +137,6 @@ class GetPatientLinkedProfilesServiceTest {
     @DisplayName("P2.2: ho so cua chinh minh bi vo hieu hoa cung khong hien thi")
     void excludesOwnInactiveProfile() {
         UUID userId = UUID.randomUUID();
-        UUID ownId = UUID.randomUUID();
         Patient inactiveOwn = mock(Patient.class);
         when(inactiveOwn.isActive()).thenReturn(false);
 

@@ -284,7 +284,7 @@ export default function AppointmentEffectivenessReportPage() {
     if (isAuthorized) {
       handleFetchReport()
     }
-  }, [isAuthorized]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthorized])
 
   // Xử lý chọn nhanh khoảng thời gian
   const handleQuickPreset = (preset) => {

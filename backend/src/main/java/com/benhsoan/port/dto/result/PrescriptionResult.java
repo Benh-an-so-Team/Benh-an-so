@@ -44,7 +44,17 @@ public record PrescriptionResult(
 
         List<PrescriptionWarningResult> warnings,
 
-        List<MaxDailyDoseMissingDataResult> maxDailyDoseMissingData
+        List<MaxDailyDoseMissingDataResult> maxDailyDoseMissingData,
+
+        UUID replacesPrescriptionId,
+
+        String replacesPrescriptionCode,
+
+        String replacementReason,
+
+        UUID replacedByPrescriptionId,
+
+        String replacedByPrescriptionCode
 
 ) {
 
@@ -70,7 +80,7 @@ public record PrescriptionResult(
     ) {
         this(id, prescriptionCode, medicalRecordId, visitId, visitCode, patientId, patientCode, patientName,
                 status, note, cancelReason, prescribedBy, doctorName, prescribedAt, updatedBy, updatedAt, items,
-                warnings, List.of());
+                warnings, List.of(), null, null, null, null, null);
     }
 
     public PrescriptionResult(
@@ -94,6 +104,20 @@ public record PrescriptionResult(
     ) {
         this(id, prescriptionCode, medicalRecordId, visitId, visitCode, patientId, patientCode, patientName,
                 status, note, null, prescribedBy, doctorName, prescribedAt, updatedBy, updatedAt, items, warnings,
-                List.of());
+                List.of(), null, null, null, null, null);
+    }
+
+    public PrescriptionResult withReplacementLink(
+            UUID replacesPrescriptionId,
+            String replacesPrescriptionCode,
+            String replacementReason,
+            UUID replacedByPrescriptionId,
+            String replacedByPrescriptionCode
+    ) {
+        return new PrescriptionResult(
+                id, prescriptionCode, medicalRecordId, visitId, visitCode, patientId, patientCode, patientName,
+                status, note, cancelReason, prescribedBy, doctorName, prescribedAt, updatedBy, updatedAt, items,
+                warnings, maxDailyDoseMissingData, replacesPrescriptionId, replacesPrescriptionCode,
+                replacementReason, replacedByPrescriptionId, replacedByPrescriptionCode);
     }
 }

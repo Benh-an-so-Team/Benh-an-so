@@ -124,7 +124,8 @@ public class RetryPrescriptionInterconnectionService implements RetryPrescriptio
                         item.getMedicineId(), item.getMedicineName(), item.getActiveIngredient(), item.getStrength(),
                         item.getUnit(), item.getDosage(), item.getFrequency(), item.getRoute().name(),
                         item.getDurationDays(), item.getQuantity(), item.getInstructions()
-                )).toList()
+                )).toList(),
+                prescription.getReplacesPrescriptionCode()
         );
     }
 

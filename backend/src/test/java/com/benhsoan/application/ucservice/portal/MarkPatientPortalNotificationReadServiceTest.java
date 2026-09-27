@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,9 +33,12 @@ class MarkPatientPortalNotificationReadServiceTest {
     private static final UUID NOTIFICATION_ID = UUID.randomUUID();
     private static final UUID PATIENT_ID = UUID.randomUUID();
 
-    @Mock private PatientPortalNotificationRepository notificationRepository;
-    @Mock private PatientAccessGuard patientAccessGuard;
-    @Mock private ClockPort clockPort;
+    @Mock
+    private PatientPortalNotificationRepository notificationRepository;
+    @Mock
+    private PatientAccessGuard patientAccessGuard;
+    @Mock
+    private ClockPort clockPort;
 
     private MarkPatientPortalNotificationReadService service;
 
