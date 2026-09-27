@@ -88,7 +88,7 @@ class CashierShiftConcurrencyMySqlIntegrationTest {
                     system_card_amount, system_other_amount, actual_cash_amount,
                     difference_amount, status, notes, created_at
                 ) VALUES (
-                    ?, ?, ?, '2026-09-21 02:00:00', '2026-09-21 10:00:00', 3,
+                    UUID_TO_BIN(?), ?, UUID_TO_BIN(?), '2026-09-21 02:00:00', '2026-09-21 10:00:00', 3,
                     1500000.00, 1000000.00, 500000.00, 0.00, 0.00, 950000.00,
                     -50000.00, 'PENDING_CONFIRMATION', 'Chênh lệch 50k', '2026-09-21 10:00:00'
                 )
@@ -158,7 +158,7 @@ class CashierShiftConcurrencyMySqlIntegrationTest {
         assertEquals(1, conflictCount.get(), "Transaction còn lại phải nhận lỗi xung đột (đã được xác nhận)");
 
         String finalStatus = jdbcTemplate.queryForObject(
-                "SELECT status FROM cashier_shifts WHERE id = ?",
+                "SELECT status FROM cashier_shifts WHERE id = UUID_TO_BIN(?)",
                 String.class,
                 shiftId.toString()
         );

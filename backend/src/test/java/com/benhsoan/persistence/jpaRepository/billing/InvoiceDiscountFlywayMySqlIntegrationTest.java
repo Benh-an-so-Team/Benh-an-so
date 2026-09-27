@@ -72,11 +72,14 @@ class InvoiceDiscountFlywayMySqlIntegrationTest {
         UUID visitId = UUID.randomUUID();
         jdbcTemplate.update(
                 """
-                INSERT INTO visits (id, visit_code, patient_id, visit_type, visit_at, status, created_at, updated_at)
-                VALUES (UUID_TO_BIN(?), ?, ?, 'OUTPATIENT', NOW(), 'COMPLETED', NOW(), NOW())
+                INSERT INTO visits (id, visit_code, patient_id, doctor_id, visit_type, status, visit_at, reason, created_by, created_at, updated_at)
+                VALUES (UUID_TO_BIN(?), ?, ?, ?, 'OUTPATIENT', 'COMPLETED', NOW(), 'Kham benh', ?, NOW(), NOW())
                 """,
                 visitId.toString(),
-                "VISIT-" + visitId.toString().substring(0, 8)
+                "VISIT-" + visitId.toString().substring(0, 8),
+                patientId,
+                userId,
+                userId
         );
 
         // 2. Insert approved discount request (100% free)

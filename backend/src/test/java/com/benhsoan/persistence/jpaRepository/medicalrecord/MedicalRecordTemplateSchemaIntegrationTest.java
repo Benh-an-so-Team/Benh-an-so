@@ -86,6 +86,11 @@ class MedicalRecordTemplateSchemaIntegrationTest {
 
     @Test
     void schemaEnforcesTemplateVersionAndSectionUniqueness() {
+        jdbc.update("UPDATE medical_records SET applied_template_version_id = NULL WHERE applied_template_version_id IN (SELECT id FROM medical_record_template_versions WHERE specialty_id = UUID_TO_BIN(?))", GENERAL_SPECIALTY_ID);
+        jdbc.update("DELETE FROM medical_record_template_sections WHERE template_version_id IN (SELECT id FROM medical_record_template_versions WHERE specialty_id = UUID_TO_BIN(?))", GENERAL_SPECIALTY_ID);
+        jdbc.update("DELETE FROM medical_record_template_versions WHERE specialty_id = UUID_TO_BIN(?)", GENERAL_SPECIALTY_ID);
+        jdbc.update("DELETE FROM medical_record_templates WHERE specialty_id = UUID_TO_BIN(?)", GENERAL_SPECIALTY_ID);
+
         insertTemplate("f0000000-0000-0000-0000-000000000011", "General examination", "general examination", true);
 
         assertThrows(DataIntegrityViolationException.class, () ->

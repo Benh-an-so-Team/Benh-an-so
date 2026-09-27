@@ -137,7 +137,7 @@ class PrescriptionAllergyWarningLogFlywayMySqlIntegrationTest {
                     severity, reaction, active, created_by, created_at, updated_by, updated_at
                 ) VALUES (
                     UUID_TO_BIN(?), UUID_TO_BIN(?), 'MEDICATION', 'Amoxicillin Test', 'amoxicillin test',
-                    'SEVERE', 'Rash', TRUE, UUID_TO_BIN(?), NOW(), NULL, NULL
+                    'SEVERE', 'Rash', TRUE, UUID_TO_BIN(?), NOW(), NULL, NOW()
                 )
                 """,
                 tempAllergyId.toString(),
@@ -195,7 +195,7 @@ class PrescriptionAllergyWarningLogFlywayMySqlIntegrationTest {
                     severity, reaction, active, created_by, created_at, updated_by, updated_at
                 ) VALUES (
                     UUID_TO_BIN(?), UUID_TO_BIN(?), 'MEDICATION', 'Aspirin Test', 'aspirin test',
-                    'MILD', 'Itch', TRUE, UUID_TO_BIN(?), NOW(), NULL, NULL
+                    'MILD', 'Itch', TRUE, UUID_TO_BIN(?), NOW(), NULL, NOW()
                 )
                 """,
                 allergyId.toString(),
