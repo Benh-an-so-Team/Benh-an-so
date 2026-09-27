@@ -555,19 +555,23 @@ public class JsonDatabaseBackupStorageAdapter implements DatabaseBackupStoragePo
             ps.setNull(index, jdbcType);
             return;
         }
-        switch (jdbcType) {
-            case Types.BINARY, Types.VARBINARY, Types.LONGVARBINARY, Types.BLOB ->
-                    ps.setBytes(index, HexFormat.of().parseHex(value));
-            case Types.DATE -> ps.setDate(index, java.sql.Date.valueOf(value));
-            case Types.TIME -> ps.setTime(index, java.sql.Time.valueOf(value));
-            case Types.TIMESTAMP, Types.TIMESTAMP_WITH_TIMEZONE -> ps.setTimestamp(index, toTimestamp(value));
-            case Types.BOOLEAN, Types.BIT -> ps.setBoolean(index, isTrue(value));
-            case Types.TINYINT, Types.SMALLINT, Types.INTEGER -> ps.setInt(index, Integer.parseInt(value));
-            case Types.BIGINT -> ps.setLong(index, Long.parseLong(value));
-            case Types.DECIMAL, Types.NUMERIC -> ps.setBigDecimal(index, new BigDecimal(value));
-            case Types.FLOAT, Types.REAL -> ps.setFloat(index, Float.parseFloat(value));
-            case Types.DOUBLE -> ps.setDouble(index, Double.parseDouble(value));
-            default -> ps.setString(index, value);
+        try {
+            switch (jdbcType) {
+                case Types.BINARY, Types.VARBINARY, Types.LONGVARBINARY, Types.BLOB ->
+                        ps.setBytes(index, HexFormat.of().parseHex(value));
+                case Types.DATE -> ps.setDate(index, java.sql.Date.valueOf(value));
+                case Types.TIME -> ps.setTime(index, java.sql.Time.valueOf(value));
+                case Types.TIMESTAMP, Types.TIMESTAMP_WITH_TIMEZONE -> ps.setTimestamp(index, toTimestamp(value));
+                case Types.BOOLEAN, Types.BIT -> ps.setBoolean(index, isTrue(value));
+                case Types.TINYINT, Types.SMALLINT, Types.INTEGER -> ps.setInt(index, Integer.parseInt(value));
+                case Types.BIGINT -> ps.setLong(index, Long.parseLong(value));
+                case Types.DECIMAL, Types.NUMERIC -> ps.setBigDecimal(index, new BigDecimal(value));
+                case Types.FLOAT, Types.REAL -> ps.setFloat(index, Float.parseFloat(value));
+                case Types.DOUBLE -> ps.setDouble(index, Double.parseDouble(value));
+                default -> ps.setString(index, value);
+            }
+        } catch (IllegalArgumentException ex) {
+            throw new BackupExecutionException("Invalid data value for column at index " + index + ": " + value, ex);
         }
     }
 

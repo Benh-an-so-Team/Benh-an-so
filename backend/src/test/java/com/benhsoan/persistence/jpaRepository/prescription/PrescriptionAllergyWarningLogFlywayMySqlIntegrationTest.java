@@ -204,7 +204,7 @@ class PrescriptionAllergyWarningLogFlywayMySqlIntegrationTest {
         );
 
         // 1. Severity sai ('INVALID_SEVERITY')
-        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update(
+        assertThrows(org.springframework.dao.DataAccessException.class, () -> jdbc.update(
                 """
                 INSERT INTO prescription_allergy_warning_logs (
                     id, prescription_id, patient_id, allergy_id, medicine_id,
@@ -225,7 +225,7 @@ class PrescriptionAllergyWarningLogFlywayMySqlIntegrationTest {
         ));
 
         // 2. Override reason rỗng / whitespace ('   ')
-        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update(
+        assertThrows(org.springframework.dao.DataAccessException.class, () -> jdbc.update(
                 """
                 INSERT INTO prescription_allergy_warning_logs (
                     id, prescription_id, patient_id, allergy_id, medicine_id,

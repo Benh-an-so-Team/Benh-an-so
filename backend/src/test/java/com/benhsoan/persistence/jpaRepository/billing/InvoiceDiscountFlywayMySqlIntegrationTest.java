@@ -124,10 +124,10 @@ class InvoiceDiscountFlywayMySqlIntegrationTest {
                 """
                 INSERT INTO invoices (
                     id, invoice_code, visit_id, payment_id, invoice_type, total_amount, discount_amount,
-                    discount_request_id, status, created_by, issued_at
+                    discount_request_id, created_by, created_at
                 ) VALUES (
                     UUID_TO_BIN(?), ?, UUID_TO_BIN(?), UUID_TO_BIN(?), 'ORIGINAL', 0.00, 250000.00,
-                    UUID_TO_BIN(?), 'ISSUED', ?, NOW()
+                    UUID_TO_BIN(?), ?, NOW()
                 )
                 """,
                 invoiceId.toString(),

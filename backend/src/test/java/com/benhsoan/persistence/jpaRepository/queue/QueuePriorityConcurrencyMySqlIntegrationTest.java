@@ -72,11 +72,19 @@ class QueuePriorityConcurrencyMySqlIntegrationTest {
                 .id(queueId).doctorId(doctorId).roomId(roomId).queueDate(LocalDate.of(2026, 8, 2))
                 .status(MedicalQueueStatus.OPEN).createdAt(now).updatedAt(now).build());
 
+        UUID visitId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO visits (id, visit_code, patient_id, doctor_id, visit_type, status, visit_at, reason, created_by, created_at, updated_at)
+                VALUES (UUID_TO_BIN(?), ?, UUID_TO_BIN(?), UUID_TO_BIN(?), 'WALK_IN', 'IN_PROGRESS', NOW(), 'Kham benh', UUID_TO_BIN(?), NOW(), NOW())
+                """,
+                visitId.toString(), "VIS-" + visitId.toString().substring(0, 8),
+                patientId.toString(), doctorId.toString(), doctorId.toString());
+
         QueueItemEntity item = new QueueItemEntity();
         item.setId(itemId);
         item.setMedicalQueueId(queueId);
         item.setPatientId(patientId);
-        item.setVisitId(null);
+        item.setVisitId(visitId);
         item.setSourceType(QueueItemSourceType.WALK_IN);
         item.setStatus(QueueItemStatus.WAITING);
         item.setQueueNumber(1);
