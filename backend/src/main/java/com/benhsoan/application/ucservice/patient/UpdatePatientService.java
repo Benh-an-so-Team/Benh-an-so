@@ -32,8 +32,6 @@ import com.benhsoan.port.outbound.repository.patient.PatientChangeLogRepository;
 import com.benhsoan.port.outbound.repository.patient.PatientRepository;
 import com.benhsoan.port.outbound.security.CurrentUserPort;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 @Service
 @Transactional
 public class UpdatePatientService
@@ -64,7 +62,6 @@ public class UpdatePatientService
 
     private final RoleRepository roleRepository;
 
-    @Autowired
     public UpdatePatientService(
             PatientRepository patientRepository,
             PatientChangeLogRepository patientChangeLogRepository,

@@ -1,6 +1,7 @@
 package com.benhsoan.persistence.adapterRepository.prescription;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.benhsoan.port.outbound.repository.prescription.PrescriptionCodeSequenceRepository;
 
@@ -15,6 +16,7 @@ public class PrescriptionCodeSequenceRepositoryAdapter
     private final EntityManager entityManager;
 
     @Override
+    @Transactional
     public long reserveNextValue(String prefix) {
         entityManager.createNativeQuery("""
                 INSERT INTO prescription_code_sequences (code_prefix, `last_value`)

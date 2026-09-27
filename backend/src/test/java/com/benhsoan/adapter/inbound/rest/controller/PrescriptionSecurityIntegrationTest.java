@@ -47,6 +47,9 @@ import com.benhsoan.port.inbound.prescription.GetPrescriptionAllergyWarningLogsU
 import com.benhsoan.port.inbound.prescription.SearchPrescriptionsUseCase;
 import com.benhsoan.port.inbound.prescription.SendPrescriptionInterconnectionUseCase;
 import com.benhsoan.port.inbound.prescription.RetryPrescriptionInterconnectionUseCase;
+import com.benhsoan.port.inbound.prescription.ReplaceInterconnectedPrescriptionUseCase;
+import com.benhsoan.port.dto.command.prescription.ReplacePrescriptionCommand;
+import com.benhsoan.port.dto.result.PrescriptionReplacementResult;
 import com.benhsoan.port.inbound.prescription.ReturnMedicationUseCase;
 import com.benhsoan.port.dto.result.PrescriptionInterconnectionResult;
 import com.benhsoan.port.dto.command.prescription.CancelPrescriptionCommand;
@@ -95,6 +98,7 @@ class PrescriptionSecurityIntegrationTest {
     @MockitoBean private ExportPrescriptionUseCase exportPrescriptionUseCase;
     @MockitoBean private SendPrescriptionInterconnectionUseCase sendPrescriptionInterconnectionUseCase;
     @MockitoBean private RetryPrescriptionInterconnectionUseCase retryPrescriptionInterconnectionUseCase;
+    @MockitoBean private ReplaceInterconnectedPrescriptionUseCase replaceInterconnectedPrescriptionUseCase;
     @MockitoBean private ReturnMedicationUseCase returnMedicationUseCase;
     @MockitoBean private com.benhsoan.port.inbound.prescription.SearchPrescriptionInterconnectionsUseCase searchPrescriptionInterconnectionsUseCase;
     @MockitoBean private JwtTokenPort jwtTokenPort;
@@ -374,6 +378,61 @@ class PrescriptionSecurityIntegrationTest {
         mockMvc.perform(post("/prescriptions/{id}/cancel", prescriptionId)
                         .with(user("pharmacist").authorities(
                                 new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_PRESCRIPTION_READ")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /prescriptions/{id}/replacement requires PRESCRIPTION_UPDATE permission (NCL-12-CN-008)")
+    void replacePrescriptionRequiresPrescriptionUpdatePermission() throws Exception {
+        UUID originalId = UUID.randomUUID();
+        PrescriptionResult original = new PrescriptionResult(
+                originalId, "RX000001", UUID.randomUUID(), UUID.randomUUID(), "VISIT-001",
+                UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.REPLACED,
+                "Note", UUID.randomUUID(), "Dr. A", Instant.now(), null, null, List.of(), List.of());
+        PrescriptionResult replacement = new PrescriptionResult(
+                UUID.randomUUID(), "RX000002", UUID.randomUUID(), UUID.randomUUID(), "VISIT-001",
+                UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.PENDING_DISPENSE,
+                "Note", UUID.randomUUID(), "Dr. A", Instant.now(), null, null, List.of(), List.of());
+        when(replaceInterconnectedPrescriptionUseCase.replace(any(ReplacePrescriptionCommand.class)))
+                .thenReturn(new PrescriptionReplacementResult(
+                        original,
+                        replacement,
+                        new PrescriptionInterconnectionResult(
+                                replacement.id(), "RX000002", InterconnectionStatus.SUCCESS,
+                                "LT-20260925-000001", null, Instant.now())));
+
+        String body = """
+                {
+                  "replacementReason": "Sai liều lượng",
+                  "items": [
+                    { "medicineId": "%s", "dosage": "1 vien", "frequency": 2,
+                      "route": "ORAL", "durationDays": 5, "quantity": 10 }
+                  ]
+                }
+                """.formatted(UUID.randomUUID());
+
+        // A doctor holding PRESCRIPTION_UPDATE is allowed
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .with(user("doctor").authorities(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_PRESCRIPTION_UPDATE")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated());
+
+        // A user holding only PRESCRIPTION_READ is rejected
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .with(user("reader").authorities(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_PRESCRIPTION_READ")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+
+        // The pharmacist permission PRESCRIPTION_UPDATE_STATUS does not grant replacement
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .with(user("pharmacist").authorities(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("PERMISSION_PRESCRIPTION_UPDATE_STATUS")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isForbidden());

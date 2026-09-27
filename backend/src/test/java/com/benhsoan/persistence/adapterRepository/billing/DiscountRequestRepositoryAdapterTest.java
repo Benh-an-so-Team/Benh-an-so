@@ -60,7 +60,7 @@ class DiscountRequestRepositoryAdapterTest {
                 now
         );
 
-        when(jpaRepository.save(any(DiscountRequestEntity.class)))
+        when(jpaRepository.saveAndFlush(any(DiscountRequestEntity.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
         DiscountRequest saved = adapter.save(domain);
@@ -68,7 +68,7 @@ class DiscountRequestRepositoryAdapterTest {
         assertEquals(id, saved.getId());
         assertEquals(new BigDecimal("10000.00"), saved.getDiscountAmount());
         assertEquals(new BigDecimal("90000.00"), saved.getFinalAmount());
-        verify(jpaRepository).save(any(DiscountRequestEntity.class));
+        verify(jpaRepository).saveAndFlush(any(DiscountRequestEntity.class));
     }
 
     @Test

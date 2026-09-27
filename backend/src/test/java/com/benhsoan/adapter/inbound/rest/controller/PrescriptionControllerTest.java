@@ -1,5 +1,7 @@
 package com.benhsoan.adapter.inbound.rest.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -17,6 +19,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -68,6 +71,12 @@ import com.benhsoan.port.inbound.prescription.GetPrescriptionsByMedicalRecordUse
 import com.benhsoan.port.inbound.prescription.SearchPrescriptionsUseCase;
 import com.benhsoan.port.inbound.prescription.SendPrescriptionInterconnectionUseCase;
 import com.benhsoan.port.inbound.prescription.RetryPrescriptionInterconnectionUseCase;
+import com.benhsoan.port.inbound.prescription.ReplaceInterconnectedPrescriptionUseCase;
+import com.benhsoan.port.dto.command.prescription.ReplacePrescriptionCommand;
+import com.benhsoan.port.dto.result.PrescriptionReplacementResult;
+import com.benhsoan.domain.prescription.exception.PrescriptionInvalidStatusException;
+import com.benhsoan.domain.prescription.exception.UnauthorizedPrescriptionReplacementException;
+import org.springframework.security.access.AccessDeniedException;
 import com.benhsoan.port.inbound.prescription.ReturnMedicationUseCase;
 import com.benhsoan.port.outbound.authSecurity.JwtTokenPort;
 import com.benhsoan.port.outbound.repository.auth.UserRepository;
@@ -121,6 +130,9 @@ class PrescriptionControllerTest {
 
     @MockitoBean
     private CancelPrescriptionUseCase cancelPrescriptionUseCase;
+
+    @MockitoBean
+    private ReplaceInterconnectedPrescriptionUseCase replaceInterconnectedPrescriptionUseCase;
 
     @MockitoBean
     private CheckDrugInteractionUseCase checkDrugInteractionUseCase;
@@ -907,6 +919,174 @@ class PrescriptionControllerTest {
         return new PrescriptionResult(
                 prescriptionId, "RX-001", UUID.randomUUID(), UUID.randomUUID(), "VISIT-001",
                 UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.PENDING_DISPENSE,
+                null, UUID.randomUUID(), "Dr. B", NOW, null, null, List.of(), List.of());
+    }
+
+    @Test
+    @DisplayName("POST /prescriptions/{id}/replacement - 201 issues the replacement and replaces the original")
+    void replacement_returns201WithBothPrescriptions() throws Exception {
+        UUID originalId = UUID.randomUUID();
+        UUID replacementId = UUID.randomUUID();
+        PrescriptionResult original = replacedPrescription(originalId);
+        PrescriptionResult replacement = new PrescriptionResult(
+                replacementId, "RX-002", UUID.randomUUID(), UUID.randomUUID(), "VISIT-001",
+                UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.PENDING_DISPENSE,
+                null, UUID.randomUUID(), "Dr. B", NOW, null, null, List.of(), List.of())
+                .withReplacementLink(originalId, "RX-001", "Sai liều lượng", null, null);
+        PrescriptionInterconnectionResult interconnection = new PrescriptionInterconnectionResult(
+                replacementId, "RX-002", InterconnectionStatus.SUCCESS, "LT-20260925-000123", null, NOW);
+
+        when(replaceInterconnectedPrescriptionUseCase.replace(any(ReplacePrescriptionCommand.class)))
+                .thenReturn(new PrescriptionReplacementResult(original, replacement, interconnection));
+
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(replacementRequestBody()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.originalPrescription.id").value(originalId.toString()))
+                .andExpect(jsonPath("$.originalPrescription.status").value("REPLACED"))
+                .andExpect(jsonPath("$.replacementPrescription.id").value(replacementId.toString()))
+                .andExpect(jsonPath("$.replacementPrescription.prescriptionCode").value("RX-002"))
+                .andExpect(jsonPath("$.replacementPrescription.replacesPrescriptionId")
+                        .value(originalId.toString()))
+                .andExpect(jsonPath("$.replacementPrescription.replacesPrescriptionCode").value("RX-001"))
+                .andExpect(jsonPath("$.replacementPrescription.replacementReason").value("Sai liều lượng"))
+                .andExpect(jsonPath("$.interconnection.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.interconnection.receiptCode").value("LT-20260925-000123"));
+
+        ArgumentCaptor<ReplacePrescriptionCommand> captor =
+                ArgumentCaptor.forClass(ReplacePrescriptionCommand.class);
+        verify(replaceInterconnectedPrescriptionUseCase).replace(captor.capture());
+        assertEquals(originalId, captor.getValue().originalPrescriptionId());
+        assertEquals("Sai liều lượng", captor.getValue().replacementReason());
+        assertNull(captor.getValue().prescription().medicalRecordId());
+    }
+
+    @Test
+    @DisplayName("POST /prescriptions/{id}/replacement - 400 when the replacement reason is missing")
+    void replacement_returns400WhenReasonIsMissing() throws Exception {
+        UUID originalId = UUID.randomUUID();
+
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "items": [
+                                    { "medicineId": "%s", "dosage": "1 vien", "frequency": 2,
+                                      "route": "ORAL", "durationDays": 5, "quantity": 10 }
+                                  ]
+                                }
+                                """.formatted(UUID.randomUUID())))
+                .andExpect(status().isBadRequest());
+
+        verify(replaceInterconnectedPrescriptionUseCase, never()).replace(any());
+    }
+
+    @Test
+    @DisplayName("POST /prescriptions/{id}/replacement - 400 when no medicine is supplied")
+    void replacement_returns400WhenItemsAreEmpty() throws Exception {
+        UUID originalId = UUID.randomUUID();
+
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "replacementReason": "Sai liều lượng",
+                                  "items": []
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(replaceInterconnectedPrescriptionUseCase, never()).replace(any());
+    }
+
+    @Test
+    @DisplayName("POST /prescriptions/{id}/replacement - 404 when the original prescription is unknown")
+    void replacement_returns404WhenOriginalIsUnknown() throws Exception {
+        UUID originalId = UUID.randomUUID();
+        when(replaceInterconnectedPrescriptionUseCase.replace(any(ReplacePrescriptionCommand.class)))
+                .thenThrow(new PrescriptionNotFoundException(originalId));
+
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(replacementRequestBody()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /prescriptions/{id}/replacement - 409 when the original cannot be replaced")
+    void replacement_returns409WhenOriginalCannotBeReplaced() throws Exception {
+        UUID originalId = UUID.randomUUID();
+        when(replaceInterconnectedPrescriptionUseCase.replace(any(ReplacePrescriptionCommand.class)))
+                .thenThrow(new PrescriptionInvalidStatusException(
+                        "Only successfully interconnected prescriptions can be replaced."));
+
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(replacementRequestBody()))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("POST /prescriptions/{id}/replacement - 409 when the original was already dispensed (TC-02)")
+    void replacement_returns409WhenOriginalWasDispensed() throws Exception {
+        UUID originalId = UUID.randomUUID();
+        when(replaceInterconnectedPrescriptionUseCase.replace(any(ReplacePrescriptionCommand.class)))
+                .thenThrow(new PrescriptionAlreadyDispensedException(
+                        "Dispensed prescriptions cannot be replaced. "
+                                + "Please prescribe a new prescription for the visit instead."));
+
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(replacementRequestBody()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PRESCRIPTION_ALREADY_DISPENSED"));
+    }
+
+    @Test
+    @DisplayName("POST /prescriptions/{id}/replacement - 403 when the doctor does not own the prescription")
+    void replacement_returns403WhenAnotherDoctorsPrescription() throws Exception {
+        UUID originalId = UUID.randomUUID();
+        when(replaceInterconnectedPrescriptionUseCase.replace(any(ReplacePrescriptionCommand.class)))
+                .thenThrow(new UnauthorizedPrescriptionReplacementException());
+
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(replacementRequestBody()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED_PRESCRIPTION_REPLACEMENT"));
+    }
+
+    @Test
+    @DisplayName("POST /prescriptions/{id}/replacement - 403 when the caller is not a doctor")
+    void replacement_returns403WhenCallerIsNotADoctor() throws Exception {
+        UUID originalId = UUID.randomUUID();
+        when(replaceInterconnectedPrescriptionUseCase.replace(any(ReplacePrescriptionCommand.class)))
+                .thenThrow(new AccessDeniedException("Only doctors can replace prescriptions."));
+
+        mockMvc.perform(post("/prescriptions/{id}/replacement", originalId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(replacementRequestBody()))
+                .andExpect(status().isForbidden());
+    }
+
+    private String replacementRequestBody() {
+        return """
+                {
+                  "replacementReason": "Sai liều lượng",
+                  "note": "Đơn thay thế",
+                  "items": [
+                    { "medicineId": "%s", "dosage": "1 vien", "frequency": 2,
+                      "route": "ORAL", "durationDays": 5, "quantity": 10 }
+                  ]
+                }
+                """.formatted(UUID.randomUUID());
+    }
+
+    private PrescriptionResult replacedPrescription(UUID prescriptionId) {
+        return new PrescriptionResult(
+                prescriptionId, "RX-001", UUID.randomUUID(), UUID.randomUUID(), "VISIT-001",
+                UUID.randomUUID(), "PAT-001", "Nguyen Van A", PrescriptionStatus.REPLACED,
                 null, UUID.randomUUID(), "Dr. B", NOW, null, null, List.of(), List.of());
     }
 

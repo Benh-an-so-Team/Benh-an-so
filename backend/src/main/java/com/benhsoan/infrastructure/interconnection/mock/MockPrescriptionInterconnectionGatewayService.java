@@ -3,7 +3,9 @@ package com.benhsoan.infrastructure.interconnection.mock;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.http.HttpStatus;
@@ -21,10 +23,18 @@ public class MockPrescriptionInterconnectionGatewayService implements Prescripti
     private static final DateTimeFormatter RECEIPT_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE
             .withZone(ZoneOffset.UTC);
 
+    /** Mirrors the {@code DatabasePrescriptionCodeGenerator} format. */
+    private static final String PRESCRIPTION_CODE_PATTERN = "RX\\d{6,}";
+
     private final ClockPort clockPort;
     private final MockInterconnectionGatewayProperties properties;
     private final AtomicLong receiptSequence = new AtomicLong();
     private final Map<String, AcceptedSubmission> acceptedByPrescriptionCode = new LinkedHashMap<>();
+
+    /**
+     * Prescription codes this gateway was told were cancelled by a replacement.
+     */
+    private final Set<String> cancelledByPrescriptionCode = new LinkedHashSet<>();
 
     public MockPrescriptionInterconnectionGatewayService(
             ClockPort clockPort,
@@ -49,6 +59,11 @@ public class MockPrescriptionInterconnectionGatewayService implements Prescripti
             return new SubmissionResult(existing.response(), true);
         }
 
+        if (cancelledByPrescriptionCode.contains(request.prescriptionCode())) {
+            throw error(HttpStatus.CONFLICT, "PRESCRIPTION_CANCELLED",
+                    "This prescription was cancelled on the interconnection system because it was replaced.");
+        }
+
         applyConfiguredMode();
 
         var receivedAt = clockPort.now();
@@ -59,6 +74,9 @@ public class MockPrescriptionInterconnectionGatewayService implements Prescripti
                 receivedAt
         );
         acceptedByPrescriptionCode.put(idempotencyKey, new AcceptedSubmission(request, response));
+        if (request.replacesPrescriptionCode() != null) {
+            cancelledByPrescriptionCode.add(request.replacesPrescriptionCode());
+        }
         return new SubmissionResult(response, false);
     }
 
@@ -97,12 +115,22 @@ public class MockPrescriptionInterconnectionGatewayService implements Prescripti
         }
         requireText(idempotencyKey, "X-Idempotency-Key is required.");
         requireText(request.prescriptionCode(), "prescriptionCode is required.");
-        if (!request.prescriptionCode().matches("RX\\d{6,}")) {
+        if (!request.prescriptionCode().matches(PRESCRIPTION_CODE_PATTERN)) {
             throw error(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "prescriptionCode has an invalid format.");
         }
         if (!idempotencyKey.equals(request.prescriptionCode())) {
             throw error(HttpStatus.BAD_REQUEST, "IDEMPOTENCY_KEY_MISMATCH",
                     "X-Idempotency-Key must equal prescriptionCode.");
+        }
+        if (request.replacesPrescriptionCode() != null) {
+            if (!request.replacesPrescriptionCode().matches(PRESCRIPTION_CODE_PATTERN)) {
+                throw error(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED",
+                        "replacesPrescriptionCode has an invalid format.");
+            }
+            if (request.replacesPrescriptionCode().equals(request.prescriptionCode())) {
+                throw error(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED",
+                        "replacesPrescriptionCode must differ from prescriptionCode.");
+            }
         }
         if (request.prescribedAt() == null) {
             throw error(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "prescribedAt is required.");

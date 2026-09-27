@@ -41,6 +41,7 @@ import com.benhsoan.domain.shared.exception.ValidationException;
 import com.benhsoan.port.dto.command.prescription.CheckDrugInteractionCommand;
 import com.benhsoan.port.dto.command.prescription.CreatePrescriptionCommand;
 import com.benhsoan.port.dto.command.prescription.CreatePrescriptionItemCommand;
+import com.benhsoan.port.dto.command.prescription.PrescriptionCreationContext;
 import com.benhsoan.port.dto.command.prescription.PrescriptionAllergyOverrideCommand;
 import com.benhsoan.port.dto.command.prescription.PrescriptionContraindicationOverrideCommand;
 import com.benhsoan.port.dto.command.prescription.PrescriptionInteractionOverrideCommand;
@@ -122,7 +123,7 @@ public class CreatePrescriptionService
         UUID currentUserId = currentUserPort.getCurrentUserId();
         Instant now = clockPort.now();
 
-        validateMedicalRecord(command.medicalRecordId(), currentUserId);
+        validateMedicalRecord(command.medicalRecordId(), currentUserId, command.creationContext());
         List<CreatePrescriptionItemCommand> itemCommands
                 = validateItemCommands(command.items());
         Map<UUID, Medicine> medicines = loadActiveMedicines(itemCommands);
@@ -268,11 +269,22 @@ public class CreatePrescriptionService
         }
     }
 
-    private void validateMedicalRecord(UUID medicalRecordId, UUID doctorId) {
-        clinicalContextValidator.requireEditableRecordForDoctor(
-                medicalRecordId,
-                doctorId
-        );
+    private void validateMedicalRecord(
+            UUID medicalRecordId,
+            UUID doctorId,
+            PrescriptionCreationContext creationContext
+    ) {
+        if (creationContext == PrescriptionCreationContext.REPLACEMENT) {
+            clinicalContextValidator.requireRecordForPrescriptionReplacement(
+                    medicalRecordId,
+                    doctorId
+            );
+        } else {
+            clinicalContextValidator.requireEditableRecordForDoctor(
+                    medicalRecordId,
+                    doctorId
+            );
+        }
 
         if (!medicalRecordDiagnosisRepository
                 .existsByMedicalRecordId(medicalRecordId)) {
