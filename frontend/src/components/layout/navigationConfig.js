@@ -45,7 +45,7 @@ export const navigationSections = [
   { key: 'pharmacy', label: 'Nhà thuốc', paths: ['/pharmacy', '/medicines', '/pharmacy/receipts', '/inventory/stock-report', '/pharmacy/special-control-register', '/pharmacy/procurement-plans'] },
   { key: 'finance', label: 'Tài chính', paths: ['/billing', '/invoices/lookup', '/cashier-shifts/close', '/cashier-shifts/history', '/invoices/discount-requests'] },
   { key: 'reports', label: 'Báo cáo', paths: ['/reports', '/reports/disease-patterns', '/reports/revenue-breakdown', '/reports/appointment-effectiveness'] },
-  { key: 'system', label: 'Hệ thống & Bảng giá', paths: ['/users', '/services', '/system/specialties', '/system/clinical-services', '/system/diagnosis-catalog', '/system/medical-record-templates', '/system-management', '/admin/operation-logs', '/prescription-interconnections', '/system/anonymization', '/contraindication-rules', '/admin/sessions'] },
+  { key: 'system', label: 'Hệ thống & Bảng giá', paths: ['/users', '/services', '/system/specialties', '/system/clinical-services', '/system/diagnosis-catalog', '/system/medical-record-templates', '/system-management', '/admin/operation-logs', '/prescription-interconnections', '/system/anonymization', '/contraindication-rules', '/admin/sessions', '/system/scheduled-backup'] },
 ]
 
 export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
@@ -114,6 +114,7 @@ export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
     { key: '/prescription-interconnections', label: 'Liên thông đơn thuốc', icon: CloudServerOutlined, check: () => hasPerm('PRESCRIPTION_INTERCONNECTION_READ') || isAdmin },
     { key: '/system/anonymization', label: 'Chế độ ẩn danh dữ liệu', icon: EyeInvisibleOutlined, check: () => hasPerm('SYSTEM_CONFIG_READ') || isAdmin },
     { key: '/contraindication-rules', label: 'Quy tắc chống chỉ định', icon: MedicineBoxOutlined, check: () => hasPerm('CONTRAINDICATION_RULE_MANAGE') || isAdmin },
+    { key: '/system/scheduled-backup', label: 'Lịch sao lưu tự động', icon: CloudServerOutlined, check: () => isAdmin || hasPerm('BACKUP_READ') },
     { key: '/cashier-shifts/close', label: 'Chốt ca thu ngân', icon: DollarCircleOutlined, check: () => hasPerm('CASHIER_SHIFT_CREATE') || isReceptionist || isAdmin },
     { key: '/cashier-shifts/history', label: 'Lịch sử chốt ca', icon: HistoryOutlined, check: () => hasPerm('CASHIER_SHIFT_READ') || isReceptionist || isManager || isAdmin },
   ]

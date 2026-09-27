@@ -1,0 +1,251 @@
+/* scheduledBackup.css - Giao diện Sao lưu tự động theo lịch & Kiểm tra bản sao lưu */
+
+.scheduled-backup-container {
+  padding: 24px;
+  background-color: #f7f9fc;
+  min-height: calc(100vh - 64px);
+}
+
+.scheduled-backup-header {
+  margin-bottom: 20px;
+}
+
+.scheduled-backup-header .header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.scheduled-backup-header .title-area h2 {
+  margin: 0 0 6px 0;
+  color: #1a202c;
+  font-weight: 700;
+  font-size: 22px;
+}
+
+.scheduled-backup-header .title-area p {
+  margin: 0;
+  color: #718096;
+  font-size: 14px;
+}
+
+/* Alert Banner chủ động khi có lần sao lưu thất bại */
+.scheduled-backup-alert-banner {
+  margin-bottom: 20px;
+  border-radius: 8px;
+  border-left: 5px solid #cf1322 !important;
+  box-shadow: 0 2px 8px rgba(207, 19, 34, 0.15);
+}
+
+.scheduled-backup-alert-banner .ant-alert-message {
+  font-weight: 700;
+  font-size: 15px;
+  color: #cf1322;
+}
+
+.scheduled-backup-alert-banner .alert-details {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Informational Disclaimers */
+.scheduled-backup-info-banner {
+  margin-bottom: 20px;
+  border-radius: 8px;
+}
+
+/* Cards */
+.scheduled-backup-card {
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.scheduled-backup-card .ant-card-head {
+  border-bottom: 1px solid #edf2f7;
+  padding: 14px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  background-color: #ffffff;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+/* Next Run Callout */
+.next-run-callout {
+  padding: 14px 18px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  transition: all 0.3s ease;
+}
+
+.next-run-callout.active {
+  background: linear-gradient(135deg, #e6f7ff 0%, #f0f5ff 100%);
+  border: 1px solid #91d5ff;
+}
+
+.next-run-callout.inactive {
+  background: #f5f5f5;
+  border: 1px solid #d9d9d9;
+}
+
+.next-run-callout .callout-icon {
+  font-size: 26px;
+}
+
+.next-run-callout.active .callout-icon {
+  color: #1890ff;
+}
+
+.next-run-callout.inactive .callout-icon {
+  color: #8c8c8c;
+}
+
+.next-run-callout .callout-content {
+  flex: 1;
+}
+
+.next-run-callout .callout-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-bottom: 2px;
+}
+
+.next-run-callout .callout-desc {
+  font-size: 13px;
+  color: #595959;
+}
+
+/* Latest Verification Card */
+.verification-status-panel {
+  padding: 16px;
+  border-radius: 8px;
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  margin-top: 12px;
+}
+
+.verification-status-panel.success {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.verification-status-panel.error {
+  background: #fff2f0;
+  border-color: #ffccc7;
+}
+
+/* Table Row Highlights */
+.backup-row-failed {
+  background-color: #fff1f0 !important;
+}
+
+.backup-row-failed:hover > td {
+  background-color: #ffe8e6 !important;
+}
+
+.backup-row-in-progress {
+  background-color: #e6f7ff !important;
+  animation: pulse-row 2s infinite ease-in-out;
+}
+
+@keyframes pulse-row {
+  0% {
+    background-color: #e6f7ff;
+  }
+  50% {
+    background-color: #bae7ff;
+  }
+  100% {
+    background-color: #e6f7ff;
+  }
+}
+
+/* Failure Reason Display */
+.failure-reason-cell {
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #cf1322;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 4px;
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+/* Table empty state */
+.backup-empty-state {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+/* Modal Descriptions Styling - Ngăn chặn tràn modal và chống xuống dòng từng chữ */
+.backup-verification-descriptions {
+  width: 100% !important;
+  overflow: hidden;
+}
+
+.backup-verification-descriptions .ant-descriptions-view {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-radius: 8px;
+}
+
+.backup-verification-descriptions table {
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+
+.backup-verification-descriptions .ant-descriptions-item-label {
+  white-space: nowrap !important;
+  width: 145px !important;
+  max-width: 150px !important;
+  color: #262626;
+  font-weight: 600;
+  vertical-align: middle;
+  padding: 10px 12px !important;
+}
+
+.backup-verification-descriptions .ant-descriptions-item-content {
+  vertical-align: middle;
+  word-break: break-word;
+  padding: 10px 12px !important;
+}
+
+.scheduled-backup-card .ant-table-cell {
+  vertical-align: middle;
+}
+
+.scheduled-backup-card .ant-table-thead > tr > th {
+  white-space: nowrap !important;
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .scheduled-backup-container {
+    padding: 12px;
+  }
+  
+  .scheduled-backup-header .header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .backup-verification-descriptions .ant-descriptions-item-label {
+    width: auto !important;
+  }
+}

@@ -45,6 +45,7 @@ const MedicalRecordTemplateManagementPage = React.lazy(() => import('../pages/Me
 const SpecialtyManagementPage = React.lazy(() => import('../pages/SpecialtyManagementPage'))
 const SessionManagementPage = React.lazy(() => import('../pages/SessionManagementPage'))
 const BackupRestorePage = React.lazy(() => import('../pages/BackupRestorePage'))
+const ScheduledBackupPage = React.lazy(() => import('../pages/ScheduledBackupPage'))
 
 const MedicalRecordAccessLogsPage = React.lazy(() => import('../pages/MedicalRecordAccessLogsPage'))
 const MedicalRecordCopyPage = React.lazy(() => import('../pages/MedicalRecordCopyPage'))
@@ -202,6 +203,8 @@ function AppRoutes() {
         <Route path="pharmacy/stock-report" element={<Navigate to="/inventory/stock-report" replace />} />
         <Route path="system-management" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><SystemManagementPage /></LazyPage></PrivateRoute>} />
         <Route path="backup-restore" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><BackupRestorePage /></LazyPage></PrivateRoute>} />
+        <Route path="system/scheduled-backup" element={<PrivateRoute allowedPermissions={['BACKUP_READ', 'BACKUP_CREATE']} allowedRoles={['admin']}><LazyPage><ScheduledBackupPage /></LazyPage></PrivateRoute>} />
+        <Route path="scheduled-backup" element={<Navigate to="/system/scheduled-backup" replace />} />
         <Route path="audit-logs" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><MedicalRecordAccessLogsPage /></LazyPage></PrivateRoute>} />
         <Route path="medical-records/access-logs" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><MedicalRecordAccessLogsPage /></LazyPage></PrivateRoute>} />
         <Route path="users" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><UsersPage /></LazyPage></PrivateRoute>} />
