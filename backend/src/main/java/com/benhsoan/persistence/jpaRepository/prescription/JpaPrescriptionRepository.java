@@ -55,6 +55,8 @@ public interface JpaPrescriptionRepository
             + "where prescription.id = :id")
     Optional<PrescriptionEntity> findByIdForUpdate(@Param("id") UUID id);
 
+    Optional<PrescriptionEntity> findByReplacesPrescriptionId(UUID replacesPrescriptionId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select prescription from PrescriptionEntity prescription "
             + "where prescription.medicalRecordId = :medicalRecordId "

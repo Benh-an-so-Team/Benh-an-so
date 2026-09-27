@@ -47,7 +47,17 @@ public record PrescriptionResponse(
 
         List<PrescriptionWarningResponse> warnings,
 
-        List<MaxDailyDoseMissingDataResponse> maxDailyDoseMissingData
+        List<MaxDailyDoseMissingDataResponse> maxDailyDoseMissingData,
+
+        UUID replacesPrescriptionId,
+
+        String replacesPrescriptionCode,
+
+        String replacementReason,
+
+        UUID replacedByPrescriptionId,
+
+        String replacedByPrescriptionCode
 
 ) {
 }

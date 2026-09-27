@@ -24,6 +24,7 @@ tiên và lưu đơn ở trạng thái `PENDING_DISPENSE`.
 |---|---|---|
 | `POST` | `/prescriptions` | Cấp mã lần đầu; trả `201 Created`. |
 | `PATCH` | `/prescriptions/{id}` | Giữ nguyên mã và thời điểm cấp mã. |
+| `POST` | `/prescriptions/{id}/replacement` | Cấp **mã mới** cho đơn thay thế; đơn gốc giữ nguyên mã cũ. |
 | `GET` | `/prescriptions/{id}` | Trả mã và thời điểm cấp mã đã lưu. |
 | `GET` | `/prescriptions/medical-records/{medicalRecordId}` | Trả các mã và thời điểm tương ứng. |
 | `GET` | `/prescriptions?status={status}` | Trả các mã và thời điểm tương ứng. |
@@ -59,6 +60,9 @@ Ví dụ response `201 Created`:
 - `PATCH /prescriptions/{id}` chỉ cho phép thay đổi nội dung đơn khi đơn còn
   `PENDING_DISPENSE`; response vẫn trả chính mã và `prescribedAt` ban đầu.
 - Hủy hoặc cấp phát đơn không làm thay đổi mã hay thời điểm cấp mã.
+- Đơn đã liên thông không sửa nội dung tại chỗ (QTN-42). Khi cần sửa, backend cấp
+  một mã mới cho đơn thay thế và đơn gốc giữ nguyên mã cũ ở trạng thái `REPLACED`
+  (NCL-12-CN-008). Mã đơn không bao giờ được dùng lại cho hai đơn khác nhau.
 - Database áp dụng unique constraint cho `prescriptionCode`; mã không được
   dùng cho hai đơn khác nhau.
 

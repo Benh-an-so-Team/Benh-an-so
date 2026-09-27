@@ -6,6 +6,8 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.benhsoan.domain.prescription.Prescription;
+import com.benhsoan.domain.prescription.enums.PrescriptionStatus;
 import com.benhsoan.domain.prescription.exception.PrescriptionNotFoundException;
 import com.benhsoan.domain.shared.exception.ValidationException;
 import com.benhsoan.port.dto.result.PrescriptionResult;
@@ -33,10 +35,12 @@ public class GetPrescriptionService implements GetPrescriptionUseCase, GetPrescr
         var prescription = prescriptionRepository.findById(prescriptionId)
                 .orElseThrow(() -> new PrescriptionNotFoundException(prescriptionId));
         accessValidator.requireCanRead(prescription);
-        return resultMapper.toResult(
+        PrescriptionResult result = resultMapper.toResult(
                 prescription,
                 warningLogRepository.findByPrescriptionId(prescriptionId)
         );
+
+        return withReplacementLink(prescription, result);
     }
 
     @Override
@@ -51,9 +55,26 @@ public class GetPrescriptionService implements GetPrescriptionUseCase, GetPrescr
         var prescription = prescriptionRepository.findByPrescriptionCode(normalizedCode)
                 .orElseThrow(() -> new PrescriptionNotFoundException(normalizedCode));
         accessValidator.requireCanRead(prescription);
-        return resultMapper.toResult(
+        PrescriptionResult result = resultMapper.toResult(
                 prescription,
                 warningLogRepository.findByPrescriptionId(prescription.getId())
         );
+
+        return withReplacementLink(prescription, result);
+    }
+
+    /** A superseded original also exposes the replacement that succeeded it. */
+    private PrescriptionResult withReplacementLink(Prescription prescription, PrescriptionResult result) {
+        if (result.status() != PrescriptionStatus.REPLACED) {
+            return result;
+        }
+        return prescriptionRepository.findReplacementOf(prescription.getId())
+                .map(replacement -> result.withReplacementLink(
+                        result.replacesPrescriptionId(),
+                        result.replacesPrescriptionCode(),
+                        result.replacementReason(),
+                        replacement.getId(),
+                        replacement.getPrescriptionCode()))
+                .orElse(result);
     }
 }

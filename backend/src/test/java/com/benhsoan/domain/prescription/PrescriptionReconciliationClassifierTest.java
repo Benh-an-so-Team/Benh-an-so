@@ -120,6 +120,26 @@ class PrescriptionReconciliationClassifierTest {
     }
 
     @Test
+    void replacedIsVisibleAndOutsideScopeForEveryInterconnectionStatus() {
+        for (InterconnectionStatus interconnectionStatus : InterconnectionStatus.values()) {
+            assertEquals(PrescriptionReconciliationOutcome.REPLACED,
+                    classify(PrescriptionStatus.REPLACED, interconnectionStatus));
+            assertFalse(PrescriptionReconciliationClassifier.isDiscrepancy(
+                    PrescriptionStatus.REPLACED, interconnectionStatus));
+        }
+    }
+
+    @Test
+    void replacedNeverCausesAnUnsupportedStateError() {
+        assertEquals(PrescriptionReconciliationOutcome.REPLACED,
+                classify(PrescriptionStatus.REPLACED, InterconnectionStatus.NOT_SENT));
+        assertEquals(PrescriptionReconciliationOutcome.REPLACED,
+                classify(PrescriptionStatus.REPLACED, InterconnectionStatus.FAILED));
+        assertEquals(PrescriptionReconciliationOutcome.REPLACED,
+                classify(PrescriptionStatus.REPLACED, InterconnectionStatus.SUCCESS));
+    }
+
+    @Test
     void retransmissionEligibilityIsDerivedStrictlyFromFailed() {
         assertTrue(PrescriptionReconciliationClassifier.isRetransmissionEligible(
                 InterconnectionStatus.FAILED));

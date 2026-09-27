@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
@@ -53,6 +54,67 @@ class MockPrescriptionInterconnectionGatewayServiceTest {
         assertMode(MockInterconnectionGatewayMode.NO_RESPONSE, HttpStatus.GATEWAY_TIMEOUT, "MOCK_GATEWAY_NO_RESPONSE");
     }
 
+    @Test
+    @DisplayName("TC-03: accepting a replacement cancels the superseded prescription")
+    void acceptingAReplacementCancelsTheSupersededPrescription() {
+        MockPrescriptionInterconnectionGatewayService service = service(MockInterconnectionGatewayMode.ACCEPT);
+
+        var replacement = service.submit("RX000002", replacementRequest("RX000002", "RX000001"));
+
+        assertEquals("ACCEPTED", replacement.response().status());
+
+        // The superseded prescription is no longer active on the interconnection system.
+        MockInterconnectionGatewayException exception = assertThrows(
+                MockInterconnectionGatewayException.class,
+                () -> service.submit("RX000001", request("RX000001", "1 vien"))
+        );
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertEquals("PRESCRIPTION_CANCELLED", exception.getCode());
+    }
+
+    @Test
+    @DisplayName("A failed replacement never cancels the superseded prescription")
+    void failedReplacementDoesNotCancelTheSupersededPrescription() {
+        MockPrescriptionInterconnectionGatewayService service = service(MockInterconnectionGatewayMode.SERVER_ERROR);
+
+        assertThrows(MockInterconnectionGatewayException.class,
+                () -> service.submit("RX000002", replacementRequest("RX000002", "RX000001")));
+
+        // The cancelled check runs before the configured failure mode, so getting the
+        // mode error here proves the original was never recorded as cancelled. Nothing
+        // was accepted, so the original is still active and a later retry can cancel it.
+        MockInterconnectionGatewayException exception = assertThrows(
+                MockInterconnectionGatewayException.class,
+                () -> service.submit("RX000001", request("RX000001", "1 vien"))
+        );
+        assertEquals("MOCK_GATEWAY_ERROR", exception.getCode());
+    }
+
+    @Test
+    @DisplayName("A repeated replacement send is idempotent and does not cancel anything twice")
+    void repeatedReplacementSendIsIdempotent() {
+        MockPrescriptionInterconnectionGatewayService service = service(MockInterconnectionGatewayMode.ACCEPT);
+        var request = replacementRequest("RX000002", "RX000001");
+
+        var first = service.submit("RX000002", request);
+        var replay = service.submit("RX000002", request);
+
+        assertTrue(replay.idempotentReplay());
+        assertEquals(first.response().receiptCode(), replay.response().receiptCode());
+    }
+
+    @Test
+    @DisplayName("A replacement may not declare itself as the superseded prescription")
+    void rejectsSelfSupersedingReplacement() {
+        MockPrescriptionInterconnectionGatewayService service = service(MockInterconnectionGatewayMode.ACCEPT);
+
+        MockInterconnectionGatewayException exception = assertThrows(
+                MockInterconnectionGatewayException.class,
+                () -> service.submit("RX000002", replacementRequest("RX000002", "RX000002"))
+        );
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+    }
+
     private void assertMode(MockInterconnectionGatewayMode mode, HttpStatus status, String code) {
         MockInterconnectionGatewayException exception = assertThrows(
                 MockInterconnectionGatewayException.class,
@@ -80,6 +142,22 @@ class MockPrescriptionInterconnectionGatewayServiceTest {
                         UUID.randomUUID(), "Paracetamol 500 mg", "Paracetamol", "500 mg", "vien",
                         dosage, 3, "ORAL", 3, 9, null
                 ))
+        );
+    }
+
+    private PrescriptionInterconnectionGatewayRequest replacementRequest(
+            String prescriptionCode,
+            String replacesPrescriptionCode
+    ) {
+        PrescriptionInterconnectionGatewayRequest base = request(prescriptionCode, "1 vien");
+        return new PrescriptionInterconnectionGatewayRequest(
+                base.prescriptionCode(),
+                base.prescribedAt(),
+                base.clinic(),
+                base.doctor(),
+                base.patient(),
+                base.items(),
+                replacesPrescriptionCode
         );
     }
 }
