@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,7 +54,6 @@ public class RegisterPatientService
 
     private final ObjectMapper objectMapper;
 
-    @Autowired
     public RegisterPatientService(
             PatientRepository patientRepository,
             PatientChangeLogRepository patientChangeLogRepository,

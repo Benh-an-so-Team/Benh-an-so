@@ -1,6 +1,7 @@
 package com.benhsoan.application.ucservice.prescription;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.lenient;
@@ -82,6 +83,50 @@ class PrescriptionClinicalContextValidatorTest {
 
         assertThrows(AccessDeniedException.class,
                 () -> validator.requireEditableRecordForDoctor(recordId, doctorId));
+    }
+
+    @Test
+    void replacementPermissionAllowsResponsibleDoctor() {
+        stubContext(MedicalRecordStatus.OPEN, VisitStatus.IN_PROGRESS, doctorId);
+
+        assertDoesNotThrow(() -> validator.requireDoctorPermissionForPrescriptionReplacement(
+                recordId, doctorId));
+    }
+
+    @Test
+    void replacementPermissionRejectsDoctorWhoDoesNotOwnVisit() {
+        stubContext(MedicalRecordStatus.OPEN, VisitStatus.IN_PROGRESS, UUID.randomUUID());
+
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                () -> validator.requireDoctorPermissionForPrescriptionReplacement(recordId, doctorId));
+        assertEquals("Only the doctor responsible for the visit can replace prescriptions.",
+                exception.getMessage());
+    }
+
+    @Test
+    void replacementCreationAllowsCompletedVisitForResponsibleDoctor() {
+        stubContext(MedicalRecordStatus.OPEN, VisitStatus.COMPLETED, doctorId);
+
+        assertDoesNotThrow(() -> validator.requireRecordForPrescriptionReplacement(
+                recordId, doctorId));
+    }
+
+    @Test
+    void replacementCreationRejectsLockedMedicalRecord() {
+        stubContext(MedicalRecordStatus.LOCKED, VisitStatus.COMPLETED, doctorId);
+
+        assertThrows(MedicalRecordAlreadyLockedException.class,
+                () -> validator.requireRecordForPrescriptionReplacement(recordId, doctorId));
+    }
+
+    @Test
+    void replacementCreationRejectsDoctorWhoDoesNotOwnVisit() {
+        stubContext(MedicalRecordStatus.OPEN, VisitStatus.COMPLETED, UUID.randomUUID());
+
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                () -> validator.requireRecordForPrescriptionReplacement(recordId, doctorId));
+        assertEquals("Only the doctor responsible for the visit can replace prescriptions.",
+                exception.getMessage());
     }
 
     private void stubContext(

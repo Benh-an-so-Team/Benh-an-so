@@ -205,6 +205,9 @@ DOCTOR (Bác sĩ)
   ├── Patient CRUD
   ├── Medical Records CRUD
   ├── Prescriptions (create/read/update/cancel, check interactions, check allergy warnings & override)
+  ├── Prescription interconnection send (NCL-12-CN-004) and prescription replacement
+  │   (NCL-12-CN-008, `POST /prescriptions/{id}/replacement`, guarded by
+  │   `PRESCRIPTION_UPDATE` like amend and cancel — no dedicated permission)
   ├── Diagnoses management
   ├── Appointments management
   ├── Medical Queue (call next, update status, view)

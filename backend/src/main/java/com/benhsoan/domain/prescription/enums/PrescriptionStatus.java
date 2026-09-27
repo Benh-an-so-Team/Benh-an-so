@@ -4,5 +4,6 @@ public enum PrescriptionStatus {
     PENDING_DISPENSE,
     PARTIALLY_DISPENSED,
     DISPENSED,
-    CANCELLED
+    CANCELLED,
+    REPLACED
 }

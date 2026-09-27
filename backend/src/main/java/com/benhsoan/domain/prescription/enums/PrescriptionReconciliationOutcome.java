@@ -50,6 +50,16 @@ public enum PrescriptionReconciliationOutcome {
     CANCELLED(
             false,
             Set.of(PrescriptionStatus.CANCELLED),
+            Set.of(InterconnectionStatus.NOT_SENT, InterconnectionStatus.SUCCESS, InterconnectionStatus.FAILED)),
+
+    /**
+     * Replaced prescription (NCL-12-CN-008): no longer active for dispensing, so it is never
+     * a transmission/dispensing discrepancy. Visible for auditing, outside NCL-12-CN-007
+     * reconciliation scope, consistent with the treatment of {@link #CANCELLED}.
+     */
+    REPLACED(
+            false,
+            Set.of(PrescriptionStatus.REPLACED),
             Set.of(InterconnectionStatus.NOT_SENT, InterconnectionStatus.SUCCESS, InterconnectionStatus.FAILED));
 
     private final boolean discrepancy;

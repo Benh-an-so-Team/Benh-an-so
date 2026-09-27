@@ -48,10 +48,8 @@ public class AuthController {
         private final com.benhsoan.port.outbound.security.CurrentUserPort currentUserPort;
         private final AuthRestMapper authRestMapper;
 
-        @Autowired(required = false)
         private ExtendSessionUseCase extendSessionUseCase;
 
-        @Autowired(required = false)
         private com.benhsoan.adapter.inbound.rest.mapper.SessionRestMapper sessionRestMapper;
 
         public AuthController(
