@@ -54,6 +54,23 @@ class PersonalDataRequestTest {
     }
 
     @Test
+    @DisplayName("dueAt bằng đúng receivedAt được chấp nhận")
+    void createAcceptsDueAtEqualToReceivedAt() {
+        PersonalDataRequest request = PersonalDataRequest.create(
+                UUID.randomUUID(), PersonalDataRequest.TYPE_MEDICAL_RECORD_COPY, null, NOW, NOW);
+
+        assertEquals(NOW, request.getDueAt());
+        assertEquals(NOW, request.getReceivedAt());
+    }
+
+    @Test
+    @DisplayName("dueAt trước receivedAt bị từ chối ở tầng domain")
+    void createRejectsDueAtBeforeReceivedAt() {
+        assertThrows(ValidationException.class, () -> PersonalDataRequest.create(
+                UUID.randomUUID(), PersonalDataRequest.TYPE_MEDICAL_RECORD_COPY, null, NOW, NOW.minusSeconds(1)));
+    }
+
+    @Test
     @DisplayName("TC-03: hoàn tất ghi kết quả và người xử lý, chuyển trạng thái COMPLETED")
     void completeRecordsResultAndProcessor() {
         PersonalDataRequest request = PersonalDataRequest.create(

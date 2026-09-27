@@ -40,6 +40,11 @@ public class PersonalDataRequestRepositoryAdapter implements PersonalDataRequest
     }
 
     @Override
+    public Optional<PersonalDataRequest> findByIdForUpdate(UUID id) {
+        return jpaRepository.findByIdForUpdate(id).map(mapper::toDomain);
+    }
+
+    @Override
     public Page<PersonalDataRequest> search(
             UUID patientId,
             PersonalDataRequestStatus status,
@@ -56,6 +61,15 @@ public class PersonalDataRequestRepositoryAdapter implements PersonalDataRequest
     public List<PersonalDataRequest> findOpenWithDueBefore(Instant now) {
         return jpaRepository
                 .findByStatusAndDueAtBeforeOrderByDueAtAsc(PersonalDataRequestStatus.RECEIVED, now)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<PersonalDataRequest> findOpenWithDueBetween(Instant fromInclusive, Instant toInclusive) {
+        return jpaRepository
+                .findByStatusAndDueAtBetweenOrderByDueAtAsc(PersonalDataRequestStatus.RECEIVED, fromInclusive, toInclusive)
                 .stream()
                 .map(mapper::toDomain)
                 .toList();

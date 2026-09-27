@@ -71,6 +71,53 @@ class PersonalDataRequestMigrationH2Test {
         }
     }
 
+    @Test
+    void v109DeadlineAlertsDdlRunsAndDeduplicatesOnH2() throws Exception {
+        try (Connection conn = DriverManager.getConnection(
+                "jdbc:h2:mem:v109;DB_CLOSE_DELAY=-1;MODE=LEGACY", "sa", "")) {
+            Statement stmt = conn.createStatement();
+            stmt.execute("CREATE TABLE patients (id BINARY(16) NOT NULL, PRIMARY KEY (id))");
+            stmt.execute("CREATE TABLE users (id BINARY(16) NOT NULL, PRIMARY KEY (id))");
+
+            String v108 = readResource("db/migration/V108__create_personal_data_requests_table.sql");
+            RunScript.execute(conn, new StringReader(schemaOnly(v108)));
+
+            String v109 = readResource("db/migration/V109__create_personal_data_request_deadline_alerts_table.sql");
+            RunScript.execute(conn, new StringReader(v109));
+
+            UUID patientId = UUID.randomUUID();
+            UUID processorId = UUID.randomUUID();
+            seed(stmt, "patients", patientId);
+            seed(stmt, "users", processorId);
+
+            UUID requestId = UUID.randomUUID();
+            insertRequest(conn, requestId, patientId, "MEDICAL_RECORD_COPY", "RECEIVED", processorId);
+
+            UUID alertId1 = UUID.randomUUID();
+            UUID alertId2 = UUID.randomUUID();
+            insertAlert(conn, alertId1, requestId, "OVERDUE");
+            insertAlert(conn, alertId2, requestId, "UPCOMING");
+
+            // Duplicate (same request + same type) must be rejected by the unique constraint.
+            assertThrows(SQLException.class,
+                    () -> insertAlert(conn, UUID.randomUUID(), requestId, "OVERDUE"));
+
+            assertIndexExists(stmt, "idx_pdr_deadline_alerts_created_at");
+        }
+    }
+
+    private void insertAlert(Connection conn, UUID id, UUID requestId, String alertType) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO personal_data_request_deadline_alerts "
+                        + "(id, personal_data_request_id, alert_type, created_at) VALUES (?, ?, ?, ?)")) {
+            ps.setBytes(1, uuidBytes(id));
+            ps.setBytes(2, uuidBytes(requestId));
+            ps.setString(3, alertType);
+            ps.setTimestamp(4, Timestamp.from(Instant.now()));
+            ps.executeUpdate();
+        }
+    }
+
     private String schemaOnly(String migration) {
         int idx = migration.indexOf("INSERT INTO permissions");
         return idx >= 0 ? migration.substring(0, idx) : migration;

@@ -44,14 +44,20 @@ authoritative business source (Sheet "Product Backlog" R140, "Tasks" R641–R645
   none of the acceptance criteria describe a patient viewing their requests; this surface is
   omitted to keep the backend minimal.
 - **`dueAt` is caller-supplied.** The workbook does not define a legal processing period, so
-  no default/hardcoded deadline is computed.
+  no default/hardcoded deadline is computed. However the backend enforces the business
+  invariant `dueAt >= receivedAt` (receivedAt is generated server-side) at the domain level;
+  a request whose deadline precedes its received time is rejected.
 - **Status lifecycle** is minimal: `RECEIVED` → `COMPLETED`. "Upcoming" and "overdue" are
   derived from `dueAt` relative to `now`, never stored as separate statuses.
 - **TC-02 alert delivery**: the workbook defines periodic review + administrator alerting but
-  not the upcoming-deadline window nor the notification channel. The backend provides (a) an
-  `overdue` query filter and (b) a `dueFrom`/`dueTo` range filter, plus (c) an opt-in,
-  default-disabled scheduler that logs overdue ids. No email/SMS/push/WhatsApp channel is
-  invented. TC-02 runtime alerting is therefore not claimed as complete.
+  not the upcoming-deadline window nor a push/email channel. The backend therefore persists
+  administrator alerts into `personal_data_request_deadline_alerts` — one row per
+  (request, alert type) with `UPCOMING`/`OVERDUE` — so the administrator can retrieve them
+  through `GET /personal-data-request-deadline-alerts`. The scheduler
+  `PersonalDataRequestDeadlineScheduler` is enabled by default
+  (`personal-data-request.deadline-check.enabled=true`) and the upcoming window is configurable
+  via `personal-data-request.deadline-check.upcoming-window-hours` (default `24`). No
+  email/SMS/push channel is invented; the persisted alert is the delivery surface.
 
 ## Data model
 
@@ -75,6 +81,19 @@ Indexes: `patient_id`, `(status, due_at)` (overdue/upcoming scan), `due_at`, `pr
 
 No patient name/phone/address or medical-record content is duplicated in this table.
 
+Table `personal_data_request_deadline_alerts` (Flyway `V109`) stores the persistent
+administrator alerts produced by the deadline review:
+
+| Column | Type | Notes |
+|---|---|---|
+| id | BINARY(16) PK | |
+| personal_data_request_id | BINARY(16) NOT NULL | FK → `personal_data_requests(id)` |
+| alert_type | VARCHAR(20) NOT NULL | `UPCOMING` / `OVERDUE` |
+| created_at | TIMESTAMP NOT NULL | |
+
+Unique `(personal_data_request_id, alert_type)` so a re-run of the scheduler never duplicates
+the same alert.
+
 ## Authorization
 
 - Permissions seeded (ADMIN only): `PERSONAL_DATA_REQUEST_READ`, `PERSONAL_DATA_REQUEST_UPDATE`.
@@ -91,6 +110,10 @@ Base path `/api/v1` (context path). All endpoints require an ADMIN session.
 | GET | `/personal-data-requests/{id}` | READ | Get one request |
 | PATCH | `/personal-data-requests/{id}/complete` | UPDATE | Complete with result + processor (TC-03) |
 | GET | `/personal-data-requests` | READ | Search; params `patientId`, `status`, `overdue`, `dueFrom`, `dueTo`, paging |
+| GET | `/personal-data-request-deadline-alerts` | READ | Administrator deadline alerts (TC-02), paging |
+
+The `dueFrom`/`dueTo` range filter is **inclusive on both bounds** (`dueFrom ≤ dueAt ≤ dueTo`),
+so `dueFrom == dueTo` matches the single instant rather than returning an empty interval.
 
 ### Record request body
 

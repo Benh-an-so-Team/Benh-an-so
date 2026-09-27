@@ -3,6 +3,7 @@ package com.benhsoan.application.ucservice.personaldata;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.benhsoan.domain.auditlog.AuditLog;
 import com.benhsoan.domain.personaldata.PersonalDataRequest;
 import com.benhsoan.domain.personaldata.enums.PersonalDataRequestStatus;
+import com.benhsoan.domain.personaldata.exception.PersonalDataRequestAlreadyCompletedException;
 import com.benhsoan.domain.personaldata.exception.PersonalDataRequestNotFoundException;
 import com.benhsoan.port.outbound.repository.audit.AuditLogRepository;
 import com.benhsoan.port.outbound.repository.personaldata.PersonalDataRequestRepository;
@@ -51,12 +53,13 @@ class CompletePersonalDataRequestServiceTest {
 
         PersonalDataRequest request = PersonalDataRequest.create(
                 UUID.randomUUID(), PersonalDataRequest.TYPE_MEDICAL_RECORD_COPY, null, NOW, NOW.plusSeconds(86400));
-        when(requestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(requestRepository.findByIdForUpdate(requestId)).thenReturn(Optional.of(request));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.complete(requestId, "Đã cấp bản sao");
 
         verify(authorizer).requireUpdatePermission();
+        verify(requestRepository).findByIdForUpdate(requestId);
         verify(requestRepository).save(argThat(r ->
                 r.getStatus() == PersonalDataRequestStatus.COMPLETED
                         && r.getResult().equals("Đã cấp bản sao")
@@ -65,12 +68,47 @@ class CompletePersonalDataRequestServiceTest {
     }
 
     @Test
+    @DisplayName("hoàn tất dùng khóa bi quan (SELECT FOR UPDATE) để chống ghi đè đồng thời")
+    void completeUsesPessimisticLock() {
+        UUID requestId = UUID.randomUUID();
+        UUID processorId = UUID.randomUUID();
+        when(clockPort.now()).thenReturn(NOW);
+        when(currentUserPort.getCurrentUserId()).thenReturn(processorId);
+        PersonalDataRequest request = PersonalDataRequest.create(
+                UUID.randomUUID(), PersonalDataRequest.TYPE_MEDICAL_RECORD_COPY, null, NOW, NOW.plusSeconds(86400));
+        when(requestRepository.findByIdForUpdate(requestId)).thenReturn(Optional.of(request));
+        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.complete(requestId, "Đã xử lý");
+
+        verify(requestRepository).findByIdForUpdate(requestId);
+    }
+
+    @Test
     @DisplayName("yêu cầu không tồn tại bị từ chối")
     void completeRejectsUnknownRequest() {
         UUID requestId = UUID.randomUUID();
-        when(requestRepository.findById(requestId)).thenReturn(Optional.empty());
+        when(requestRepository.findByIdForUpdate(requestId)).thenReturn(Optional.empty());
 
         assertThrows(PersonalDataRequestNotFoundException.class,
                 () -> service.complete(requestId, "Đã xử lý"));
+    }
+
+    @Test
+    @DisplayName("hoàn tất lần hai (đã COMPLETED) bị từ chối, không ghi đè")
+    void completeRejectsAlreadyCompletedRequest() {
+        UUID requestId = UUID.randomUUID();
+        UUID processorId = UUID.randomUUID();
+        when(clockPort.now()).thenReturn(NOW);
+        when(currentUserPort.getCurrentUserId()).thenReturn(processorId);
+
+        PersonalDataRequest request = PersonalDataRequest.create(
+                UUID.randomUUID(), PersonalDataRequest.TYPE_MEDICAL_RECORD_COPY, null, NOW, NOW.plusSeconds(86400));
+        request.complete("Lần một", processorId, NOW);
+        when(requestRepository.findByIdForUpdate(requestId)).thenReturn(Optional.of(request));
+
+        assertThrows(PersonalDataRequestAlreadyCompletedException.class,
+                () -> service.complete(requestId, "Lần hai"));
+        verify(requestRepository, never()).save(any());
     }
 }

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.benhsoan.domain.auditlog.AuditLog;
 import com.benhsoan.domain.patient.Patient;
+import com.benhsoan.domain.patient.exception.PatientAlreadyMergedException;
 import com.benhsoan.domain.patient.exception.PatientNotFoundException;
 import com.benhsoan.domain.personaldata.PersonalDataRequest;
 import com.benhsoan.domain.personaldata.enums.PersonalDataRequestStatus;
@@ -80,5 +82,23 @@ class RecordPersonalDataRequestServiceTest {
                 patientId, PersonalDataRequest.TYPE_MEDICAL_RECORD_COPY, null, NOW.plusSeconds(86400));
 
         assertThrows(PatientNotFoundException.class, () -> service.record(command));
+    }
+
+    @Test
+    @DisplayName("bệnh nhân đã gộp bị từ chối, không tạo yêu cầu")
+    void recordRejectsMergedPatient() {
+        UUID patientId = UUID.randomUUID();
+        UUID mergedInto = UUID.randomUUID();
+        Patient merged = mock(Patient.class);
+        when(merged.isMerged()).thenReturn(true);
+        when(merged.getId()).thenReturn(patientId);
+        when(merged.getMergedIntoPatientId()).thenReturn(mergedInto);
+        when(patientRepository.findById(patientId)).thenReturn(Optional.of(merged));
+
+        RecordPersonalDataRequestCommand command = new RecordPersonalDataRequestCommand(
+                patientId, PersonalDataRequest.TYPE_MEDICAL_RECORD_COPY, null, NOW.plusSeconds(86400));
+
+        assertThrows(PatientAlreadyMergedException.class, () -> service.record(command));
+        verify(requestRepository, never()).save(any());
     }
 }

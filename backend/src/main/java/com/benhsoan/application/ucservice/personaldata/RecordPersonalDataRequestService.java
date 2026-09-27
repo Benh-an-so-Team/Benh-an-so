@@ -8,8 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.benhsoan.domain.auditlog.AuditLog;
 import com.benhsoan.domain.auditlog.enums.ActionType;
 import com.benhsoan.domain.auditlog.enums.ResourceType;
-import com.benhsoan.domain.personaldata.PersonalDataRequest;
+import com.benhsoan.domain.patient.Patient;
+import com.benhsoan.domain.patient.exception.PatientAlreadyMergedException;
 import com.benhsoan.domain.patient.exception.PatientNotFoundException;
+import com.benhsoan.domain.personaldata.PersonalDataRequest;
 import com.benhsoan.port.dto.command.personaldata.RecordPersonalDataRequestCommand;
 import com.benhsoan.port.dto.result.personaldata.PersonalDataRequestResult;
 import com.benhsoan.port.inbound.personaldata.RecordPersonalDataRequestUseCase;
@@ -38,8 +40,10 @@ public class RecordPersonalDataRequestService implements RecordPersonalDataReque
     public PersonalDataRequestResult record(RecordPersonalDataRequestCommand command) {
         authorizer.requireUpdatePermission();
 
-        if (!patientRepository.findById(command.patientId()).isPresent()) {
-            throw new PatientNotFoundException(command.patientId());
+        Patient patient = patientRepository.findById(command.patientId())
+                .orElseThrow(() -> new PatientNotFoundException(command.patientId()));
+        if (patient.isMerged()) {
+            throw new PatientAlreadyMergedException(patient.getId(), patient.getMergedIntoPatientId());
         }
 
         Instant now = clockPort.now();

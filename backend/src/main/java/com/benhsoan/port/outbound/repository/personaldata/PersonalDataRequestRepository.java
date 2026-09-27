@@ -17,6 +17,8 @@ public interface PersonalDataRequestRepository {
 
     Optional<PersonalDataRequest> findById(UUID id);
 
+    Optional<PersonalDataRequest> findByIdForUpdate(UUID id);
+
     Page<PersonalDataRequest> search(
             UUID patientId,
             PersonalDataRequestStatus status,
@@ -27,4 +29,6 @@ public interface PersonalDataRequestRepository {
             Pageable pageable);
 
     List<PersonalDataRequest> findOpenWithDueBefore(Instant now);
+
+    List<PersonalDataRequest> findOpenWithDueBetween(Instant fromInclusive, Instant toInclusive);
 }

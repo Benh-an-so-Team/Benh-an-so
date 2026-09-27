@@ -67,6 +67,9 @@ public class PersonalDataRequest {
         this.reason = optionalText(reason, MAX_REASON_LENGTH);
         this.receivedAt = Guard.require(receivedAt, "Received at");
         this.dueAt = Guard.require(dueAt, "Due at");
+        if (this.dueAt.isBefore(this.receivedAt)) {
+            throw new ValidationException("Due date must not be before the received date.");
+        }
         this.result = optionalText(result, MAX_RESULT_LENGTH);
         this.completedAt = completedAt;
         this.processedBy = processedBy;

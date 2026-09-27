@@ -36,7 +36,7 @@ public class CompletePersonalDataRequestService implements CompletePersonalDataR
     public PersonalDataRequestResult complete(UUID id, String result) {
         authorizer.requireUpdatePermission();
 
-        PersonalDataRequest request = requestRepository.findById(id)
+        PersonalDataRequest request = requestRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new PersonalDataRequestNotFoundException(id));
 
         Instant now = clockPort.now();
