@@ -571,7 +571,7 @@ public class JsonDatabaseBackupStorageAdapter implements DatabaseBackupStoragePo
                 default -> ps.setString(index, value);
             }
         } catch (IllegalArgumentException ex) {
-            throw new BackupExecutionException("Invalid data value for column at index " + index + ": " + value, ex);
+            throw new BackupExecutionException("Invalid data value for column at index " + index + ": " + value);
         }
     }
 

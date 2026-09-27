@@ -1,7 +1,6 @@
 package com.benhsoan.application.ucservice.billing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -98,7 +97,7 @@ class CreateDiscountRequestConcurrencyMySqlIntegrationTest {
                 .patientId(patientId)
                 .doctorId(userId)
                 .specialtyId(UUID.fromString("f0000000-0000-0000-0000-000000000001"))
-                .visitType(com.benhsoan.domain.visit.enums.VisitType.OUTPATIENT)
+                .visitType(com.benhsoan.domain.visit.enums.VisitType.WALK_IN)
                 .status(com.benhsoan.domain.visit.enums.VisitStatus.IN_PROGRESS)
                 .reason("Kham benh")
                 .visitAt(now)
