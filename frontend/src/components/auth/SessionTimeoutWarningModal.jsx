@@ -10,7 +10,6 @@ import {
   SESSION_IDLE_CONFIG_KEY,
   setSessionExpiredNotice,
 } from '../../utils/sessionManagementHelpers.js'
-import { showNotice, dismissNotice } from '../common/notice'
 import './sessionTimeout.css'
 
 export default function SessionTimeoutWarningModal() {
@@ -77,7 +76,6 @@ export default function SessionTimeoutWarningModal() {
   // Perform auto-logout when countdown finishes
   const handleAutoLogout = useCallback(() => {
     setIsWarningOpen(false)
-    dismissNotice('session-idle-timeout-notice')
     setSessionExpiredNotice('Phiên làm việc đã hết hạn do không có thao tác, vui lòng đăng nhập lại')
     logout()
 
@@ -96,14 +94,12 @@ export default function SessionTimeoutWarningModal() {
       await sessionApi.extendCurrentSession()
       lastActiveRef.current = Date.now()
       setIsWarningOpen(false)
-      dismissNotice('session-idle-timeout-notice')
       setRemainingSeconds(COUNTDOWN_WARNING_SECONDS)
-      showNotice.success('Phiên làm việc', 'Phiên làm việc đã được gia hạn thành công.')
+      message.success('Phiên làm việc đã được gia hạn thành công.')
     } catch (error) {
       const status = error.response?.status
       if (status === 400 || status === 401) {
         setIsWarningOpen(false)
-        dismissNotice('session-idle-timeout-notice')
         setSessionExpiredNotice('Phiên làm việc đã bị kết thúc hoặc không hợp lệ, vui lòng đăng nhập lại')
         logout()
         navigate('/login', { replace: true })
@@ -111,8 +107,7 @@ export default function SessionTimeoutWarningModal() {
         // In case of transient network issue, still reset local timer to avoid abrupt kick
         lastActiveRef.current = Date.now()
         setIsWarningOpen(false)
-        dismissNotice('session-idle-timeout-notice')
-        showNotice.warning('Mạng không ổn định', 'Không thể kết nối máy chủ để gia hạn, vui lòng kiểm tra mạng.')
+        message.warning('Không thể kết nối máy chủ để gia hạn, vui lòng kiểm tra mạng.')
       }
     } finally {
       setExtending(false)
@@ -163,17 +158,11 @@ export default function SessionTimeoutWarningModal() {
         setRemainingSeconds(remaining)
         if (!isWarningOpenRef.current) {
           setIsWarningOpen(true)
-          showNotice.sessionTimeout({
-            remainingSeconds: remaining,
-            onExtend: handleExtendSession,
-            onLogout: handleAutoLogout,
-          })
         }
       } else {
         // Within normal active window
         if (isWarningOpenRef.current) {
           setIsWarningOpen(false)
-          dismissNotice('session-idle-timeout-notice')
         }
       }
     }, 1000)
