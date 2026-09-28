@@ -57,7 +57,8 @@ final class DomainExceptionHttpStatusMapper {
                     VISIT_NOT_FOUND,
                     VITAL_SIGN_NOT_FOUND,
                     WAITLIST_ENTRY_NOT_FOUND,
-                    SATISFACTION_SURVEY_NOT_FOUND -> HttpStatus.NOT_FOUND;
+                    SATISFACTION_SURVEY_NOT_FOUND,
+                    PERSONAL_DATA_REQUEST_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case ACCOUNT_DISABLED,
                     ACCOUNT_LOCKED,
                     DOCTOR_INACTIVE,
@@ -202,7 +203,8 @@ final class DomainExceptionHttpStatusMapper {
                     VISIT_ALREADY_CANCELLED,
                     VISIT_ALREADY_COMPLETED,
                     VISIT_INVALID_STATUS,
-                    SATISFACTION_SURVEY_ALREADY_EXISTS -> HttpStatus.CONFLICT;
+                    SATISFACTION_SURVEY_ALREADY_EXISTS,
+                    PERSONAL_DATA_REQUEST_ALREADY_COMPLETED -> HttpStatus.CONFLICT;
             case BACKUP_EXECUTION_FAILED -> HttpStatus.INTERNAL_SERVER_ERROR;
             case REPORT_DATA_EMPTY,
                     CONTRAINDICATION_DATA_MISSING -> HttpStatus.UNPROCESSABLE_ENTITY;
