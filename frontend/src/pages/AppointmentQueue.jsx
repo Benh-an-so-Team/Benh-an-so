@@ -36,6 +36,7 @@ import {
   CheckOutlined,
   ClockCircleOutlined,
   CloseCircleOutlined,
+  DesktopOutlined,
   EllipsisOutlined,
   ExclamationCircleOutlined,
   EyeOutlined,
@@ -1390,6 +1391,14 @@ function AppointmentQueue() {
               <Button icon={<HistoryOutlined />} onClick={() => setLogsDrawerOpen(true)}>
                 Nhật ký & Thông báo
               </Button>
+              <Tooltip title="Mở màn hình công cộng hiển thị số thứ tự sảnh chờ (Kiosk / Smart TV)">
+                <Button
+                  icon={<DesktopOutlined />}
+                  onClick={() => window.open('/display/waiting-room', '_blank')}
+                >
+                  Màn hình sảnh chờ
+                </Button>
+              </Tooltip>
               {permissions.canCreateAppointment && (
                 <Button
                   type="primary"
