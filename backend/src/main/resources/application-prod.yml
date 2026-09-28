@@ -49,5 +49,6 @@ app:
 logging:
   level:
     root: WARN
-    com.benhsoan: WARN
-    org.springframework.security: WARN
+    "[com.benhsoan]": WARN
+    "[org.springframework.security]": WARN
+

@@ -37,7 +37,6 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
-    repair-on-migrate: true
     out-of-order: true
   sql:
     init:

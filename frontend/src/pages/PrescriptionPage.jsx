@@ -163,6 +163,7 @@ const createEmptyItem = (isOriginal = false) => ({
   medicineId: undefined,
   quantity: 10,
   dosage: '1 viên',
+  singleDoseQuantity: 1,
   frequency: 2,
   route: 'ORAL',
   durationDays: 5,
@@ -1215,10 +1216,12 @@ function PrescriptionPage() {
           ? item.quantity
           : (calculateAutoQuantity({ ...item, dosage: initialDosage, frequency: freq, durationDays: days }) || 10)
 
+        const parsedInitialSingle = parseSingleDoseQuantity(initialDosage, 1)
         return {
           ...item,
           medicineId: value,
           dosage: initialDosage,
+          singleDoseQuantity: parsedInitialSingle,
           route: initialRoute,
           quantity: initialQty,
           specialControlConfirmed: false,
@@ -1235,7 +1238,12 @@ function PrescriptionPage() {
       }
 
       if (field === 'dosage' || field === 'frequency' || field === 'durationDays') {
-        const updatedItem = { ...item, [field]: value }
+        const parsedSingle = field === 'dosage' ? parseSingleDoseQuantity(value, 1) : item.singleDoseQuantity
+        const updatedItem = {
+          ...item,
+          [field]: value,
+          ...(field === 'dosage' ? { singleDoseQuantity: parsedSingle } : {}),
+        }
         const autoQty = calculateAutoQuantity(updatedItem)
         return {
           ...updatedItem,
