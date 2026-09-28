@@ -9,6 +9,8 @@ import {
   buildOverridesPayload,
   parseSingleDoseQuantity,
   calculateAutoQuantity,
+  validateMedicineDoseConfig,
+  buildMedicineDosePayload,
 } from './maxDailyDoseHelpers.js'
 
 test('1. PRESET_MAX_DOSE_OVERRIDE_REASONS contains valid clinical presets', () => {
@@ -196,3 +198,102 @@ test('10. calculateAutoQuantity calculates (singleDoseQuantity * frequency * dur
   assert.equal(calculateAutoQuantity(null), 0)
   assert.equal(calculateAutoQuantity({ dosage: '2 viên', frequency: 0, durationDays: 5 }), 0)
 })
+
+test('11. validateMedicineDoseConfig accepts both empty values as valid with nulls and no warning', () => {
+  const res1 = validateMedicineDoseConfig(null, null)
+  assert.equal(res1.valid, true)
+  assert.equal(res1.error, '')
+  assert.equal(res1.warning, '')
+  assert.equal(res1.strengthValueMg, null)
+  assert.equal(res1.maxDailyDoseMg, null)
+
+  const res2 = validateMedicineDoseConfig(undefined, undefined)
+  assert.equal(res2.valid, true)
+  assert.equal(res2.strengthValueMg, null)
+  assert.equal(res2.maxDailyDoseMg, null)
+
+  const res3 = validateMedicineDoseConfig('', '')
+  assert.equal(res3.valid, true)
+  assert.equal(res3.strengthValueMg, null)
+  assert.equal(res3.maxDailyDoseMg, null)
+})
+
+test('12. validateMedicineDoseConfig accepts valid positive numbers for both fields', () => {
+  const res = validateMedicineDoseConfig(500, 4000)
+  assert.equal(res.valid, true)
+  assert.equal(res.error, '')
+  assert.equal(res.warning, '')
+  assert.equal(res.strengthValueMg, 500)
+  assert.equal(res.maxDailyDoseMg, 4000)
+
+  // Accepts numeric strings
+  const resStr = validateMedicineDoseConfig('400.5', '2400')
+  assert.equal(resStr.valid, true)
+  assert.equal(resStr.strengthValueMg, 400.5)
+  assert.equal(resStr.maxDailyDoseMg, 2400)
+})
+
+test('13. validateMedicineDoseConfig gives soft warning when only 1 is provided (does NOT block)', () => {
+  // Only strength provided
+  const res1 = validateMedicineDoseConfig(500, null)
+  assert.equal(res1.valid, true)
+  assert.equal(res1.error, '')
+  assert.match(res1.warning, /Cần khai báo đủ cả hàm lượng và liều tối đa thì mới kiểm tra được/)
+  assert.equal(res1.strengthValueMg, 500)
+  assert.equal(res1.maxDailyDoseMg, null)
+
+  // Only max daily dose provided
+  const res2 = validateMedicineDoseConfig('', 4000)
+  assert.equal(res2.valid, true)
+  assert.equal(res2.error, '')
+  assert.match(res2.warning, /Cần khai báo đủ cả hàm lượng và liều tối đa thì mới kiểm tra được/)
+  assert.equal(res2.strengthValueMg, null)
+  assert.equal(res2.maxDailyDoseMg, 4000)
+})
+
+test('14. validateMedicineDoseConfig rejects values <= 0 or invalid strings with error', () => {
+  // Zero strength
+  const resZero = validateMedicineDoseConfig(0, 4000)
+  assert.equal(resZero.valid, false)
+  assert.match(resZero.error, /phải lớn hơn 0/)
+
+  // Negative max dose
+  const resNeg = validateMedicineDoseConfig(500, -100)
+  assert.equal(resNeg.valid, false)
+  assert.match(resNeg.error, /phải lớn hơn 0/)
+
+  // Non-numeric string
+  const resNaN = validateMedicineDoseConfig('abc', 4000)
+  assert.equal(resNaN.valid, false)
+  assert.match(resNaN.error, /phải là số hợp lệ/)
+})
+
+test('15. buildMedicineDosePayload returns null for empty, zero, negative, or invalid values', () => {
+  // Empty object
+  const p1 = buildMedicineDosePayload({})
+  assert.deepEqual(p1, { strengthValueMg: null, maxDailyDoseMg: null })
+
+  // Empty strings and zeros
+  const p2 = buildMedicineDosePayload({ strengthValueMg: '', maxDailyDoseMg: 0 })
+  assert.deepEqual(p2, { strengthValueMg: null, maxDailyDoseMg: null })
+
+  // Negative values
+  const p3 = buildMedicineDosePayload({ strengthValueMg: -500, maxDailyDoseMg: -4000 })
+  assert.deepEqual(p3, { strengthValueMg: null, maxDailyDoseMg: null })
+})
+
+test('16. buildMedicineDosePayload rounds to 3 decimal places matching DECIMAL(12,3)', () => {
+  const p = buildMedicineDosePayload({
+    strengthValueMg: '500.1234',
+    maxDailyDoseMg: 4000,
+  })
+  assert.equal(p.strengthValueMg, 500.123)
+  assert.equal(p.maxDailyDoseMg, 4000)
+
+  const pDemo = buildMedicineDosePayload({
+    strengthValueMg: 500,
+    maxDailyDoseMg: 4000,
+  })
+  assert.deepEqual(pDemo, { strengthValueMg: 500, maxDailyDoseMg: 4000 })
+})
+
