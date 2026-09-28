@@ -41,6 +41,7 @@ import {
   FireOutlined,
   StopOutlined,
   BookOutlined,
+  SwapOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import pharmacyApi from '../../api/pharmacyApi'
@@ -54,6 +55,10 @@ import SpecialControlBadge from './SpecialControlBadge.jsx'
 import { useAuthContext } from '../../context/AuthContext'
 import { canSaveAsTemplate } from '../../utils/prescriptionTemplateHelpers.js'
 import SaveAsTemplateModal from '../prescription/SaveAsTemplateModal.jsx'
+import {
+  canReplacePrescription,
+  getReplacementLinkInfo,
+} from '../../utils/prescriptionReplacementHelpers.js'
 
 const { Text, Paragraph, Title } = Typography
 
@@ -88,6 +93,8 @@ function PrescriptionDetailModal({
   canSendInterconnection = true,
   diagnoses = [],
   onTemplateSaved,
+  onReplaceClick,
+  onNavigateToPrescription,
 }) {
   const { user } = useAuthContext()
   const [sendingInterconnection, setSendingInterconnection] = useState(false)
@@ -310,9 +317,11 @@ function PrescriptionDetailModal({
             ? 'gold'
             : prescription.status === 'CANCELLED'
               ? 'default'
-              : 'orange'
+              : prescription.status === 'REPLACED'
+                ? 'purple'
+                : 'orange'
       }
-      style={{ fontSize: 13, padding: '2px 8px', fontWeight: prescription.status === 'PARTIALLY_DISPENSED' ? 600 : undefined }}
+      style={{ fontSize: 13, padding: '2px 8px', fontWeight: prescription.status === 'PARTIALLY_DISPENSED' || prescription.status === 'REPLACED' ? 600 : undefined }}
     >
       {prescription.status === 'PENDING_DISPENSE'
         ? 'Chờ cấp phát (PENDING_DISPENSE)'
@@ -322,21 +331,33 @@ function PrescriptionDetailModal({
             ? 'Đã cấp phát (DISPENSED)'
             : prescription.status === 'CANCELLED'
               ? 'Đã hủy (CANCELLED)'
-              : prescription.status}
+              : prescription.status === 'REPLACED'
+                ? 'Đã bị thay thế (REPLACED)'
+                : prescription.status}
     </Tag>
   )
 
   const isPending = prescription.status === 'PENDING_DISPENSE'
   const isCancelled = prescription.status === 'CANCELLED'
+  const enrichedForReplace = {
+    ...prescription,
+    interconnectionStatus: prescription.interconnectionStatus || (interInfo.isSuccess ? 'SUCCESS' : 'NOT_SENT'),
+    interconnectionReceiptCode: prescription.interconnectionReceiptCode || interInfo.receiptCode,
+  }
+  const canReplace = canReplacePrescription(enrichedForReplace, user)
+  const linkInfo = getReplacementLinkInfo(prescription)
+
   const isPrintable = Boolean(
     prescription?.id &&
     prescription?.prescriptionCode &&
+    !isReplaced &&
     (prescription?.status === 'PENDING_DISPENSE' || prescription?.status === 'DISPENSED')
   )
 
   const canSendNow = Boolean(
     canSendInterconnection &&
     !isCancelled &&
+    !isReplaced &&
     prescription.id &&
     prescription.prescriptionCode &&
     !interInfo.isSuccess
@@ -454,22 +475,40 @@ function PrescriptionDetailModal({
             )}
           </div>
           <Space>
-            <Button
-              type="primary"
-              icon={<PrinterOutlined />}
-              loading={printing}
-              disabled={!isPrintable || printing}
-              onClick={() => {
-                if (onPrintClick) {
-                  onPrintClick(prescription)
-                } else {
-                  handlePrintPrescription()
-                }
-              }}
-            >
-              In đơn thuốc
-            </Button>
-            {canSaveTemplate && (
+            {canReplace && (
+              <Button
+                type="primary"
+                icon={<SwapOutlined />}
+                onClick={() => {
+                  onClose()
+                  if (onReplaceClick) onReplaceClick(prescription)
+                }}
+                style={{ backgroundColor: '#7c3aed', borderColor: '#7c3aed' }}
+                id="btn-detail-replace-prescription"
+              >
+                Thay thế đơn thuốc
+              </Button>
+            )}
+            <Tooltip title={isReplaced ? 'Đơn thuốc đã bị thay thế không thể in ấn.' : undefined}>
+              <span>
+                <Button
+                  type="primary"
+                  icon={<PrinterOutlined />}
+                  loading={printing}
+                  disabled={!isPrintable || printing}
+                  onClick={() => {
+                    if (onPrintClick) {
+                      onPrintClick(prescription)
+                    } else {
+                      handlePrintPrescription()
+                    }
+                  }}
+                >
+                  In đơn thuốc
+                </Button>
+              </span>
+            </Tooltip>
+            {canSaveTemplate && !isReplaced && (
               <Button
                 type="default"
                 icon={<BookOutlined />}
@@ -480,7 +519,7 @@ function PrescriptionDetailModal({
                 Lưu thành mẫu
               </Button>
             )}
-            {canEdit && isPending && (
+            {canEdit && isPending && !isReplaced && (
               <Button
                 type="default"
                 icon={<EditOutlined />}
@@ -492,7 +531,7 @@ function PrescriptionDetailModal({
                 Điều chỉnh đơn này
               </Button>
             )}
-            {canCancel && isPending && (
+            {canCancel && isPending && !isReplaced && (
               <Button
                 type="primary"
                 danger
@@ -540,7 +579,131 @@ function PrescriptionDetailModal({
         />
       )}
 
+      {isReplaced && (
+        <Alert
+          type="warning"
+          showIcon
+          icon={<StopOutlined style={{ fontSize: 20, color: '#7c3aed' }} />}
+          message={
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#6d28d9' }}>
+              Đơn thuốc đã bị thay thế (REPLACED)
+            </div>
+          }
+          description={
+            <div style={{ fontSize: 13, marginTop: 4, color: '#5b21b6' }}>
+              <div>
+                Đơn thuốc gốc này đã bị thay thế bởi đơn thuốc mới. Đơn này không còn hiệu lực cấp phát, không thể sửa đổi hay in ấn.
+              </div>
+              {prescription.replacedByPrescriptionCode && (
+                <div style={{ marginTop: 6 }}>
+                  Mã đơn thay thế:{' '}
+                  <Tag
+                    color="purple"
+                    style={{ fontWeight: 700, cursor: onNavigateToPrescription ? 'pointer' : 'default', padding: '2px 8px' }}
+                    onClick={() => {
+                      if (onNavigateToPrescription) {
+                        onNavigateToPrescription(
+                          prescription.replacedByPrescriptionId,
+                          prescription.replacedByPrescriptionCode,
+                        )
+                      }
+                    }}
+                  >
+                    <SwapOutlined style={{ marginRight: 4 }} />
+                    {prescription.replacedByPrescriptionCode}
+                  </Tag>
+                </div>
+              )}
+            </div>
+          }
+          style={{ marginBottom: 14, backgroundColor: '#f5f3ff', borderColor: '#ddd6fe', borderRadius: 8 }}
+        />
+      )}
+
       <Card size="small" style={{ marginBottom: 16, backgroundColor: '#f8fafc' }}>
+        {/* Banner Chuỗi liên kết đơn thuốc thay thế */}
+        {linkInfo && (
+          <div
+            style={{
+              backgroundColor: '#faf5ff',
+              border: '1px solid #e9d5ff',
+              borderRadius: 8,
+              padding: '10px 14px',
+              marginBottom: 12,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 8,
+            }}
+          >
+            <Space size={8} align="center">
+              <SwapOutlined style={{ fontSize: 20, color: '#7c3aed' }} />
+              <div>
+                <div style={{ fontSize: 11, color: '#6d28d9', fontWeight: 700, textTransform: 'uppercase' }}>
+                  Chuỗi liên kết đơn thuốc
+                </div>
+                <div style={{ fontSize: 13, color: '#4c1d95', marginTop: 2 }}>
+                  {linkInfo.isReplacement ? (
+                    <span>
+                      Đơn thuốc này thay thế cho đơn gốc:{' '}
+                      <Tag
+                        color="purple"
+                        style={{
+                          fontWeight: 700,
+                          cursor: onNavigateToPrescription ? 'pointer' : 'default',
+                          fontSize: 13,
+                        }}
+                        onClick={() => {
+                          if (onNavigateToPrescription) {
+                            onNavigateToPrescription(linkInfo.linkedId, linkInfo.linkedCode)
+                          }
+                        }}
+                      >
+                        {linkInfo.linkedCode}
+                      </Tag>
+                    </span>
+                  ) : (
+                    <span>
+                      Đơn thuốc này đã được thay thế bởi đơn mới:{' '}
+                      <Tag
+                        color="purple"
+                        style={{
+                          fontWeight: 700,
+                          cursor: onNavigateToPrescription ? 'pointer' : 'default',
+                          fontSize: 13,
+                        }}
+                        onClick={() => {
+                          if (onNavigateToPrescription) {
+                            onNavigateToPrescription(linkInfo.linkedId, linkInfo.linkedCode)
+                          }
+                        }}
+                      >
+                        {linkInfo.linkedCode}
+                      </Tag>
+                    </span>
+                  )}
+                </div>
+                {linkInfo.reason && (
+                  <div style={{ fontSize: 12, color: '#5b21b6', marginTop: 3 }}>
+                    <strong>Lý do thay thế:</strong> {linkInfo.reason}
+                  </div>
+                )}
+              </div>
+            </Space>
+            {onNavigateToPrescription && (
+              <Button
+                size="small"
+                type="link"
+                icon={<SwapOutlined />}
+                style={{ color: '#7c3aed', padding: 0 }}
+                onClick={() => onNavigateToPrescription(linkInfo.linkedId, linkInfo.linkedCode)}
+              >
+                Chuyển tới đơn liên kết
+              </Button>
+            )}
+          </div>
+        )}
         {/* Banner mã định danh điện tử */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#eff6ff', padding: '10px 14px', borderRadius: 8, marginBottom: 12, border: '1px solid #bfdbfe', flexWrap: 'wrap', gap: 8 }}>
           <Space size={8} align="center">

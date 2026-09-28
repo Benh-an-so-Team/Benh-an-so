@@ -39,6 +39,7 @@ const pharmacyApi = {
   sendToInterconnection: (id) => axiosClient.post(`/prescriptions/${id}/interconnection`),
   retryInterconnection: (id) => axiosClient.post(`/prescriptions/${id}/interconnection/retry`),
   searchInterconnections: (params) => axiosClient.get('/prescription-interconnections', { params }),
+  replacePrescription: (id, data) => axiosClient.post(`/prescriptions/${id}/replacement`, data),
 }
 
 export default pharmacyApi
