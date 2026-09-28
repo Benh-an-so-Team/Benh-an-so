@@ -11,6 +11,7 @@ const Login = React.lazy(() => import('../pages/Login'))
 const TwoFactorVerifyPage = React.lazy(() => import('../pages/TwoFactorVerifyPage.jsx'))
 const PortalLogin = React.lazy(() => import('../pages/PortalLogin'))
 const PortalRegister = React.lazy(() => import('../pages/PortalRegister'))
+const PortalForgotPassword = React.lazy(() => import('../pages/PortalForgotPassword'))
 const PortalDashboard = React.lazy(() => import('../pages/PortalDashboard'))
 const PatientPortalBookingPage = React.lazy(() => import('../pages/PatientPortalBookingPage'))
 const PatientMyAppointmentsPage = React.lazy(() => import('../pages/PatientMyAppointmentsPage'))
@@ -131,6 +132,7 @@ function AppRoutes() {
       <Route path="/login/verify-2fa" element={<LazyPage><TwoFactorVerifyPage /></LazyPage>} />
       <Route path="/portal/login" element={<LazyPage><PortalLogin /></LazyPage>} />
       <Route path="/portal/register" element={<LazyPage><PortalRegister /></LazyPage>} />
+      <Route path="/portal/forgot-password" element={<LazyPage><PortalForgotPassword /></LazyPage>} />
       <Route path="/portal/dashboard" element={<PatientRoute><LazyPage><PortalDashboard /></LazyPage></PatientRoute>} />
       <Route path="/portal/book-appointment" element={<PatientRoute><LazyPage><PatientPortalBookingPage /></LazyPage></PatientRoute>} />
       <Route path="/portal/my-appointments" element={<PatientRoute><LazyPage><PatientMyAppointmentsPage /></LazyPage></PatientRoute>} />

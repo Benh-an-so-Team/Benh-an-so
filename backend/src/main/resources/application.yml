@@ -100,7 +100,7 @@ app:
           cron: '0 0 3 * * *'
   sms:
     gateway:
-      provider: ${SMS_GATEWAY_PROVIDER:mock}
+      provider: ${SMS_GATEWAY_PROVIDER:android}
       android:
         url: ${SMS_GATEWAY_ANDROID_URL:https://api.sms-gate.app/3rdparty/v1/message}
         username: ${SMS_GATEWAY_ANDROID_USERNAME:LRIMS3}

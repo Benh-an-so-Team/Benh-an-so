@@ -44,6 +44,15 @@ const authApi = {
   patientRegister: (data) => {
     return axiosClient.post('/auth/patient/register', data)
   },
+  patientForgotPassword: (phone) => {
+    return axiosClient.post('/auth/patient/forgot-password', { phone })
+  },
+  patientVerifyRecoveryCode: (phone, code) => {
+    return axiosClient.post('/auth/patient/verify-recovery-code', { phone, code })
+  },
+  patientResetPassword: (data) => {
+    return axiosClient.post('/auth/patient/reset-password', data)
+  },
   changePassword: (data) => {
     return axiosClient.post('/auth/change-password', data)
   },
