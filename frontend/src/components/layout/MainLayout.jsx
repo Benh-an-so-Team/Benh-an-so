@@ -16,6 +16,7 @@ import {
   EyeInvisibleOutlined,
 } from '@ant-design/icons'
 import ChangePasswordModal from '../auth/ChangePasswordModal'
+import ClinicHeaderNotificationBell from './ClinicHeaderNotificationBell'
 import patientApi from '../../api/patientApi'
 import { useAuthContext } from '../../context/AuthContext'
 import { useAnonymization } from '../../context/AnonymizationContext'
@@ -299,11 +300,7 @@ function MainLayout() {
           </AutoComplete>
 
           <div className="clinic-header-actions">
-            <Badge count={0} size="small" offset={[-2, 3]}>
-              <button type="button" className="notification-button" aria-label="Thông báo">
-                <BellOutlined />
-              </button>
-            </Badge>
+            <ClinicHeaderNotificationBell />
 
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
               <button type="button" className="header-user">
