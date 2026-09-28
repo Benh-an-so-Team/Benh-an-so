@@ -25,7 +25,7 @@ jobs:
   backend-ci:
     name: Backend Test & Build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
 
     steps:
       - name: Checkout Source Code

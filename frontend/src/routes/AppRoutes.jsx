@@ -45,6 +45,7 @@ const MedicalRecordTemplateManagementPage = React.lazy(() => import('../pages/Me
 const SpecialtyManagementPage = React.lazy(() => import('../pages/SpecialtyManagementPage'))
 const SessionManagementPage = React.lazy(() => import('../pages/SessionManagementPage'))
 const BackupRestorePage = React.lazy(() => import('../pages/BackupRestorePage'))
+const ScheduledBackupPage = React.lazy(() => import('../pages/ScheduledBackupPage'))
 
 const MedicalRecordAccessLogsPage = React.lazy(() => import('../pages/MedicalRecordAccessLogsPage'))
 const MedicalRecordCopyPage = React.lazy(() => import('../pages/MedicalRecordCopyPage'))
@@ -65,6 +66,7 @@ const ContraindicationRuleManagementPage = React.lazy(() => import('../pages/Con
 const CashierShiftClosingPage = React.lazy(() => import('../pages/CashierShiftClosingPage.jsx'))
 const CashierShiftHistoryPage = React.lazy(() => import('../pages/CashierShiftHistoryPage.jsx'))
 const DiscountRequestManagementPage = React.lazy(() => import('../pages/DiscountRequestManagementPage.jsx'))
+const MedicalRecordArchivePage = React.lazy(() => import('../pages/MedicalRecordArchivePage.jsx'))
 const WaitingRoomDisplayPage = React.lazy(() => import('../pages/WaitingRoomDisplayPage'))
 const PrescriptionReconciliationPage = React.lazy(() => import('../pages/PrescriptionReconciliationPage'))
 const NotFound = React.lazy(() => import('../pages/NotFound'))
@@ -177,6 +179,8 @@ function AppRoutes() {
         <Route path="visits/summary" element={<Navigate to="/medical-records/visit-summaries" replace />} />
         <Route path="medical-records/overdue-signing" element={<PrivateRoute allowedPermissions={['MEDICAL_RECORD_OVERDUE_READ', 'MEDICAL_RECORD_REMIND_SIGN']} allowedRoles={['admin', 'manager', 'clinic_manager', 'doctor']}><LazyPage><OverdueMedicalRecordSigningPage /></LazyPage></PrivateRoute>} />
         <Route path="overdue-signing" element={<Navigate to="/medical-records/overdue-signing" replace />} />
+        <Route path="medical-records/archive" element={<PrivateRoute allowedPermissions={['MEDICAL_RECORD_ARCHIVE_READ', 'MEDICAL_RECORD_ARCHIVE_MANAGE']} allowedRoles={['admin', 'manager', 'clinic_manager', 'doctor']}><LazyPage><MedicalRecordArchivePage /></LazyPage></PrivateRoute>} />
+        <Route path="archive" element={<Navigate to="/medical-records/archive" replace />} />
         <Route path="prescriptions" element={<PrivateRoute allowedPermissions={['PRESCRIPTION_READ', 'PRESCRIPTION_CREATE', 'PRESCRIPTION_UPDATE', 'PRESCRIPTION_PRINT']} allowedRoles={['admin', 'doctor']}><LazyPage><PrescriptionPage /></LazyPage></PrivateRoute>} />
         <Route path="prescriptions/:medicalRecordId" element={<PrivateRoute allowedPermissions={['PRESCRIPTION_READ', 'PRESCRIPTION_CREATE', 'PRESCRIPTION_UPDATE', 'PRESCRIPTION_PRINT']} allowedRoles={['admin', 'doctor']}><LazyPage><PrescriptionPage /></LazyPage></PrivateRoute>} />
         <Route path="clinical-orders" element={<PrivateRoute allowedPermissions={['CLINICAL_ORDER_READ', 'CLINICAL_ORDER_CANCEL']} allowedRoles={['admin', 'doctor']}><LazyPage><PendingClinicalOrdersPage /></LazyPage></PrivateRoute>} />
@@ -205,6 +209,8 @@ function AppRoutes() {
         <Route path="pharmacy/stock-report" element={<Navigate to="/inventory/stock-report" replace />} />
         <Route path="system-management" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><SystemManagementPage /></LazyPage></PrivateRoute>} />
         <Route path="backup-restore" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><BackupRestorePage /></LazyPage></PrivateRoute>} />
+        <Route path="system/scheduled-backup" element={<PrivateRoute allowedPermissions={['BACKUP_READ', 'BACKUP_CREATE']} allowedRoles={['admin']}><LazyPage><ScheduledBackupPage /></LazyPage></PrivateRoute>} />
+        <Route path="scheduled-backup" element={<Navigate to="/system/scheduled-backup" replace />} />
         <Route path="audit-logs" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><MedicalRecordAccessLogsPage /></LazyPage></PrivateRoute>} />
         <Route path="medical-records/access-logs" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><MedicalRecordAccessLogsPage /></LazyPage></PrivateRoute>} />
         <Route path="users" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><UsersPage /></LazyPage></PrivateRoute>} />

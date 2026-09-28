@@ -52,3 +52,7 @@ backend/.env.*.local
 # Graphify
 graphify-out/
 .graphifyignore
+
+# Backups
+backend/backups/
+backups/

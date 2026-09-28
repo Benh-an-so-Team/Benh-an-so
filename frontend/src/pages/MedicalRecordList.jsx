@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Alert, Table, Button, Tag, Typography, Space, Popconfirm, message, Modal, Tooltip } from 'antd'
-import { EyeOutlined, InboxOutlined, DeleteOutlined, HistoryOutlined, EditOutlined } from '@ant-design/icons'
+import { EyeOutlined, InboxOutlined, DeleteOutlined, HistoryOutlined, EditOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import medicalRecordApi from '../api/medicalRecordApi'
 import MedicalRecordVersionHistoryModal from '../components/clinical/MedicalRecordVersionHistoryModal'
@@ -154,6 +154,13 @@ function MedicalRecordList({ patientId }) {
       width: 130,
       align: 'center',
       render: (status) => {
+        if (status === 'ARCHIVED') {
+          return (
+            <Tag color="purple" icon={<LockOutlined />} style={{ fontWeight: 600 }}>
+              Hồ sơ lưu trữ
+            </Tag>
+          )
+        }
         const formatted = formatRecordStatus(status)
         return <Tag color={formatted.color}>{formatted.label}</Tag>
       },
@@ -221,7 +228,7 @@ function MedicalRecordList({ patientId }) {
                 </Button>
               </Popconfirm>
             )}
-            {canDeleteRecord && (
+            {canDeleteRecord && !isArchived && (
               <Popconfirm
                 title="Xóa hồ sơ bệnh án?"
                 description="Bạn có chắc chắn muốn xóa hồ sơ này? (Lưu ý: Chỉ hồ sơ ngoài thời hạn lưu trữ mới xóa được)."
