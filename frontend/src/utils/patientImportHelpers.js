@@ -455,6 +455,13 @@ export const generateExcelTemplateBlob = () => {
   const wb = XLSX.utils.book_new()
   const ws = XLSX.utils.aoa_to_sheet(sampleRows)
 
+  // Explicitly enforce string type 's' on all cells so Excel preserves leading zeros
+  Object.keys(ws).forEach((key) => {
+    if (!key.startsWith('!') && ws[key]) {
+      ws[key].t = 's'
+    }
+  })
+
   ws['!cols'] = [
     { wch: 24 }, // Họ và tên
     { wch: 22 }, // Ngày sinh
@@ -576,18 +583,38 @@ export const parseAndValidateSpreadsheet = async (fileOrBuffer, existingPatients
     const fullName = String(c[0] || '').trim()
     const rawDob = c[1]
     const rawGender = String(c[2] || '').trim()
-    const rawPhone = String(c[3] || '').replace(/[\s.-]/g, '').trim()
-    const rawIdentity = String(c[4] || '').replace(/[\s.-]/g, '').trim()
+
+    let rawPhone = String(c[3] || '').replace(/[\s.-]/g, '').trim()
+    if (rawPhone && /^[35789]\d{8}$/.test(rawPhone)) {
+      rawPhone = '0' + rawPhone
+    }
+
+    let rawIdentity = String(c[4] || '').replace(/[\s.-]/g, '').trim()
+    if (rawIdentity && /^\d{10,11}$/.test(rawIdentity)) {
+      rawIdentity = rawIdentity.padStart(12, '0')
+    } else if (rawIdentity && /^\d{8}$/.test(rawIdentity)) {
+      rawIdentity = rawIdentity.padStart(9, '0')
+    }
+
     const rawInsurance = String(c[5] || '').trim()
     const address = String(c[6] || '').trim()
     const email = String(c[7] || '').trim()
     const bloodType = String(c[8] || '').trim().toUpperCase()
     const emergencyContact = String(c[9] || '').trim()
     const emergencyRelationship = String(c[10] || '').trim()
-    const emergencyPhone = String(c[11] || '').replace(/[\s.-]/g, '').trim()
+
+    let emergencyPhone = String(c[11] || '').replace(/[\s.-]/g, '').trim()
+    if (emergencyPhone && /^[35789]\d{8}$/.test(emergencyPhone)) {
+      emergencyPhone = '0' + emergencyPhone
+    }
+
     const guardianName = String(c[12] || '').trim()
     const guardianRelationship = String(c[13] || '').trim()
-    const guardianPhone = String(c[14] || '').replace(/[\s.-]/g, '').trim()
+
+    let guardianPhone = String(c[14] || '').replace(/[\s.-]/g, '').trim()
+    if (guardianPhone && /^[35789]\d{8}$/.test(guardianPhone)) {
+      guardianPhone = '0' + guardianPhone
+    }
 
     // 1. Kiểm tra Họ và tên (*)
     if (!fullName) {
