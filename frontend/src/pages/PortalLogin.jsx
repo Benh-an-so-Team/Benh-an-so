@@ -179,6 +179,15 @@ function PortalLogin() {
               />
             </Form.Item>
 
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -10, marginBottom: 16 }}>
+              <Link
+                to="/portal/forgot-password"
+                style={{ fontSize: 13, color: '#1677ff', fontWeight: 500 }}
+              >
+                Quên mật khẩu?
+              </Link>
+            </div>
+
             <Form.Item style={{ marginBottom: 12 }}>
               <Button
                 className="portal-login-btn"

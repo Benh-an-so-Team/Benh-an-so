@@ -16,10 +16,16 @@ dist/
 build/
 *.tsbuildinfo
 
-# --- Environment ---
+# --- Environment & Local Configuration ---
 .env
 .env.local
 .env.*.local
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties
+**/application-*.local.yml
+**/application-*.local.yaml
+**/application-*.local.properties
 
 # --- OS ---
 .DS_Store
@@ -27,7 +33,6 @@ Thumbs.db
 
 # --- IDE ---
 .vscode/
-.idea/
 *.swp
 *.swo
 
@@ -35,17 +40,10 @@ Thumbs.db
 *.db
 *.sqlite
 
-# Local configuration
-backend/src/main/resources/application-local.properties
-backend/src/main/resources/application-*.local.properties
-
-# Bot Cline
+# --- Bot Cline & Tools ---
 .clinerules
-
-# Graphify
 graphify-out/
 .graphifyignore
 
-# Backups
-backend/backups/
+# --- Backups ---
 backups/

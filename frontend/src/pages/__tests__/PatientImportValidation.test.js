@@ -275,3 +275,27 @@ test('Patient Import - parseAndValidateSpreadsheet identifies intra-file and dat
   assert.match(result.suspectedDuplicates[1].duplicateReason, /BN-00010/i)
 })
 
+test('Patient Import - parseAndValidateSpreadsheet restores leading zero for numeric phone and CCCD', async () => {
+  const { parseAndValidateSpreadsheet } = await import('../utils/patientImportHelpers.js')
+  const XLSX = await import('xlsx')
+
+  const wb = XLSX.utils.book_new()
+  const rows = [
+    ['Họ và tên (*)', 'Ngày sinh (*)', 'Giới tính (*)', 'Số điện thoại', 'Số CCCD/CMND'],
+    // Phone 345678910 (number without leading 0) and CCCD 1088012346 (number without leading 00)
+    ['Nguyễn Văn Tuấn', '15/05/2005', 'Nam', 345678910, 1088012346],
+  ]
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  XLSX.utils.book_append_sheet(wb, ws, 'NumSheet')
+  const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
+
+  const result = await parseAndValidateSpreadsheet(buffer)
+
+  assert.equal(result.totalRows, 1)
+  assert.equal(result.errorCount, 0)
+  assert.equal(result.validCount, 1)
+  assert.equal(result.validRows[0].phone, '0345678910')
+  assert.equal(result.validRows[0].identityNumber, '001088012346')
+})
+
+

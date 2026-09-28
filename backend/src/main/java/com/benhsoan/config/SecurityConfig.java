@@ -2,7 +2,6 @@ package com.benhsoan.config;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -40,9 +39,7 @@ public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthenticationFilter;
         private final ObjectMapper objectMapper;
-
-        @Value("${app.cors.allowed-origin-patterns:http://localhost:3000,http://localhost:5173,http://localhost:4200,https://*.vercel.app}")
-        private List<String> allowedOriginPatterns;
+        private final CorsProperties corsProperties;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -58,7 +55,9 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
 
                                                 // ===== AUTHENTICATION =====
-                                                .requestMatchers("/auth/change-password", "/auth/sessions/current/extend").authenticated()
+                                                .requestMatchers("/auth/change-password",
+                                                                "/auth/sessions/current/extend")
+                                                .authenticated()
                                                 .requestMatchers("/auth/**").permitAll()
 
                                                 .requestMatchers(
@@ -157,7 +156,7 @@ public class SecurityConfig {
 
                 CorsConfiguration configuration = new CorsConfiguration();
 
-                configuration.setAllowedOriginPatterns(allowedOriginPatterns);
+                configuration.setAllowedOriginPatterns(corsProperties.allowedOriginPatterns());
 
                 configuration.setAllowedMethods(List.of(
                                 "GET",

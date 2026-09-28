@@ -261,10 +261,10 @@ Benh-so-an/
 │       │   │   ├── exception/                # GlobalExceptionHandler & DomainExceptionMapper
 │       │   │   └── common/                   # Tiện ích dùng chung
 │       │   └── resources/
-│       │       ├── application.properties    # Cấu hình gốc (Server, JWT 15m, Flyway, Cloudinary)
-│       │       ├── application-local.properties  # Profile chạy Local (MySQL 8 localhost)
-│       │       ├── application-dev.properties    # Profile Dev Cloud (TiDB Cloud)
-│       │       ├── application-prod.properties   # Profile Production (Render / Cloud DB)
+│       │       ├── application.yml           # Cấu hình gốc (Server, Flyway, Cloudinary, Defaults)
+│       │       ├── application-local.yml     # Profile Local (gitignored, nạp qua .env)
+│       │       ├── application-dev.yml       # Profile Dev Cloud (Staging)
+│       │       ├── application-prod.yml      # Profile Production (Render / Cloud DB)
 │       │       └── db/migration/             # 109 file Flyway Migration (V1 → V109)
 │       └── test/java/com/benhsoan/           # Kiểm thử tự động (Unit, MockMvc, Testcontainers)
 │

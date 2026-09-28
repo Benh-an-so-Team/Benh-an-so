@@ -1,14 +1,40 @@
-{"properties": [
-  {
-    "name": "app.jwt.secret",
-    "type": "java.lang.String",
-    "description": "JWT secret key used for signing and verifying access tokens.",
-    "defaultValue": "LOCAL_SECRET_CHANGE_ME_1234567890"
-  },
-  {
-    "name": "app.jwt.expiration-ms",
-    "type": "java.lang.Long",
-    "description": "JWT access token expiration time in milliseconds.",
-    "defaultValue": 1800000
-  }
-]}
+{
+  "properties": [
+    {
+      "name": "app.jwt.secret",
+      "type": "java.lang.String",
+      "description": "JWT secret key used for signing and verifying access tokens.",
+      "defaultValue": "LOCAL_SECRET_CHANGE_ME_1234567890"
+    },
+    {
+      "name": "app.jwt.expiration-ms",
+      "type": "java.lang.Long",
+      "description": "JWT access token expiration time in milliseconds.",
+      "defaultValue": 1800000
+    },
+    {
+      "name": "app.security.two-factor.challenge.cleanup.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable scheduled cleanup for expired 2FA challenges.",
+      "defaultValue": true
+    },
+    {
+      "name": "app.security.two-factor.challenge.cleanup.retention-days",
+      "type": "java.lang.Integer",
+      "description": "Days to retain expired 2FA challenges.",
+      "defaultValue": 30
+    },
+    {
+      "name": "app.security.two-factor.challenge.cleanup.cron",
+      "type": "java.lang.String",
+      "description": "Cron expression for 2FA challenge cleanup schedule.",
+      "defaultValue": "0 0 3 * * *"
+    },
+    {
+      "name": "inventory.expiry-alert-days",
+      "type": "java.lang.Integer",
+      "description": "Number of days before expiration to trigger inventory alerts.",
+      "defaultValue": 30
+    }
+  ]
+}

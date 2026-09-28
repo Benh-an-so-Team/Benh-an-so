@@ -1,0 +1,27 @@
+# ==========================================================
+# Test Profile: H2 In-Memory Database with Flyway Disabled
+# ==========================================================
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password: ''
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    defer-datasource-initialization: true
+    show-sql: false
+  sql:
+    init:
+      mode: always
+  flyway:
+    enabled: false
+  h2:
+    console:
+      enabled: false
+
+app:
+  jwt:
+    secret: TEST_SECRET_32_CHARS_LONG_FOR_TEST_ONLY_!!
+    expiration-ms: 3600000

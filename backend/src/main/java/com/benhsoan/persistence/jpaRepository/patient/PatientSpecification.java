@@ -19,6 +19,10 @@ public class PatientSpecification {
 
         return (root, query, cb) -> {
 
+            if (command == null) {
+                return cb.conjunction();
+            }
+
             List<Predicate> predicates = new ArrayList<>();
 
             if (StringUtils.hasText(command.patientCode())) {
@@ -93,7 +97,7 @@ public class PatientSpecification {
                 );
             }
 
-            if (query != null) {
+            if (query != null && !Long.class.equals(query.getResultType()) && !long.class.equals(query.getResultType())) {
                 query.orderBy(
                         cb.desc(root.get("createdAt"))
                 );

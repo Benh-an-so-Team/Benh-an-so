@@ -12,7 +12,8 @@ const publicApiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 60000,
+
 })
 
 publicApiClient.interceptors.request.use(
