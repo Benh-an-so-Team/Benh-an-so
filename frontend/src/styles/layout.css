@@ -133,11 +133,12 @@
 }
 
 .clinic-menu.ant-menu-dark .ant-menu-submenu-title {
+  position: relative;
   display: flex;
   height: 38px;
   min-height: 38px;
   margin: 2px 0 !important;
-  padding: 8px 12px !important;
+  padding: 8px 28px 8px 12px !important;
   align-items: center;
   gap: 10px;
   color: rgba(255, 255, 255, 0.75);
@@ -148,6 +149,15 @@
   white-space: nowrap;
   border-radius: 8px !important;
   transition: all 0.2s ease;
+}
+
+.clinic-menu.ant-menu-dark .ant-menu-submenu-title .ant-menu-title-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 6px;
 }
 
 .clinic-menu.ant-menu-dark .ant-menu-submenu-title:hover {
@@ -161,7 +171,10 @@
 }
 
 .clinic-menu.ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow {
+  right: 8px !important;
+  inset-inline-end: 8px !important;
   color: rgba(255, 255, 255, 0.55) !important;
+  transition: all 0.2s ease;
 }
 
 .clinic-menu.ant-menu-dark .ant-menu-submenu-title:hover .ant-menu-submenu-arrow {
