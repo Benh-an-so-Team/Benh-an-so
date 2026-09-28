@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AutoComplete, Avatar, Badge, Drawer, Dropdown, Input, Layout, Menu, Tooltip } from 'antd'
 import {
+  AppstoreOutlined,
   BellOutlined,
   CaretDownOutlined,
   LogoutOutlined,
@@ -9,6 +10,7 @@ import {
   MenuFoldOutlined,
   MenuOutlined,
   MenuUnfoldOutlined,
+  SafetyCertificateOutlined,
   SearchOutlined,
   SettingOutlined,
   UserOutlined,
@@ -16,12 +18,81 @@ import {
   EyeInvisibleOutlined,
 } from '@ant-design/icons'
 import ChangePasswordModal from '../auth/ChangePasswordModal'
+import ClinicHeaderNotificationBell from './ClinicHeaderNotificationBell'
 import patientApi from '../../api/patientApi'
 import { useAuthContext } from '../../context/AuthContext'
 import { useAnonymization } from '../../context/AnonymizationContext'
 import { getDefaultHomePath, getNavigationItems, navigationSections, roleNames } from './navigationConfig'
 
 const { Header, Sider, Content } = Layout
+
+const CATALOG_PATHS = [
+  '/services',
+  '/system/specialties',
+  '/system/clinical-services',
+  '/system/diagnosis-catalog',
+  '/system/medical-record-templates',
+  '/contraindication-rules',
+]
+
+const SECURITY_PATHS = [
+  '/admin/operation-logs',
+  '/admin/sessions',
+  '/system/anonymization',
+  '/prescription-interconnections',
+  '/system/scheduled-backup',
+]
+
+const buildSectionChildren = (section, navItems) => {
+  const allItems = section.paths
+    .map((path) => navItems.find((item) => item.key === path))
+    .filter(Boolean)
+
+  if (section.key !== 'system') {
+    return allItems
+  }
+
+  const catalogItems = allItems.filter((i) => CATALOG_PATHS.includes(i.key))
+  const securityItems = allItems.filter((i) => SECURITY_PATHS.includes(i.key))
+  const topItems = allItems.filter((i) => !CATALOG_PATHS.includes(i.key) && !SECURITY_PATHS.includes(i.key))
+
+  const result = []
+
+  // Top item: /users
+  const usersItem = topItems.find((i) => i.key === '/users')
+  if (usersItem) result.push(usersItem)
+
+  // Submenu: Quản lý danh mục
+  if (catalogItems.length > 1) {
+    result.push({
+      key: 'sub-catalogs',
+      icon: React.createElement(AppstoreOutlined),
+      label: 'Quản lý danh mục',
+      children: catalogItems,
+    })
+  } else if (catalogItems.length === 1) {
+    result.push(catalogItems[0])
+  }
+
+  // Submenu: Bảo mật & Giám sát
+  if (securityItems.length > 1) {
+    result.push({
+      key: 'sub-security',
+      icon: React.createElement(SafetyCertificateOutlined),
+      label: 'Bảo mật & Giám sát',
+      children: securityItems,
+    })
+  } else if (securityItems.length === 1) {
+    result.push(securityItems[0])
+  }
+
+  // Top items: /system-management and other remaining
+  topItems
+    .filter((i) => i.key !== '/users')
+    .forEach((i) => result.push(i))
+
+  return result
+}
 
 function MainLayout() {
   const [collapsed, setCollapsed] = useState(false)
@@ -33,6 +104,22 @@ function MainLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuthContext()
+
+  const [openKeys, setOpenKeys] = useState(() => {
+    const initialKeys = []
+    if (CATALOG_PATHS.some((p) => location.pathname.startsWith(p))) initialKeys.push('sub-catalogs')
+    if (SECURITY_PATHS.some((p) => location.pathname.startsWith(p))) initialKeys.push('sub-security')
+    return initialKeys
+  })
+
+  React.useEffect(() => {
+    setOpenKeys((prev) => {
+      const next = new Set(prev)
+      if (CATALOG_PATHS.some((p) => location.pathname.startsWith(p))) next.add('sub-catalogs')
+      if (SECURITY_PATHS.some((p) => location.pathname.startsWith(p))) next.add('sub-security')
+      return Array.from(next)
+    })
+  }, [location.pathname])
 
   const syncPatients = React.useCallback(async () => {
     try {
@@ -141,34 +228,30 @@ function MainLayout() {
   )
 
   const sidebarItems = useMemo(() => navigationSections.flatMap((section) => {
-    const items = section.paths
-      .map((path) => navigationItems.find((item) => item.key === path))
-      .filter(Boolean)
+    const children = buildSectionChildren(section, navigationItems)
 
-    if (!items.length) return []
-    if (collapsed || !section.label) return items
+    if (!children.length) return []
+    if (collapsed || !section.label) return children
 
     return [{
       type: 'group',
       key: `group-${section.key}`,
       label: section.label,
-      children: items,
+      children,
     }]
   }), [navigationItems, collapsed])
 
   const drawerItems = useMemo(() => navigationSections.flatMap((section) => {
-    const items = section.paths
-      .map((path) => navigationItems.find((item) => item.key === path))
-      .filter(Boolean)
+    const children = buildSectionChildren(section, navigationItems)
 
-    if (!items.length) return []
-    if (!section.label) return items
+    if (!children.length) return []
+    if (!section.label) return children
 
     return [{
       type: 'group',
       key: `group-${section.key}`,
       label: section.label,
-      children: items,
+      children,
     }]
   }), [navigationItems])
 
@@ -198,6 +281,9 @@ function MainLayout() {
   }
 
   const handleMenuClick = ({ key }) => {
+    if (key && key.startsWith('sub-')) {
+      return
+    }
     if (key && key.startsWith('group-')) {
       const sectionKey = key.replace('group-', '')
       const section = navigationSections.find((s) => s.key === sectionKey)
@@ -242,7 +328,7 @@ function MainLayout() {
         onBreakpoint={(broken) => {
           if (broken) setCollapsed(true)
         }}
-        width={240}
+        width={272}
         theme="dark"
       >
 
@@ -261,6 +347,8 @@ function MainLayout() {
           theme="dark"
           mode="inline"
           selectedKeys={[selectedPath]}
+          openKeys={collapsed ? undefined : openKeys}
+          onOpenChange={setOpenKeys}
           items={sidebarItems}
           inlineIndent={16}
           onClick={handleMenuClick}
@@ -299,11 +387,7 @@ function MainLayout() {
           </AutoComplete>
 
           <div className="clinic-header-actions">
-            <Badge count={0} size="small" offset={[-2, 3]}>
-              <button type="button" className="notification-button" aria-label="Thông báo">
-                <BellOutlined />
-              </button>
-            </Badge>
+            <ClinicHeaderNotificationBell />
 
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
               <button type="button" className="header-user">
@@ -369,8 +453,9 @@ function MainLayout() {
           theme="dark"
           mode="inline"
           selectedKeys={[selectedPath]}
+          openKeys={openKeys}
+          onOpenChange={setOpenKeys}
           items={drawerItems}
-
           inlineIndent={16}
           onClick={handleMenuClick}
         />

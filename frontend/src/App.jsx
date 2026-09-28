@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/vi'
 import ForceChangePasswordModal from './components/auth/ForceChangePasswordModal'
 import SessionTimeoutWarningModal from './components/auth/SessionTimeoutWarningModal'
+import { NoticeProvider } from './components/common/notice'
 
 dayjs.locale('vi')
 
@@ -81,9 +82,11 @@ function App() {
           },
         }}
       >
-        <ForceChangePasswordModal />
-        <SessionTimeoutWarningModal />
-        <AppRoutes />
+        <NoticeProvider>
+          <ForceChangePasswordModal />
+          <SessionTimeoutWarningModal />
+          <AppRoutes />
+        </NoticeProvider>
       </ConfigProvider>
   )
 }
