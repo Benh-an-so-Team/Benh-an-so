@@ -82,19 +82,27 @@ public class AndroidSmsGatewayPatientVerificationCodeAdapter implements PatientV
         );
 
         try {
-            log.info("Dispatching SMS OTP to {} via Android SMS Gateway at {}", maskPhone(phone), gatewayUrl);
+            log.info("[SMS GATEWAY] Bắt đầu gửi SMS OTP tới SĐT: {} (chuẩn hóa E.164: {}) qua Gateway: {}", phone, e164Phone, gatewayUrl);
 
-            restClient.post()
+            org.springframework.http.ResponseEntity<String> response = restClient.post()
                     .uri(gatewayUrl)
                     .header(HttpHeaders.AUTHORIZATION, basicAuthHeader)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(payload)
                     .retrieve()
-                    .toBodilessEntity();
+                    .toEntity(String.class);
 
-            log.info("Successfully dispatched SMS OTP via Android SMS Gateway to {}", maskPhone(phone));
+            log.info("[SMS GATEWAY THÀNH CÔNG] Đã gửi SMS OTP thành công tới SĐT: {} (E.164: {}) | HTTP Status: {} | Gateway Response: {}",
+                    phone, e164Phone, response.getStatusCode(), response.getBody());
+        } catch (org.springframework.web.client.RestClientResponseException ex) {
+            log.error("[SMS GATEWAY THẤT BẠI] Gateway trả về mã lỗi HTTP khi gửi tới SĐT: {} (E.164: {}) | HTTP Status: {} {} | Error Response: {}",
+                    phone, e164Phone, ex.getStatusCode().value(), ex.getStatusText(), ex.getResponseBodyAsString(), ex);
+        } catch (org.springframework.web.client.ResourceAccessException ex) {
+            log.error("[SMS GATEWAY THẤT BẠI] Lỗi kết nối / timeout tới SMS Gateway ({}) khi gửi tới SĐT: {}: {}",
+                    gatewayUrl, phone, ex.getMessage(), ex);
         } catch (Exception ex) {
-            log.error("Failed to dispatch SMS OTP to {} via Android SMS Gateway: {}", maskPhone(phone), ex.getMessage(), ex);
+            log.error("[SMS GATEWAY THẤT BẠI] Lỗi không xác định khi gửi SMS OTP tới SĐT: {}: {}",
+                    phone, ex.getMessage(), ex);
         }
     }
 

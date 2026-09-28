@@ -21,8 +21,8 @@ public class MockPatientVerificationCodeAdapter implements PatientVerificationCo
     @Override
     public void sendVerificationCode(String phone, String code, long ttlSeconds) {
         lastSentCodes.put(phone, code);
-        log.info("[MOCK SMS] Simulated verification code sent to phone {} (valid for {}s)",
-                maskPhone(phone), ttlSeconds);
+        log.info("[MOCK SMS] Gửi mã xác thực giả lập tới SĐT: {} | Mã OTP: {} (hiệu lực {}s)",
+                phone, code, ttlSeconds);
     }
 
     private String maskPhone(String phone) {

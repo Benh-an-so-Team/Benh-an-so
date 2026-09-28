@@ -91,6 +91,7 @@ public class PatientPasswordRecoveryService
         // Cooldown check independent of phone existence (Finding 4 / TC-03)
         if (cooldownPort.isInCooldown(phone, now)) {
             long remainingSeconds = cooldownPort.getRemainingCooldownSeconds(phone, now);
+            log.warn("[FORGOT PASSWORD] SĐT '{}' đang trong thời gian chờ gửi lại mã (cooldown). Còn lại: {} giây.", phone, remainingSeconds);
             throw new VerificationCodeCooldownException(remainingSeconds);
         }
 
@@ -101,7 +102,7 @@ public class PatientPasswordRecoveryService
         if (userOpt.isEmpty()) {
             // Anti-enumeration protection (TC-03): balance timing with dummy password hash
             passwordEncoderPort.encode("DUMMY_CODE_" + phone);
-            log.info("Password recovery requested for non-existent phone: {}", phone);
+            log.warn("[FORGOT PASSWORD] SĐT '{}' KHÔNG TỒN TẠI trong bảng tài khoản (users) -> Bỏ qua gửi SMS OTP (Chính sách Anti-enumeration).", phone);
             return new PatientForgotPasswordResult(GENERIC_SUCCESS_MESSAGE, TTL_SECONDS);
         }
 
@@ -111,13 +112,15 @@ public class PatientPasswordRecoveryService
         Role role = roleRepository.findById(user.getRoleId()).orElse(null);
         if (role == null || !PATIENT_ROLE.equalsIgnoreCase(role.getName())) {
             passwordEncoderPort.encode("DUMMY_CODE_" + phone);
-            log.warn("Password recovery requested via patient portal for non-patient role user: {}", user.getId());
+            log.warn("[FORGOT PASSWORD] SĐT '{}' thuộc tài khoản (id={}, username={}) có vai trò '{}' (KHÔNG PHẢI PATIENT) -> Bỏ qua gửi SMS OTP.",
+                    phone, user.getId(), user.getUsername(), role != null ? role.getName() : "NULL");
             return new PatientForgotPasswordResult(GENERIC_SUCCESS_MESSAGE, TTL_SECONDS);
         }
 
         if (!user.isActive()) {
             passwordEncoderPort.encode("DUMMY_CODE_" + phone);
-            log.warn("Password recovery requested for disabled user: {}", user.getId());
+            log.warn("[FORGOT PASSWORD] SĐT '{}' thuộc tài khoản bệnh nhân (id={}, username={}) đang BỊ VÔ HIỆU HÓA (active=false) -> Bỏ qua gửi SMS OTP.",
+                    phone, user.getId(), user.getUsername());
             return new PatientForgotPasswordResult(GENERIC_SUCCESS_MESSAGE, TTL_SECONDS);
         }
 
@@ -136,6 +139,9 @@ public class PatientPasswordRecoveryService
                 now
         );
         tokenRepository.save(token);
+
+        log.info("[FORGOT PASSWORD] Xác thực tài khoản bệnh nhân hợp lệ (id={}, username={}, phone={}). Đã tạo mã OTP (hiệu lực đến {}). Đang chuyển tới SMS Gateway để gửi tin nhắn...",
+                user.getId(), user.getUsername(), phone, expiresAt);
 
         verificationCodePort.sendVerificationCode(phone, plainCode, TTL_SECONDS);
 
