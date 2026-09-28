@@ -15,7 +15,7 @@
 .clinic-sider .ant-layout-sider-children {
   display: flex;
   height: 100%;
-  padding: 14px 14px;
+  padding: 14px 10px;
   flex-direction: column;
   box-sizing: border-box;
 }
@@ -119,12 +119,12 @@
   height: 38px;
   min-height: 38px;
   margin: 2px 0 !important;
-  padding: 8px 12px !important;
+  padding: 8px 10px !important;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: rgba(255, 255, 255, 0.75);
   font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 20px;
   white-space: nowrap;
@@ -138,12 +138,12 @@
   height: 38px;
   min-height: 38px;
   margin: 2px 0 !important;
-  padding: 8px 28px 8px 12px !important;
+  padding: 8px 24px 8px 10px !important;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: rgba(255, 255, 255, 0.75);
   font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 20px;
   white-space: nowrap;
@@ -154,10 +154,10 @@
 .clinic-menu.ant-menu-dark .ant-menu-submenu-title .ant-menu-title-content {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
-  margin-right: 6px;
+  margin-right: 4px;
 }
 
 .clinic-menu.ant-menu-dark .ant-menu-submenu-title:hover {
@@ -203,8 +203,9 @@
 .clinic-menu.ant-menu-dark .ant-menu-sub.ant-menu-inline .ant-menu-item {
   height: 34px;
   min-height: 34px;
-  font-size: 13px;
-  padding-left: 28px !important;
+  font-size: 12.5px;
+  padding-left: 20px !important;
+  padding-right: 8px !important;
   margin: 1px 0 !important;
 }
 
@@ -221,8 +222,8 @@
 }
 
 .clinic-menu.ant-menu-dark .ant-menu-title-content {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
