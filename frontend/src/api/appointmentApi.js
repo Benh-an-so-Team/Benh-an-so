@@ -17,6 +17,11 @@ const appointmentApi = {
   confirm: (id) => axiosClient.patch(`/appointments/${id}/confirm`),
   getUnconfirmed: (params) => axiosClient.get('/appointments/unconfirmed', { params }),
   getDoctorWeeklyTable: (params) => axiosClient.get('/appointments/doctor-weekly-table', { params }),
+  previewSeries: (data) => axiosClient.post('/appointments/series/preview', data),
+  createSeries: (data) => axiosClient.post('/appointments/series', data),
+  getSeriesById: (id) => axiosClient.get(`/appointments/series/${id}`),
+  getSeriesByPatient: (patientId) => axiosClient.get(`/appointments/series/patient/${patientId}`),
 }
 
 export default appointmentApi
+

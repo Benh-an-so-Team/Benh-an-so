@@ -190,7 +190,8 @@ export const getQueueBoardColumns = ({
   {
     title: 'Thao tác',
     key: 'action',
-    width: 190,
+    width: 90,
+    align: 'center',
     render: (_, record) => {
       const pInfo = getPatientInfo(record.patientId, record.patientName)
       const dInfo = getDoctorInfo(record.doctorId, record.doctorName)
@@ -202,6 +203,9 @@ export const getQueueBoardColumns = ({
         permissions.isReceptionist
 
       const canManagePrioritize = Boolean(permissions.isAdmin || permissions.isReceptionist)
+      const hasCallAction = permissions.canCallNext && record.status === 'WAITING'
+      const hasReQueueAction = onReQueue && canManageReQueue && record.status === 'SKIPPED'
+      const hasDeferAction = permissions.canSkip && record.status === 'IN_PROGRESS'
 
       const menuItems = [
         {
@@ -210,20 +214,25 @@ export const getQueueBoardColumns = ({
           label: 'Xem chi tiết lượt khám',
           onClick: () => onOpenDetail && onOpenDetail(record, pInfo, dInfo),
         },
+        hasCallAction && {
+          key: 'call',
+          icon: <StepForwardOutlined style={{ color: '#2563eb' }} />,
+          label: 'Gọi vào khám ngay',
+          onClick: () => onCallNext && onCallNext(record.medicalQueueId || record.queueId || record.id),
+        },
         canManagePrioritize &&
           canPrioritize(record.status) && {
             key: 'prioritize_menu',
-            icon: <AlertOutlined style={{ color: '#dc2626' }} />,
-            label: 'Đánh dấu ưu tiên khám',
+            icon: record.priority === 'EMERGENCY' ? <AlertOutlined style={{ color: '#dc2626' }} /> : <StarOutlined style={{ color: '#ea580c' }} />,
+            label: record.priority === 'EMERGENCY' ? 'Cập nhật mức ưu tiên (Cấp cứu)' : record.priority === 'PRIORITY' ? 'Cập nhật mức ưu tiên (Ưu tiên)' : 'Đánh dấu ưu tiên khám',
             onClick: () => onPrioritize && onPrioritize(record),
           },
-        permissions.canCallNext &&
-          record.status === 'WAITING' && {
-            key: 'call',
-            icon: <StepForwardOutlined />,
-            label: 'Gọi vào khám ngay',
-            onClick: () => onCallNext && onCallNext(record.medicalQueueId || record.queueId || record.id),
-          },
+        hasReQueueAction && {
+          key: 're_queue_menu',
+          icon: <ReloadOutlined style={{ color: '#0284c7' }} />,
+          label: 'Đưa lại vào hàng đợi',
+          onClick: () => onReQueue && onReQueue(record),
+        },
         permissions.canUpdateStatus &&
           record.status === 'IN_PROGRESS' && {
             key: 'wait_cdls',
@@ -236,25 +245,16 @@ export const getQueueBoardColumns = ({
             label: 'Tiếp tục khám bệnh',
             onClick: () => onUpdateStatus && onUpdateStatus(record.id, 'IN_PROGRESS'),
           },
-        canManageReQueue &&
-          record.status === 'SKIPPED' && {
-            key: 're_queue_menu',
-            icon: <ReloadOutlined />,
-            label: 'Đưa lại vào hàng đợi',
-            onClick: () => onReQueue && onReQueue(record),
-          },
-        permissions.canSkip &&
-          record.status === 'IN_PROGRESS' && {
-            type: 'divider',
-          },
-        permissions.canSkip &&
-          record.status === 'IN_PROGRESS' && {
-            key: 'skip',
-            icon: <CloseCircleOutlined />,
-            danger: true,
-            label: 'Tạm hoãn lượt khám (Vắng mặt)',
-            onClick: () => onSkip && onSkip(record),
-          },
+        hasDeferAction && {
+          type: 'divider',
+        },
+        hasDeferAction && {
+          key: 'skip',
+          icon: <CloseCircleOutlined />,
+          danger: true,
+          label: 'Tạm hoãn lượt khám (Vắng mặt)',
+          onClick: () => onSkip && onSkip(record),
+        },
         canUserCloseVisit(user, record.doctorId) &&
           record.status === 'IN_PROGRESS' && {
             key: 'close_visit',
@@ -274,84 +274,22 @@ export const getQueueBoardColumns = ({
         },
       ].filter(Boolean)
 
-      const hasCallAction = permissions.canCallNext && record.status === 'WAITING'
-      const hasReQueueAction = onReQueue && canManageReQueue && record.status === 'SKIPPED'
-      const hasDeferAction = permissions.canSkip && record.status === 'IN_PROGRESS'
-
       return (
-        <Space size="small">
-          {hasCallAction && (
-            <Button
-              type="primary"
-              size="small"
-              icon={<StepForwardOutlined />}
-              onClick={() => onCallNext && onCallNext(record.medicalQueueId || record.queueId || record.id)}
-            >
-              Gọi khám
-            </Button>
-          )}
-          {hasReQueueAction && (
-            <Button
-              type="primary"
-              size="small"
-              style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
-              icon={<ReloadOutlined />}
-              loading={reQueuingId === record.id}
-              onClick={() => onReQueue && onReQueue(record)}
-            >
-              Đưa lại hàng đợi
-            </Button>
-          )}
-          {hasDeferAction && (
-            <Button
-              size="small"
-              danger
-              icon={<CloseCircleOutlined />}
-              onClick={() => onSkip && onSkip(record)}
-            >
-              Tạm hoãn
-            </Button>
-          )}
-          {canManagePrioritize && canPrioritize(record.status) && (
-            <Button
-              style={{
-                height: 36,
-                borderRadius: 8,
-                borderColor: record.priority === 'EMERGENCY' ? '#fca5a5' : '#fed7aa',
-                color: record.priority === 'EMERGENCY' ? '#dc2626' : '#ea580c',
-                backgroundColor: record.priority === 'EMERGENCY' ? '#fef2f2' : '#fff7ed',
-                fontWeight: 600,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-              }}
-              icon={
-                record.priority === 'EMERGENCY' ? (
-                  <AlertOutlined style={{ fontSize: 16 }} />
-                ) : (
-                  <StarOutlined style={{ fontSize: 16 }} />
-                )
-              }
-              onClick={() => onPrioritize && onPrioritize(record)}
-            >
-              {record.priority === 'EMERGENCY' ? 'Cấp cứu' : record.priority === 'PRIORITY' ? 'Ưu tiên' : 'Ưu tiên'}
-            </Button>
-          )}
-          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button
-              style={{
-                height: 36,
-                width: 36,
-                borderRadius: 8,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              icon={<MoreOutlined style={{ fontSize: 18 }} />}
-              title="Thao tác"
-            />
-          </Dropdown>
-        </Space>
+        <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+          <Button
+            size="small"
+            style={{
+              height: 32,
+              width: 32,
+              borderRadius: 6,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            icon={<MoreOutlined style={{ fontSize: 16 }} />}
+            title="Thao tác"
+          />
+        </Dropdown>
       )
     },
   },

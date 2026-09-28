@@ -207,3 +207,98 @@ export function calculateAutoQuantity(item) {
   const total = doseQty * freq * days
   return Number.isInteger(total) ? total : Math.ceil(total)
 }
+
+/**
+ * Validate medicine catalog dose configuration inputs (NCL-05-CN-007).
+ * - Both empty: valid (backend allows NULL), no warning.
+ * - Values <= 0: invalid (backend has CHECK > 0 constraint).
+ * - Only 1 of 2 provided: valid (does not block save), but returns soft warning:
+ *   "Cần khai báo đủ cả hàm lượng và liều tối đa thì mới kiểm tra được."
+ * @param {number|string|null|undefined} strengthValueMg
+ * @param {number|string|null|undefined} maxDailyDoseMg
+ * @returns {{ valid: boolean, error: string, warning: string, strengthValueMg: number|null, maxDailyDoseMg: number|null }}
+ */
+export function validateMedicineDoseConfig(strengthValueMg, maxDailyDoseMg) {
+  const parseVal = (val) => {
+    if (val === null || val === undefined || val === '') return null
+    const num = Number(val)
+    return isNaN(num) ? 'INVALID' : num
+  }
+
+  const sVal = parseVal(strengthValueMg)
+  const mVal = parseVal(maxDailyDoseMg)
+
+  if (sVal === 'INVALID' || mVal === 'INVALID') {
+    return {
+      valid: false,
+      error: 'Hàm lượng hoạt chất hoặc liều tối đa phải là số hợp lệ.',
+      warning: '',
+      strengthValueMg: null,
+      maxDailyDoseMg: null,
+    }
+  }
+
+  if ((sVal !== null && sVal <= 0) || (mVal !== null && mVal <= 0)) {
+    return {
+      valid: false,
+      error: 'Hàm lượng hoạt chất (mg) và liều tối đa theo ngày phải lớn hơn 0.',
+      warning: '',
+      strengthValueMg: null,
+      maxDailyDoseMg: null,
+    }
+  }
+
+  // Both empty -> valid, no warning (NULL in backend)
+  if (sVal === null && mVal === null) {
+    return {
+      valid: true,
+      error: '',
+      warning: '',
+      strengthValueMg: null,
+      maxDailyDoseMg: null,
+    }
+  }
+
+  // Only one provided -> valid, soft warning
+  if (sVal === null || mVal === null) {
+    return {
+      valid: true,
+      error: '',
+      warning: 'Cần khai báo đủ cả hàm lượng và liều tối đa thì mới kiểm tra được.',
+      strengthValueMg: sVal,
+      maxDailyDoseMg: mVal,
+    }
+  }
+
+  // Both provided and positive
+  return {
+    valid: true,
+    error: '',
+    warning: '',
+    strengthValueMg: sVal,
+    maxDailyDoseMg: mVal,
+  }
+}
+
+/**
+ * Build dose configuration payload for CreateMedicineRequest / UpdateMedicineRequest.
+ * Returns null for missing/empty/invalid values (never 0, empty string, or NaN).
+ * @param {Object} values
+ * @param {number|string|null|undefined} [values.strengthValueMg]
+ * @param {number|string|null|undefined} [values.maxDailyDoseMg]
+ * @returns {{ strengthValueMg: number|null, maxDailyDoseMg: number|null }}
+ */
+export function buildMedicineDosePayload(values = {}) {
+  const parseVal = (val) => {
+    if (val === null || val === undefined || val === '') return null
+    const num = Number(val)
+    if (isNaN(num) || num <= 0) return null
+    return Number(num.toFixed(3))
+  }
+
+  return {
+    strengthValueMg: parseVal(values?.strengthValueMg),
+    maxDailyDoseMg: parseVal(values?.maxDailyDoseMg),
+  }
+}
+

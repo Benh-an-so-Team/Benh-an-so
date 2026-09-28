@@ -58,6 +58,10 @@ import {
   SPECIAL_CONTROL_GROUPS,
   validateSpecialControlMedicineForm,
 } from '../utils/specialControlHelpers.js'
+import {
+  validateMedicineDoseConfig,
+  buildMedicineDosePayload,
+} from '../utils/maxDailyDoseHelpers.js'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -247,6 +251,8 @@ function MedicineCatalogPage() {
       defaultRoute: 'ORAL',
       unit: 'Viên',
       minStockThreshold: 10,
+      strengthValueMg: undefined,
+      maxDailyDoseMg: undefined,
       isSpecialControl: false,
     })
     setModalOpen(true)
@@ -270,6 +276,8 @@ function MedicineCatalogPage() {
       unit: record.unit || '',
       defaultRoute: record.defaultRoute || 'ORAL',
       minStockThreshold: record.minStockThreshold ?? 0,
+      strengthValueMg: record.strengthValueMg != null ? Number(record.strengthValueMg) : undefined,
+      maxDailyDoseMg: record.maxDailyDoseMg != null ? Number(record.maxDailyDoseMg) : undefined,
       isSpecialControl: isSpecial,
       specialControlGroup: record.specialControlGroup || undefined,
       specialControlNote: record.specialControlNote || '',
@@ -341,6 +349,17 @@ function MedicineCatalogPage() {
       return
     }
 
+    const doseValidation = validateMedicineDoseConfig(values.strengthValueMg, values.maxDailyDoseMg)
+    if (!doseValidation.valid) {
+      message.error(doseValidation.error)
+      return
+    }
+    if (doseValidation.warning) {
+      message.warning(doseValidation.warning)
+    }
+
+    const dosePayload = buildMedicineDosePayload(values)
+
     const isSpecial = Boolean(values.isSpecialControl)
     const specialPayload = {
       isSpecialControl: isSpecial,
@@ -359,6 +378,8 @@ function MedicineCatalogPage() {
           unit: trimmedUnit,
           defaultRoute: defaultRouteVal,
           minStockThreshold: thresholdVal,
+          strengthValueMg: dosePayload.strengthValueMg,
+          maxDailyDoseMg: dosePayload.maxDailyDoseMg,
         }
         await medicineApi.update(editingMedicine.id, updatePayload)
         try {
@@ -385,6 +406,8 @@ function MedicineCatalogPage() {
           unit: trimmedUnit,
           defaultRoute: defaultRouteVal,
           minStockThreshold: thresholdVal,
+          strengthValueMg: dosePayload.strengthValueMg,
+          maxDailyDoseMg: dosePayload.maxDailyDoseMg,
         }
         const createdRes = await medicineApi.create(createPayload)
         const createdId = createdRes?.data?.id || createdRes?.id
@@ -410,7 +433,18 @@ function MedicineCatalogPage() {
       if (status === 409) {
         message.error(msg || 'Thuốc đã tồn tại trong danh mục.')
       } else if (status === 400) {
-        message.error(msg || 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.')
+        if (
+          typeof msg === 'string' &&
+          (msg.includes('Strength value') ||
+            msg.includes('Max daily dose') ||
+            msg.includes('greater than 0') ||
+            msg.includes('strengthValueMg') ||
+            msg.includes('maxDailyDoseMg'))
+        ) {
+          message.error('Hàm lượng hoạt chất (mg) và liều tối đa theo ngày phải lớn hơn 0.')
+        } else {
+          message.error(msg || 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.')
+        }
       } else {
         message.error(msg || 'Không thể lưu dữ liệu thuốc lên máy chủ.')
       }
@@ -513,6 +547,9 @@ function MedicineCatalogPage() {
       )
     }
 
+    // TODO (Backend): Cần bổ sung tham số `missingMaxDailyDose` vào SearchMedicinesQuery / API GET /medicines
+    // để hỗ trợ lọc phân trang server-side đồng bộ (tránh lỗi lệch pha filter/phân trang trên từng trang
+    // client-side như từng gặp ở Danh mục CLS). Hiện tại bảng hiển thị trực quan qua Tag "Chưa khai báo liều".
     return list
   }, [medicines, stockStatusFilter, specialControlFilter])
 
@@ -580,6 +617,66 @@ function MedicineCatalogPage() {
       width: 90,
       align: 'center',
       render: (v) => <Tag color="blue">{v || '—'}</Tag>,
+    },
+    {
+      title: 'Liều tối đa/ngày',
+      key: 'maxDailyDose',
+      width: 175,
+      render: (_, record) => {
+        const strength = record.strengthValueMg != null ? Number(record.strengthValueMg) : null
+        const maxDose = record.maxDailyDoseMg != null ? Number(record.maxDailyDoseMg) : null
+
+        if (maxDose == null && strength == null) {
+          return (
+            <Space direction="vertical" size={2}>
+              <span style={{ color: '#94a3b8' }}>—</span>
+              <Tag
+                style={{
+                  fontSize: 11,
+                  margin: 0,
+                  padding: '1px 6px',
+                  borderRadius: 4,
+                  border: '1px dashed #cbd5e1',
+                  color: '#64748b',
+                  backgroundColor: '#f8fafc',
+                }}
+              >
+                Chưa khai báo liều
+              </Tag>
+            </Space>
+          )
+        }
+
+        if (maxDose != null && strength != null) {
+          return (
+            <Space direction="vertical" size={2}>
+              <span style={{ fontWeight: 600, color: '#0369a1' }}>
+                {maxDose.toLocaleString('vi-VN')} mg/ngày
+              </span>
+              <span style={{ fontSize: 12, color: '#64748b' }}>
+                Hàm lượng: {strength.toLocaleString('vi-VN')} mg/{record.unit || 'đơn vị'}
+              </span>
+            </Space>
+          )
+        }
+
+        return (
+          <Space direction="vertical" size={2}>
+            {maxDose != null ? (
+              <span style={{ fontWeight: 600, color: '#0369a1' }}>
+                {maxDose.toLocaleString('vi-VN')} mg/ngày
+              </span>
+            ) : (
+              <span style={{ fontSize: 12, color: '#64748b' }}>
+                Hàm lượng: {strength.toLocaleString('vi-VN')} mg/{record.unit || 'đơn vị'}
+              </span>
+            )}
+            <Tag color="warning" style={{ fontSize: 11, margin: 0, padding: '1px 6px', borderRadius: 4 }}>
+              Chưa đủ cặp kiểm tra
+            </Tag>
+          </Space>
+        )
+      },
     },
     {
       title: 'Tồn kho thực tế',
@@ -1269,6 +1366,66 @@ function MedicineCatalogPage() {
                   min={0}
                   max={1000000}
                   precision={0}
+                  style={{ width: '100%', borderRadius: 8, height: 38, lineHeight: '38px' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="strengthValueMg"
+                label={<strong>Hàm lượng hoạt chất (mg/đơn vị)</strong>}
+                tooltip="Khai báo để hệ thống cảnh báo khi đơn vượt liều tối đa theo ngày. Bỏ trống sẽ không kiểm tra tự động."
+                rules={[
+                  {
+                    validator: (_, val) => {
+                      if (val != null && val !== '') {
+                        const num = Number(val)
+                        if (isNaN(num) || num <= 0) {
+                          return Promise.reject(new Error('Hàm lượng hoạt chất phải lớn hơn 0.'))
+                        }
+                      }
+                      return Promise.resolve()
+                    },
+                  },
+                ]}
+              >
+                <InputNumber
+                  min={0.001}
+                  step={0.001}
+                  precision={3}
+                  placeholder="VD: 500 (mg)"
+                  style={{ width: '100%', borderRadius: 8, height: 38, lineHeight: '38px' }}
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="maxDailyDoseMg"
+                label={<strong>Liều tối đa theo ngày (mg/ngày)</strong>}
+                tooltip="Khai báo để hệ thống cảnh báo khi đơn vượt liều tối đa theo ngày. Bỏ trống sẽ không kiểm tra tự động."
+                rules={[
+                  {
+                    validator: (_, val) => {
+                      if (val != null && val !== '') {
+                        const num = Number(val)
+                        if (isNaN(num) || num <= 0) {
+                          return Promise.reject(new Error('Liều tối đa theo ngày phải lớn hơn 0.'))
+                        }
+                      }
+                      return Promise.resolve()
+                    },
+                  },
+                ]}
+              >
+                <InputNumber
+                  min={0.001}
+                  step={0.001}
+                  precision={3}
+                  placeholder="VD: 4000 (mg/ngày)"
                   style={{ width: '100%', borderRadius: 8, height: 38, lineHeight: '38px' }}
                 />
               </Form.Item>
