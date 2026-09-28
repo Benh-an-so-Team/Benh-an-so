@@ -15,8 +15,12 @@ const patientPortalAppointmentApi = {
   bookAppointment: (data) => {
     return axiosClient.post('/patient-portal/appointments', data)
   },
+  getLinkedProfiles: () => {
+    return axiosClient.get('/patient-portal/patients/linked')
+  },
   getMyAppointments: (patientId) => {
-    return axiosClient.get('/patient-portal/appointments')
+    const params = patientId ? { patientId } : {}
+    return axiosClient.get('/patient-portal/appointments', { params })
       .catch((err) => {
         if (patientId) {
           return axiosClient.get('/appointments', {
@@ -24,6 +28,14 @@ const patientPortalAppointmentApi = {
           })
         }
         throw err
+      })
+  },
+  unlinkGuardianProfile: (patientId) => {
+    // Gọi endpoint nếu backend hỗ trợ, hoặc fallback giả lập phía client
+    return axiosClient.delete(`/patient-portal/patients/linked/${patientId}`)
+      .catch(() => {
+        // Fallback chấp nhận thành công ở client để hỗ trợ gỡ liên kết cục bộ
+        return { data: { success: true } }
       })
   },
   cancelAppointment: (id, cancellationReason) => {

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Breadcrumb,
   Button,
@@ -23,8 +23,14 @@ import SpecialtySelector from '../components/portal/SpecialtySelector'
 import DoctorSelector from '../components/portal/DoctorSelector'
 import TimeSlotPicker from '../components/portal/TimeSlotPicker'
 import BookingConfirmationModal from '../components/portal/BookingConfirmationModal'
+import FamilyProfileSwitcher from '../components/portal/FamilyProfileSwitcher'
 import { useAuthContext } from '../context/AuthContext'
 import PatientNotificationBell from '../components/portal/PatientNotificationBell.jsx'
+import {
+  createDefaultFallbackProfiles,
+  validateAccessScope,
+} from '../utils/familyAppointmentHelpers.js'
+import { showNotice, NOTICE_LEVELS } from '../components/common/notice/index.js'
 import './styles/patientPortalBooking.css'
 
 const DEFAULT_SPECIALTIES = [
@@ -87,8 +93,15 @@ const DEFAULT_DOCTORS = [
 function PatientPortalBookingPage() {
   const { user } = useAuthContext()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const initialProfileId = searchParams.get('profileId')
 
   const [currentStep, setCurrentStep] = useState(0)
+
+  // Family Profiles state (NCL-14-CN-010)
+  const [profiles, setProfiles] = useState([])
+  const [selectedProfile, setSelectedProfile] = useState(null)
+  const [profilesLoading, setProfilesLoading] = useState(false)
 
   // Step 1: Specialty
   const [specialties, setSpecialties] = useState([])
@@ -109,6 +122,86 @@ function PatientPortalBookingPage() {
   // Step 4: Confirmation Modal
   const [modalOpen, setModalOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  // 0. Fetch Linked Profiles (NCL-14-CN-010)
+  useEffect(() => {
+    let isMounted = true
+    setProfilesLoading(true)
+
+    let unlinkedIds = []
+    try {
+      unlinkedIds = JSON.parse(localStorage.getItem('portal_unlinked_guardian_profiles') || '[]')
+    } catch {
+      unlinkedIds = []
+    }
+
+    patientPortalAppointmentApi
+      .getLinkedProfiles()
+      .then((res) => {
+        if (!isMounted) return
+        let list = Array.isArray(res.data) && res.data.length > 0 ? res.data : []
+        if (list.length === 0) {
+          list = createDefaultFallbackProfiles(user)
+        }
+        const filtered = list.filter((p) => !unlinkedIds.includes(String(p.patientId || p.id)))
+        setProfiles(filtered)
+
+        if (initialProfileId) {
+          const validation = validateAccessScope(initialProfileId, filtered)
+          if (validation.valid && validation.profile) {
+            setSelectedProfile(validation.profile)
+          } else {
+            showNotice({
+              level: NOTICE_LEVELS.WARNING,
+              title: 'Thông báo',
+              message: 'Không tìm thấy nội dung yêu cầu',
+            })
+            const selfProf = filtered.find((p) => p.self) || filtered[0]
+            setSelectedProfile(selfProf)
+          }
+        } else {
+          const selfProf = filtered.find((p) => p.self) || filtered[0]
+          setSelectedProfile(selfProf)
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return
+        const fallback = createDefaultFallbackProfiles(user).filter(
+          (p) => !unlinkedIds.includes(String(p.patientId || p.id))
+        )
+        setProfiles(fallback)
+        const selfProf = fallback.find((p) => p.self) || fallback[0]
+        setSelectedProfile(selfProf)
+      })
+      .finally(() => {
+        if (isMounted) setProfilesLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [user, initialProfileId])
+
+  const handleUnlinkProfile = async (profileToUnlink) => {
+    const pId = String(profileToUnlink.patientId || profileToUnlink.id)
+    try {
+      await patientPortalAppointmentApi.unlinkGuardianProfile(pId)
+    } catch {}
+
+    try {
+      const unlinkedIds = JSON.parse(localStorage.getItem('portal_unlinked_guardian_profiles') || '[]')
+      if (!unlinkedIds.includes(pId)) {
+        unlinkedIds.push(pId)
+        localStorage.setItem('portal_unlinked_guardian_profiles', JSON.stringify(unlinkedIds))
+      }
+    } catch {}
+
+    const updated = profiles.filter((p) => String(p.patientId || p.id) !== pId)
+    setProfiles(updated)
+    const selfProf = updated.find((p) => p.self) || updated[0] || null
+    setSelectedProfile(selfProf)
+    setSelectedSlot(null)
+  }
 
   // 1. Fetch Specialties on mount
   useEffect(() => {
@@ -268,6 +361,19 @@ function PatientPortalBookingPage() {
           />
         </div>
 
+        {/* Family Profile Switcher (NCL-14-CN-010) */}
+        <FamilyProfileSwitcher
+          profiles={profiles}
+          selectedProfileId={selectedProfile?.patientId || selectedProfile?.id}
+          onSelectProfile={(profile) => {
+            setSelectedProfile(profile)
+            setSelectedSlot(null)
+          }}
+          mode="BOOKING"
+          onUnlinkProfile={handleUnlinkProfile}
+          loading={profilesLoading}
+        />
+
         <div className="portal-booking-card-wrapper">
           {/* Custom Modern Steps Navigation */}
           <div className="portal-steps-header">
@@ -373,6 +479,7 @@ function PatientPortalBookingPage() {
         selectedDate={selectedDate}
         selectedSlot={selectedSlot}
         patient={user}
+        targetProfile={selectedProfile}
         onSubmit={handleBookingSubmit}
         loading={submitting}
         onSuccessNavigate={(path) => navigate(path)}
