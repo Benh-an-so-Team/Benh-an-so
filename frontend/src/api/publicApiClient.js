@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { normalizeApiError } from '../utils/apiError.js'
 
-const configuredBaseUrl = import.meta.env?.VITE_API_BASE_URL
+const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL
 
 const publicApiClient = axios.create({
   baseURL: configuredBaseUrl || 'http://localhost:8080/api/v1',
