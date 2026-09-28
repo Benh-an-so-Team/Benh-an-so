@@ -327,7 +327,7 @@ function MainLayout() {
         onBreakpoint={(broken) => {
           if (broken) setCollapsed(true)
         }}
-        width={268}
+        width={272}
         theme="dark"
       >
 

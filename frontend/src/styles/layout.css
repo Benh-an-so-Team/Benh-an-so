@@ -204,7 +204,7 @@
   height: 34px;
   min-height: 34px;
   font-size: 12.5px;
-  padding-left: 20px !important;
+  padding-left: 18px !important;
   padding-right: 8px !important;
   margin: 1px 0 !important;
 }
@@ -221,10 +221,12 @@
   color: currentColor;
 }
 
-.clinic-menu.ant-menu-dark .ant-menu-title-content {
-  overflow: visible;
-  text-overflow: clip;
-  white-space: nowrap;
+.clinic-menu.ant-menu-dark .ant-menu-title-content,
+.clinic-menu.ant-menu-dark .ant-menu-item .ant-menu-title-content,
+.clinic-menu.ant-menu-dark .ant-menu-submenu-title .ant-menu-title-content {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
 }
 
 .clinic-menu.ant-menu-dark .ant-menu-item:hover {
