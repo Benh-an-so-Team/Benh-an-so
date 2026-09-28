@@ -1,7 +1,7 @@
 import React from 'react'
 import AppRoutes from './routes/AppRoutes'
 import './App.css'
-import { ConfigProvider, message } from 'antd'
+import { ConfigProvider, message, App as AntdApp } from 'antd'
 import viVN from 'antd/locale/vi_VN'
 import dayjs from 'dayjs'
 import 'dayjs/locale/vi'
@@ -82,12 +82,14 @@ function App() {
           },
         }}
       >
+      <AntdApp>
         <NoticeProvider>
           <ForceChangePasswordModal />
           <SessionTimeoutWarningModal />
           <AppRoutes />
         </NoticeProvider>
-      </ConfigProvider>
+      </AntdApp>
+    </ConfigProvider>
   )
 }
 
