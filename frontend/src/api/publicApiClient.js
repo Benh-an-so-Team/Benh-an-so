@@ -1,6 +1,10 @@
 import axios from 'axios'
 import { normalizeApiError } from '../utils/apiError.js'
 
+if (typeof import.meta.env === 'undefined') {
+  import.meta.env = (typeof globalThis !== 'undefined' && globalThis.process?.env) ? globalThis.process.env : {}
+}
+
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL
 
 const publicApiClient = axios.create({
