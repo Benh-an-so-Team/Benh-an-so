@@ -83,6 +83,9 @@ public class PatientPasswordRecoveryService
     private final com.benhsoan.port.outbound.authSecurity.PatientRecoveryCooldownPort cooldownPort;
     private final PatientRecoverySecurityAuditWriter auditWriter;
 
+    @org.springframework.beans.factory.annotation.Value("${app.sms.gateway.allow-unregistered-phone:false}")
+    private boolean allowUnregisteredPhone;
+
     @Override
     public PatientForgotPasswordResult forgotPassword(PatientForgotPasswordCommand command) {
         String phone = normalizePhone(command.phone());
@@ -99,14 +102,53 @@ public class PatientPasswordRecoveryService
         cooldownPort.recordRequest(phone, now, COOLDOWN_SECONDS);
 
         Optional<User> userOpt = userRepository.findByPhone(phone);
-        if (userOpt.isEmpty()) {
-            // Anti-enumeration protection (TC-03): balance timing with dummy password hash
-            passwordEncoderPort.encode("DUMMY_CODE_" + phone);
-            log.warn("[FORGOT PASSWORD] SĐT '{}' KHÔNG TỒN TẠI trong bảng tài khoản (users) -> Bỏ qua gửi SMS OTP (Chính sách Anti-enumeration).", phone);
-            return new PatientForgotPasswordResult(GENERIC_SUCCESS_MESSAGE, TTL_SECONDS);
-        }
+        User user;
 
-        User user = userOpt.get();
+        if (userOpt.isEmpty()) {
+            java.util.List<Patient> candidates = patientRepository.findAllByPhone(phone);
+            Role patientRole = roleRepository.findByName(PATIENT_ROLE).orElse(null);
+
+            if (candidates != null && !candidates.isEmpty() && patientRole != null) {
+                Patient candidate = candidates.stream()
+                        .filter(p -> p.getUserId() == null)
+                        .findFirst()
+                        .orElse(candidates.get(0));
+
+                User newUser = User.create(
+                        phone,
+                        passwordEncoderPort.encode(UUID.randomUUID().toString()),
+                        candidate.getFullName() != null && !candidate.getFullName().isBlank() ? candidate.getFullName() : "Bệnh nhân",
+                        candidate.getEmail() != null && !candidate.getEmail().isBlank() ? candidate.getEmail() : phone + "@benhsoan.vn",
+                        phone,
+                        patientRole.getId()
+                );
+                user = userRepository.save(newUser);
+                if (candidate.getUserId() == null) {
+                    candidate.linkUser(user.getId());
+                    patientRepository.save(candidate);
+                }
+                log.info("[FORGOT PASSWORD] SĐT '{}' đã có hồ sơ y tế (Mã BN: {}). Tự động kích hoạt tài khoản cổng bệnh nhân và gửi mã OTP...",
+                        phone, candidate.getPatientCode());
+            } else if (allowUnregisteredPhone && patientRole != null) {
+                User newUser = User.create(
+                        phone,
+                        passwordEncoderPort.encode(UUID.randomUUID().toString()),
+                        "Bệnh nhân " + phone,
+                        phone + "@benhsoan.vn",
+                        phone,
+                        patientRole.getId()
+                );
+                user = userRepository.save(newUser);
+                log.info("[FORGOT PASSWORD] [TEST MODE] SĐT '{}' chưa đăng ký nhưng allowUnregisteredPhone=true. Tự động tạo tài khoản test và gửi mã OTP...", phone);
+            } else {
+                // Anti-enumeration protection (TC-03): balance timing with dummy password hash
+                passwordEncoderPort.encode("DUMMY_CODE_" + phone);
+                log.warn("[FORGOT PASSWORD] SĐT '{}' KHÔNG TỒN TẠI trong bảng tài khoản (users) -> Bỏ qua gửi SMS OTP (Chính sách Anti-enumeration).", phone);
+                return new PatientForgotPasswordResult(GENERIC_SUCCESS_MESSAGE, TTL_SECONDS);
+            }
+        } else {
+            user = userOpt.get();
+        }
 
         // Enforce patient-only recovery: staff accounts cannot be reset via patient portal endpoint
         Role role = roleRepository.findById(user.getRoleId()).orElse(null);
