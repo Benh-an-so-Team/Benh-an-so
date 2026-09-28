@@ -171,3 +171,40 @@ test('TC-SB-09: Mock data đáp ứng đầy đủ cấu trúc nghiệp vụ b�
   assert.equal(SAMPLE_VERIFICATION_FAILED.valid, false)
   assert.ok(SAMPLE_VERIFICATION_FAILED.issues.length > 0)
 })
+
+test('TC-SB-10: getExecutionTypeInfo phân loại chính xác bản sao lưu theo lịch vs thủ công', async () => {
+  const { getExecutionTypeInfo } = await import('../../utils/backupScheduleHelpers.js')
+  const scheduled = getExecutionTypeInfo({ executionType: 'SCHEDULED', createdBy: null })
+  assert.equal(scheduled.label, 'Theo lịch')
+  assert.equal(scheduled.isManual, false)
+
+  const manual = getExecutionTypeInfo({ executionType: 'MANUAL', createdBy: 'u123' })
+  assert.equal(manual.label, 'Thủ công')
+  assert.equal(manual.isManual, true)
+
+  const manualByType = getExecutionTypeInfo({ backupType: 'MANUAL' })
+  assert.equal(manualByType.label, 'Thủ công')
+  assert.equal(manualByType.isManual, true)
+})
+
+test('TC-SB-11: formatTimeOnly trích xuất giờ và phút chuẩn xác', async () => {
+  const { formatTimeOnly } = await import('../../utils/backupScheduleHelpers.js')
+  assert.equal(formatTimeOnly(null), '—')
+  assert.equal(formatTimeOnly('23:00'), '23:00')
+  const d = new Date('2026-09-28T02:30:00Z')
+  assert.ok(typeof formatTimeOnly(d) === 'string')
+})
+
+test('TC-SB-12: ScheduledBackupPage sở hữu cấu trúc 3 khối từ trên xuống và tích hợp hệ thống thông báo', () => {
+  const pageContent = fs.readFileSync(
+    path.join(frontendDir, 'src/pages/ScheduledBackupPage.jsx'),
+    'utf-8',
+  )
+  assert.ok(pageContent.includes('1. Cấu hình lịch sao lưu tự động'), 'Phải có Khối 1: Cấu hình lịch sao lưu')
+  assert.ok(pageContent.includes('2. Kiểm tra bản sao lưu gần nhất'), 'Phải có Khối 2: Kiểm tra bản sao lưu gần nhất')
+  assert.ok(pageContent.includes('3. Lịch sử các lần sao lưu'), 'Phải có Khối 3: Lịch sử các lần sao lưu')
+  assert.ok(pageContent.includes('showNotice.critical'), 'Phải tích hợp showNotice.critical cho cảnh báo nghiêm trọng')
+  assert.ok(pageContent.includes('retentionLimit'), 'Phải có cấu hình lưu giữ bản sao lưu với giá trị tạm thời')
+  assert.ok(pageContent.includes('RangePicker'), 'Phải có lọc theo khoảng thời gian')
+})
+

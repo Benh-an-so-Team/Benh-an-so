@@ -16,6 +16,25 @@ export const formatDayMonthYear = (date) => {
 }
 
 /**
+ * Định dạng chỉ giờ và phút theo chuẩn HH:mm
+ * @param {string|Date|number} val
+ * @returns {string}
+ */
+export const formatTimeOnly = (val) => {
+  if (!val) return '—'
+  const date = new Date(val)
+  if (isNaN(date.getTime())) {
+    if (typeof val === 'string' && /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val.trim())) {
+      return val.trim()
+    }
+    return '—'
+  }
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
+/**
  * Định dạng thời gian và ngày theo chuẩn HH:mm:ss DD/MM/YYYY
  * @param {string|Date|number} val
  * @returns {string}
@@ -157,5 +176,30 @@ export const getVerificationStatusInfo = (valid, readable, dataIntact) => {
     isSuccess: false,
     label: 'Cảnh báo: Bản sao lưu phát hiện lỗi hoặc không toàn vẹn dữ liệu',
     color: 'error',
+  }
+}
+
+/**
+ * Xác định thông tin loại chạy: Theo lịch hoặc Thủ công
+ * @param {object} record
+ * @returns {{ label: string, color: string, isManual: boolean }}
+ */
+export const getExecutionTypeInfo = (record = {}) => {
+  const execType = String(record?.executionType || '').toUpperCase()
+  const backupType = String(record?.backupType || '').toUpperCase()
+  const hasUserCreator = record?.createdBy && record.createdBy !== '00000000-0000-0000-0000-000000000000'
+
+  if (execType === 'MANUAL' || backupType === 'MANUAL' || hasUserCreator) {
+    return {
+      label: 'Thủ công',
+      color: 'purple',
+      isManual: true,
+    }
+  }
+
+  return {
+    label: 'Theo lịch',
+    color: 'blue',
+    isManual: false,
   }
 }

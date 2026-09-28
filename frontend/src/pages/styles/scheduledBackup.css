@@ -64,6 +64,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   margin-bottom: 24px;
   border: 1px solid #e2e8f0;
+  scroll-margin-top: 80px;
 }
 
 .scheduled-backup-card .ant-card-head {
@@ -75,6 +76,7 @@
   border-top-left-radius: 10px;
   border-top-right-radius: 10px;
 }
+
 
 /* Next Run Callout */
 .next-run-callout {
