@@ -645,9 +645,6 @@ export default function MedicationProcurementPage() {
           <Title level={3} style={{ margin: 0, color: '#0f172a', fontWeight: 800 }}>
             📦 Dự trù mua thuốc và phiếu đặt hàng
           </Title>
-          <Text type="secondary" style={{ fontSize: 13.5 }}>
-            Công cụ hỗ trợ ra quyết định mua hàng dựa trên tồn kho thực tế, ngưỡng an toàn và tiêu thụ kỳ trước (NCL-06-CN-012)
-          </Text>
         </div>
 
         <Space size={10} wrap>
