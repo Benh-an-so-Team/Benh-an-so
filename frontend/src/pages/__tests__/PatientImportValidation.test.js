@@ -276,7 +276,7 @@ test('Patient Import - parseAndValidateSpreadsheet identifies intra-file and dat
 })
 
 test('Patient Import - parseAndValidateSpreadsheet restores leading zero for numeric phone and CCCD', async () => {
-  const { parseAndValidateSpreadsheet } = await import('../utils/patientImportHelpers.js')
+  const { parseAndValidateSpreadsheet } = await import('../../utils/patientImportHelpers.js')
   const XLSX = await import('xlsx')
 
   const wb = XLSX.utils.book_new()
