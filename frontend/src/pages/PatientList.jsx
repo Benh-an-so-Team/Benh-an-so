@@ -472,6 +472,12 @@ ${rowsXml}
                         label: 'Đặt lịch / Tiếp nhận',
                         onClick: () => navigate('/appointments', { state: { patientId: patient.id } }),
                       },
+                      {
+                        key: 'book-series',
+                        icon: <CalendarOutlined style={{ color: '#7c3aed' }} />,
+                        label: 'Đặt lịch theo liệu trình',
+                        onClick: () => navigate('/appointments', { state: { patientId: patient.id, openSeries: true } }),
+                      },
                     ]
                   : []),
                 ...(canMerge && !patient.isMerged && patient.status !== 'MERGED'

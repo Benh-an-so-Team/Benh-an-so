@@ -845,9 +845,6 @@ function PatientImportPage() {
             <FileExcelOutlined style={{ color: '#16a34a' }} />
             Nhập hồ sơ bệnh nhân từ tệp bảng tính
           </h1>
-          <p className="patient-import-subtitle">
-            Module Quản lý hồ sơ bệnh nhân • Nạp danh sách bệnh nhân hàng loạt với cơ chế kiểm tra và đối soát an toàn
-          </p>
         </div>
         <Space size={10}>
           <Button icon={<RollbackOutlined />} onClick={() => navigate('/patients')}>

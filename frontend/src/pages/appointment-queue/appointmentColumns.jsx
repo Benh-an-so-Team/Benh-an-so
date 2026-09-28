@@ -1,6 +1,7 @@
 import React from 'react'
 import { Avatar, Button, Dropdown, Space, Tag, Typography } from 'antd'
 import {
+  CalendarOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   EyeOutlined,
@@ -22,6 +23,7 @@ export const getAppointmentColumns = ({
   permissions = {},
   user,
   onOpenDetail,
+  onOpenSeriesDetail,
   onConfirm,
   onCheckIn,
   onReschedule,
@@ -33,12 +35,41 @@ export const getAppointmentColumns = ({
     title: 'Mã lịch hẹn',
     dataIndex: 'appointmentCode',
     key: 'appointmentCode',
-    width: 140,
-    render: (code) => (
-      <Text strong style={{ color: '#2563eb', whiteSpace: 'nowrap', display: 'inline-block' }}>
-        {code || 'Chưa có'}
-      </Text>
-    ),
+    width: 160,
+    render: (code, record) => {
+      const hasSeries = Boolean(record?.seriesId || record?.series_id)
+      const seriesCode = record?.seriesCode || record?.series_code
+      const seq = record?.sequenceNumber || record?.sequence_number
+      const total = record?.totalSessions || record?.total_sessions
+      const label = seriesCode
+        ? `Liệu trình ${seriesCode}${seq ? ` · Buổi ${seq}${total ? `/${total}` : ''}` : ''}`
+        : `Liệu trình${seq ? ` · Buổi ${seq}` : ''}`
+
+      return (
+        <div>
+          <Text strong style={{ color: '#2563eb', whiteSpace: 'nowrap', display: 'inline-block' }}>
+            {code || 'Chưa có'}
+          </Text>
+          {hasSeries && (
+            <div style={{ marginTop: 4 }}>
+              <Tag
+                color="purple"
+                style={{ cursor: 'pointer', fontSize: 11 }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (onOpenSeriesDetail) {
+                    onOpenSeriesDetail(record.seriesId || record.series_id)
+                  }
+                }}
+                title="Bấm để xem toàn bộ liệu trình này"
+              >
+                {label}
+              </Tag>
+            </div>
+          )}
+        </div>
+      )
+    },
   },
   {
     title: 'Bệnh nhân',
@@ -131,6 +162,12 @@ export const getAppointmentColumns = ({
           icon: <EyeOutlined />,
           label: 'Xem chi tiết lịch hẹn',
           onClick: () => onOpenDetail && onOpenDetail(record, pInfo, dInfo),
+        },
+        (record.seriesId || record.series_id) && {
+          key: 'series_detail',
+          icon: <CalendarOutlined style={{ color: '#7c3aed' }} />,
+          label: 'Xem toàn bộ liệu trình',
+          onClick: () => onOpenSeriesDetail && onOpenSeriesDetail(record.seriesId || record.series_id),
         },
         permissions.canConfirmAppointment && record.status === 'SCHEDULED' && {
           key: 'confirm',
