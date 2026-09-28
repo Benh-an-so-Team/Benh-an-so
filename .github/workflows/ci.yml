@@ -141,3 +141,61 @@ jobs:
           name: frontend-dist
           path: frontend/dist/
           retention-days: 7
+
+  # ==========================================================
+  # JOB 3: Continuous Deployment (Vercel & Render)
+  # Triggered only when pushing to `main` branch and all CI tests pass
+  # ==========================================================
+  deploy:
+    name: Deploy to Cloud (Vercel & Render)
+    needs: [backend-ci, frontend-ci]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # 3.1: Deploy Backend to Render via Deploy Hook
+      # --------------------------------------------------------
+      - name: Trigger Render Backend Deployment
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "::warning title=Render Deploy Skipped::Secret RENDER_BACKEND_DEPLOY_HOOK is not configured in repository secrets."
+          else
+            echo "Triggering deployment on Render..."
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$RENDER_DEPLOY_HOOK")
+            if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+              echo "Render deploy triggered successfully! (HTTP $HTTP_STATUS)"
+            else
+              echo "Failed to trigger Render deploy. HTTP Status: $HTTP_STATUS"
+              exit 1
+            fi
+          fi
+
+      # --------------------------------------------------------
+      # 3.2: Deploy Frontend to Vercel
+      # --------------------------------------------------------
+      - name: Deploy Frontend to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::warning title=Vercel Deploy Skipped::One or more Vercel secrets (VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID) are missing."
+          else
+            echo "Installing Vercel CLI..."
+            npm install --global vercel@latest
+            echo "Deploying frontend to Vercel production..."
+            cd frontend
+            vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+            vercel build --prod --token="$VERCEL_TOKEN"
+            vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+            echo "Vercel production deployment completed successfully!"
+          fi
+
