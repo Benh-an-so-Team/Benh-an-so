@@ -2,6 +2,10 @@ import axios from 'axios'
 import { normalizeApiError } from '../utils/apiError.js'
 import { API_TIMEOUT } from '../utils/constants.js'
 
+if (typeof import.meta.env === 'undefined') {
+  import.meta.env = (typeof globalThis !== 'undefined' && globalThis.process?.env) ? globalThis.process.env : {}
+}
+
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL
 
 const axiosClient = axios.create({
