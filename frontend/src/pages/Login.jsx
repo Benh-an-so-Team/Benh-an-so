@@ -5,7 +5,7 @@ import { UserOutlined, LockOutlined, SearchOutlined } from '@ant-design/icons'
 import { useAuthContext } from '../context/AuthContext.jsx'
 import { getDefaultHomePath } from '../components/layout/navigationConfig.js'
 import { popSessionExpiredNotice } from '../utils/sessionManagementHelpers.js'
-import './login.css'
+import './styles/login.css'
 
 function Login() {
   const [loading, setLoading] = useState(false)

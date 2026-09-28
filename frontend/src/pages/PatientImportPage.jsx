@@ -62,7 +62,7 @@ import {
   parseAndValidateSpreadsheet,
   validateSpreadsheetFile,
 } from '../utils/patientImportHelpers.js'
-import './patientImport.css'
+import './styles/patientImport.css'
 
 const { Title, Text, Paragraph } = Typography
 const { Dragger } = Upload

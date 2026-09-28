@@ -10,7 +10,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import { useAuthContext } from '../context/AuthContext'
-import './portalLogin.css'
+import './styles/portalLogin.css'
 
 function PortalLogin() {
   const [form] = Form.useForm()

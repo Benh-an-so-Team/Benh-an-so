@@ -50,7 +50,7 @@ import {
 import { getApiErrorMessage } from '../utils/apiError'
 import ConfirmBatchArchiveModal from '../components/archive/ConfirmBatchArchiveModal'
 import ArchivedMedicalRecordDetailModal from '../components/archive/ArchivedMedicalRecordDetailModal'
-import './medicalRecordArchive.css'
+import './styles/medicalRecordArchive.css'
 
 const { Title, Text, Paragraph } = Typography
 const { RangePicker } = DatePicker

@@ -58,7 +58,7 @@ import {
   SAMPLE_VERIFICATION_FAILED,
 } from '../utils/backupScheduleMockData'
 import BackupVerificationModal from '../components/backup/BackupVerificationModal'
-import './scheduledBackup.css'
+import './styles/scheduledBackup.css'
 
 dayjs.extend(customParseFormat)
 

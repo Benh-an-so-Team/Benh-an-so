@@ -38,7 +38,7 @@ import patientPortalMedicalHistoryApi from '../api/patientPortalMedicalHistoryAp
 import MedicalHistoryDetailModal from '../components/portal/MedicalHistoryDetailModal'
 import PatientNotificationBell from '../components/portal/PatientNotificationBell.jsx'
 import { getApiErrorMessage } from '../utils/apiError'
-import './patientMedicalHistory.css'
+import './styles/patientMedicalHistory.css'
 
 const { Title, Text } = Typography
 

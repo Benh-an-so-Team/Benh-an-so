@@ -25,7 +25,7 @@ import TimeSlotPicker from '../components/portal/TimeSlotPicker'
 import BookingConfirmationModal from '../components/portal/BookingConfirmationModal'
 import { useAuthContext } from '../context/AuthContext'
 import PatientNotificationBell from '../components/portal/PatientNotificationBell.jsx'
-import './patientPortalBooking.css'
+import './styles/patientPortalBooking.css'
 
 const DEFAULT_SPECIALTIES = [
   {

@@ -22,7 +22,7 @@ import {
 } from '@ant-design/icons'
 import { useAuthContext } from '../context/AuthContext'
 import PatientNotificationBell from '../components/portal/PatientNotificationBell.jsx'
-import './portalDashboard.css'
+import './styles/portalDashboard.css'
 
 function PortalDashboard() {
   const { user, logout } = useAuthContext()
