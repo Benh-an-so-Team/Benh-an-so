@@ -154,7 +154,6 @@ export default function ClinicalServiceManagementPage() {
   useEffect(() => {
     loadData(1, 20)
     loadStats()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const isClientFilterActive = typeFilter !== 'ALL' || dataTypeFilter !== 'ALL'

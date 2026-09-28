@@ -7,8 +7,24 @@ Base path: `/api/v1`. The live OpenAPI document is available at `/api/v1/api-doc
 | `POST /prescriptions/{id}/interconnection` | `PRESCRIPTION_INTERCONNECTION_SEND` | DOCTOR and responsible for the prescription visit |
 | `GET /prescription-interconnections` | `PRESCRIPTION_INTERCONNECTION_READ` | ADMIN |
 | `POST /prescriptions/{id}/interconnection/retry` | `PRESCRIPTION_INTERCONNECTION_RETRY` | ADMIN; only `FAILED` submissions |
+| `POST /prescriptions/{id}/replacement` | `PRESCRIPTION_UPDATE` | DOCTOR, prescribing doctor of the original (NCL-12-CN-008) |
 
 PHARMACIST is not assigned any interconnection permission.
+
+## Replacement prescriptions (NCL-12-CN-008)
+
+Issuing a replacement for an interconnected prescription sends the replacement
+through exactly this flow, so `interconnectionStatus`, the receipt code, the
+failure reason and the attempt history behave as described below. The replacement
+submission additionally carries the superseded prescription code, which makes the
+simulated interconnection system mark the original as cancelled (TC-03). See
+`docs/api/prescription-replacement-contract.md`.
+
+Because a gateway failure is recorded as `FAILED` rather than thrown, a failed
+replacement send leaves the original marked as cancelled **only** after a
+successful retry. `POST /prescriptions/{id}/interconnection/retry` re-sends the
+same payload, including the superseded code, so the existing administrator retry
+completes the replacement lifecycle without any replacement-specific retry state.
 
 ## Reconciliation (NCL-12-CN-007)
 

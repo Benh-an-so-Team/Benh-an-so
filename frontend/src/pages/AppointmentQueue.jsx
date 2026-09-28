@@ -36,6 +36,7 @@ import {
   CheckOutlined,
   ClockCircleOutlined,
   CloseCircleOutlined,
+  DesktopOutlined,
   EllipsisOutlined,
   ExclamationCircleOutlined,
   EyeOutlined,
@@ -1390,6 +1391,14 @@ function AppointmentQueue() {
               <Button icon={<HistoryOutlined />} onClick={() => setLogsDrawerOpen(true)}>
                 Nhật ký & Thông báo
               </Button>
+              <Tooltip title="Mở màn hình công cộng hiển thị số thứ tự sảnh chờ (Kiosk / Smart TV)">
+                <Button
+                  icon={<DesktopOutlined />}
+                  onClick={() => window.open('/display/waiting-room', '_blank')}
+                >
+                  Màn hình sảnh chờ
+                </Button>
+              </Tooltip>
               {permissions.canCreateAppointment && (
                 <Button
                   type="primary"
@@ -2116,6 +2125,24 @@ function AppointmentQueue() {
               </Card>
             ),
           },
+          {
+            key: 'completed_history',
+            label: (
+              <span>
+                <CheckCircleOutlined /> Lịch Sử Bệnh Nhân Đã Khám
+              </span>
+            ),
+            children: (
+              <CompletedTodayList
+                items={doctorQueueGroups.completed}
+                getPatientInfo={getPatientInfo}
+                permissions={permissions}
+                selectedDate={selectedDate}
+                onOpenEncounter={openEncounter}
+                onOpenHistory={openPatientHistory}
+              />
+            ),
+          },
           ...(!permissions.isDoctorOnly
             ? [
                 {
@@ -2138,7 +2165,7 @@ function AppointmentQueue() {
             : []),
         ].filter((item) => {
           if (permissions.isAdmin) return true
-          if (permissions.isDoctor) return ['doctor_queue', 'completed_history', 'waitlist'].includes(item.key)
+          if (permissions.isDoctor) return ['doctor_queue', 'completed_history'].includes(item.key) || item.key === 'waitlist'
           return ['appointments', 'reception_queue', 'waitlist'].includes(item.key)
         })}
       />

@@ -68,7 +68,7 @@ test('TC-CS-03: calculateConsentImpact - Rút lại toàn bộ sự đồng ý h
   assert.equal(impactWithdrawAll.newScopesList.length, 0)
   assert.ok(impactWithdrawAll.activeScopesText[0].includes('Không có'))
   assert.ok(impactWithdrawAll.stoppedActivities.length >= 3)
-  assert.match(impactWithdrawAll.legalRetentionNotice, /tối thiểu 10 năm theo Luật Khám bệnh, chữa bệnh \(QTN-19\)/i)
+  assert.match(impactWithdrawAll.legalRetentionNotice, /tối thiểu 10 năm theo Luật Khám bệnh, chữa bệnh/i)
 })
 
 test('TC-CS-04: getConsentStatusMeta - Ánh xạ đầy đủ nhãn, màu sắc cho trạng thái phiên bản', () => {
@@ -89,7 +89,7 @@ test('TC-CS-04: getConsentStatusMeta - Ánh xạ đầy đủ nhãn, màu sắc 
 })
 
 test('TC-CS-05: QTN19_PLAIN_EXPLANATION - Cung cấp lời giải thích pháp lý đơn giản, dễ hiểu theo luật định', () => {
-  assert.ok(QTN19_PLAIN_EXPLANATION.title.includes('QTN-19'))
+  assert.ok(QTN19_PLAIN_EXPLANATION.title.includes('Luật Khám bệnh, chữa bệnh'))
   assert.match(QTN19_PLAIN_EXPLANATION.summaryForPatient, /lưu trữ bảo mật tối thiểu 10 năm/)
   assert.match(QTN19_PLAIN_EXPLANATION.summaryForPatient, /không thể xóa ngay hồ sơ bệnh án/)
   assert.match(QTN19_PLAIN_EXPLANATION.actionTakenText, /thu hồi mọi quyền đồng ý đối với các hoạt động ngoài khám chữa bệnh/)

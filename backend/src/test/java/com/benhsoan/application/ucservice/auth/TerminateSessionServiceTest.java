@@ -1,9 +1,7 @@
 package com.benhsoan.application.ucservice.auth;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,10 +31,14 @@ class TerminateSessionServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-09-24T08:00:00Z");
 
-    @Mock private UserSessionRepository userSessionRepository;
-    @Mock private SessionAuditWriter sessionAuditWriter;
-    @Mock private CurrentUserPort currentUserPort;
-    @Mock private ClockPort clockPort;
+    @Mock
+    private UserSessionRepository userSessionRepository;
+    @Mock
+    private SessionAuditWriter sessionAuditWriter;
+    @Mock
+    private CurrentUserPort currentUserPort;
+    @Mock
+    private ClockPort clockPort;
 
     private TerminateSessionService service;
 
@@ -46,8 +48,7 @@ class TerminateSessionServiceTest {
                 userSessionRepository,
                 sessionAuditWriter,
                 currentUserPort,
-                clockPort
-        );
+                clockPort);
     }
 
     @Test
@@ -59,8 +60,7 @@ class TerminateSessionServiceTest {
 
         UserSession session = UserSession.restore(
                 sessionId, userId, "hash", null,
-                NOW.plus(Duration.ofDays(7)), NOW, NOW, null
-        );
+                NOW.plus(Duration.ofDays(7)), NOW, NOW, null);
 
         when(clockPort.now()).thenReturn(NOW);
         when(currentUserPort.getCurrentUserId()).thenReturn(adminId);
@@ -76,8 +76,7 @@ class TerminateSessionServiceTest {
                 eq(sessionId),
                 eq(userId),
                 eq("Suspicious workstation"),
-                eq(NOW)
-        );
+                eq(NOW));
     }
 
     @Test

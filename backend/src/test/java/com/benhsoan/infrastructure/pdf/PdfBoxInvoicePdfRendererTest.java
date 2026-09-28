@@ -280,5 +280,53 @@ class PdfBoxInvoicePdfRendererTest {
         assertEquals(matchingTotal, doc.totalAmount());
         assertEquals(2, doc.lines().size());
     }
+
+    @Test
+    @DisplayName("Renders invoice with logo and fieldVisibility")
+    void rendersInvoiceWithLogoAndFieldVisibility() throws Exception {
+        String base64Png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+        List<InvoicePrintLine> lines = List.of(
+                new InvoicePrintLine(1, "Khám chuyên khoa", "SERVICE", 1, new BigDecimal("150000"), new BigDecimal("150000"))
+        );
+        InvoicePrintDocument doc = new InvoicePrintDocument(
+                "Phòng khám Đa khoa Tiêu chuẩn có tên phòng khám rất dài nhằm kiểm tra tính năng wrap header",
+                "123 Đường Sức Khỏe, Quận Trung Tâm",
+                "02838999999",
+                "HD-20260925-001",
+                "ORIGINAL",
+                null,
+                null,
+                "BN-2026-0001",
+                "Nguyễn Văn Người Bệnh",
+                "15/06/1990",
+                "NAM",
+                "0912345678",
+                "KB-20260925-001",
+                Instant.now(),
+                "BS. Trần Văn Bác Sĩ",
+                "Khoa Nội",
+                Instant.now(),
+                "Lễ tân Thu Ngân",
+                lines,
+                new BigDecimal("150000"),
+                Instant.now(),
+                "HÓA ĐƠN THU TIỀN VIỆN PHÍ ĐIỆN TỬ",
+                base64Png,
+                "MST: 0100000000 - Cục Thuế TP.HCM",
+                "Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ",
+                true,
+                1,
+                "{\"showPatientCode\":false,\"showDoctor\":false}"
+        );
+
+        PdfBoxInvoicePdfRenderer renderer = new PdfBoxInvoicePdfRenderer();
+        byte[] pdf = renderer.render(doc);
+
+        assertNotNull(pdf);
+        assertTrue(pdf.length > 0);
+        try (PDDocument loaded = Loader.loadPDF(pdf)) {
+            assertTrue(loaded.getNumberOfPages() == 1);
+        }
+    }
 }
 

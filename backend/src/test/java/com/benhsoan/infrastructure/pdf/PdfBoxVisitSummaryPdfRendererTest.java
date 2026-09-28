@@ -146,4 +146,50 @@ class PdfBoxVisitSummaryPdfRendererTest {
         assertThat(lines).anyMatch(l -> l.contains("3. CHẨN ĐOÁN"));
         assertThat(lines).anyMatch(l -> l.contains("Viêm mũi họng cấp tính"));
     }
+
+    @Test
+    void rendersWithLogoAndFieldVisibility() throws Exception {
+        String base64Png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+        VisitSummaryPrintDocument document = new VisitSummaryPrintDocument(
+                "Phòng khám Đa khoa Tiêu chuẩn có tên rất dài để kiểm tra độ rộng wrap header",
+                "123 Đường Sức Khỏe, Quận Trung Tâm",
+                "02838999999",
+                "BN-2026-0001",
+                "Nguyễn Văn Người Bệnh",
+                "15/06/1990",
+                "NAM",
+                "0912345678",
+                "KB-20260925-001",
+                Instant.parse("2026-09-25T08:00:00Z"),
+                "BS. Trần Văn Bác Sĩ",
+                List.of(
+                        new VisitSummaryPrintDocument.Diagnosis("J02", "Viêm họng cấp", true)
+                ),
+                List.of(
+                        new VisitSummaryPrintDocument.ClinicalOrder("CLS-001", "XN-MAU", "Tổng phân tích tế bào máu", "Lấy máu buổi sáng", "COMPLETED")
+                ),
+                "Uống thuốc đầy đủ theo đơn, nghỉ ngơi hợp lý.",
+                "Điều trị nội khoa ngoại trú.",
+                LocalDate.of(2026, 10, 2),
+                "BS. Trần Văn Bác Sĩ",
+                Instant.parse("2026-09-25T08:30:00Z"),
+                "BS. Trần Văn Bác Sĩ",
+                Instant.parse("2026-09-25T08:35:00Z"),
+                "PHIẾU TỔNG KẾT KHÁM BỆNH VÀ ĐIỀU TRỊ",
+                base64Png,
+                "GPKD: 99999/SYT",
+                "Lưu ý giữ phiếu khi tái khám",
+                true,
+                "{\"showPatientCode\":false,\"showInstructions\":false}"
+        );
+
+        PdfBoxVisitSummaryPdfRenderer renderer = new PdfBoxVisitSummaryPdfRenderer();
+        byte[] pdf = renderer.render(document);
+
+        assertThat(pdf).isNotNull();
+        assertThat(pdf).startsWith("%PDF".getBytes(StandardCharsets.US_ASCII));
+        try (PDDocument loaded = Loader.loadPDF(pdf)) {
+            assertThat(loaded.getNumberOfPages()).isEqualTo(1);
+        }
+    }
 }

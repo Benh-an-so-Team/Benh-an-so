@@ -85,6 +85,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/system/specialties/**").authenticated()
                                                 .requestMatchers("/system/diagnosis-catalog/**").authenticated()
                                                 .requestMatchers("/system/clinic/**").authenticated()
+                                                .requestMatchers("/system/print-templates/**").authenticated()
                                                 .requestMatchers("/backups/**").authenticated()
                                                 .requestMatchers("/follow-up-reminders/**").authenticated()
                                                 .requestMatchers("/care-logs/**").authenticated()

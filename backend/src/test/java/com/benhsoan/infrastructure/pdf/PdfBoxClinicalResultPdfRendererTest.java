@@ -103,4 +103,49 @@ class PdfBoxClinicalResultPdfRendererTest {
             assertTrue(doc.getNumberOfPages() > 1);
         }
     }
+
+    @Test
+    @DisplayName("Renders with custom template properties, logo and fieldVisibility")
+    void rendersWithTemplateCustomizationAndFieldVisibility() throws Exception {
+        PdfBoxClinicalResultPdfRenderer renderer = new PdfBoxClinicalResultPdfRenderer();
+        String base64Png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+        List<ClinicalResultPrintItem> items = List.of(
+                new ClinicalResultPrintItem(1, "XN-01", "Glucose máu", "NUMBER", "5.2", "mmol/L", "3.9 - 6.4", "NORMAL", "Bình thường")
+        );
+
+        ClinicalResultPrintDocument document = new ClinicalResultPrintDocument(
+                "Phòng khám Đa khoa Tiêu chuẩn có tên dài để kiểm tra độ rộng cột thông tin phòng khám",
+                "123 Đường Sức Khỏe, Quận Trung Tâm",
+                "02838999999",
+                "BN-2026-0001",
+                "Nguyễn Văn Người Bệnh",
+                "15/06/1990",
+                "NAM",
+                "0912345678",
+                "KB-20260925-001",
+                Instant.parse("2026-09-25T08:00:00Z"),
+                "BS. Trần Văn Bác Sĩ",
+                "Khoa Xét Nghiệm",
+                "XN-20260925-001",
+                "Kiểm tra định kỳ tổng quát",
+                items,
+                "Các chỉ số cơ bản ổn định.",
+                Instant.parse("2026-09-25T08:30:00Z"),
+                "PHIẾU KẾT QUẢ XÉT NGHIỆM ĐIỆN TỬ",
+                base64Png,
+                "GPKD: 99999/SYT - MST: 0100000000",
+                "Lưu ý: Kết quả có giá trị trong vòng 30 ngày kể từ ngày xét nghiệm.",
+                true,
+                "{\"showPatientCode\":true,\"showPhone\":false,\"showDoctor\":true,\"showClinicalReason\":false}"
+        );
+
+        byte[] pdfBytes = renderer.render(document);
+
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+        try (PDDocument doc = Loader.loadPDF(pdfBytes)) {
+            assertTrue(doc.getNumberOfPages() == 1);
+        }
+    }
 }

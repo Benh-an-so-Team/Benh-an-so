@@ -43,4 +43,6 @@ public interface PrescriptionRepository {
     );
 
     Optional<Prescription> findByIdForUpdate(UUID id);
+
+    Optional<Prescription> findReplacementOf(UUID originalPrescriptionId);
 }

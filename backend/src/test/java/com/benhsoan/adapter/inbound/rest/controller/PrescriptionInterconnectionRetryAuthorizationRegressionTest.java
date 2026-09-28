@@ -49,9 +49,11 @@ import com.benhsoan.port.inbound.prescription.DispensePrescriptionUseCase;
 import com.benhsoan.port.inbound.prescription.ExportPrescriptionUseCase;
 import com.benhsoan.port.inbound.prescription.GetDispenseSuggestionUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionAllergyWarningLogsUseCase;
+import com.benhsoan.port.inbound.prescription.GetPrescriptionByCodeUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionDispenseHistoryUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionUseCase;
 import com.benhsoan.port.inbound.prescription.GetPrescriptionsByMedicalRecordUseCase;
+import com.benhsoan.port.inbound.prescription.ReplaceInterconnectedPrescriptionUseCase;
 import com.benhsoan.port.inbound.prescription.RetryPrescriptionInterconnectionUseCase;
 import com.benhsoan.port.inbound.prescription.ReturnMedicationUseCase;
 import com.benhsoan.port.inbound.prescription.SearchPrescriptionsUseCase;
@@ -97,6 +99,7 @@ class PrescriptionInterconnectionRetryAuthorizationRegressionTest {
     @MockitoBean private CreatePrescriptionUseCase createPrescriptionUseCase;
     @MockitoBean private AmendPrescriptionUseCase amendPrescriptionUseCase;
     @MockitoBean private GetPrescriptionUseCase getPrescriptionUseCase;
+    @MockitoBean private GetPrescriptionByCodeUseCase getPrescriptionByCodeUseCase;
     @MockitoBean private GetPrescriptionsByMedicalRecordUseCase getPrescriptionsByMedicalRecordUseCase;
     @MockitoBean private SearchPrescriptionsUseCase searchPrescriptionsUseCase;
     @MockitoBean private DispensePrescriptionUseCase dispensePrescriptionUseCase;
@@ -112,6 +115,7 @@ class PrescriptionInterconnectionRetryAuthorizationRegressionTest {
     @MockitoBean private ExportPrescriptionUseCase exportPrescriptionUseCase;
     @MockitoBean private SendPrescriptionInterconnectionUseCase sendPrescriptionInterconnectionUseCase;
     @MockitoBean private RetryPrescriptionInterconnectionUseCase retryPrescriptionInterconnectionUseCase;
+    @MockitoBean private ReplaceInterconnectedPrescriptionUseCase replaceInterconnectedPrescriptionUseCase;
     @MockitoBean private ReturnMedicationUseCase returnMedicationUseCase;
 
     @MockitoBean private JwtTokenPort jwtTokenPort;

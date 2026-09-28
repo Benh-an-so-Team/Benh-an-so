@@ -1,0 +1,190 @@
+/* ==========================================================================
+   SESSION TIMEOUT WARNING MODAL & COUNTDOWN STYLES (NCL-01-CN-007)
+   ========================================================================== */
+
+.bsa-session-warning-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  animation: bsaFadeIn 0.25s ease-out;
+}
+
+.bsa-session-warning-card {
+  width: 90%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.15),
+    0 10px 10px -5px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(245, 158, 11, 0.25);
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  animation: bsaScaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bsa-session-warning-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #F59E0B, #EF4444, #F59E0B);
+  background-size: 200% 100%;
+  animation: bsaGradientFlow 3s linear infinite;
+}
+
+.bsa-session-icon-wrap {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #FEF3C7;
+  color: #D97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  position: relative;
+}
+
+.bsa-session-icon-wrap::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px dashed rgba(217, 119, 6, 0.4);
+  animation: bsaSpinSlow 12s linear infinite;
+}
+
+.bsa-session-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0F172A;
+  margin-bottom: 8px;
+}
+
+.bsa-session-desc {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.bsa-session-countdown-box {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bsa-session-countdown-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #92400E;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bsa-session-countdown-digits {
+  font-size: 32px;
+  font-weight: 800;
+  color: #B45309;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+
+.bsa-session-countdown-digits.is-urgent {
+  color: #DC2626;
+  animation: bsaPulseFast 1s ease-in-out infinite;
+}
+
+.bsa-session-progress-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: #FEE2E2;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.bsa-session-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #F59E0B, #DC2626);
+  transition: width 1s linear;
+}
+
+.bsa-session-btn-extend {
+  width: 100%;
+  height: 44px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 10px;
+  background: #2563EB;
+  border-color: #2563EB;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25);
+}
+
+.bsa-session-btn-extend:hover {
+  background: #1D4ED8 !important;
+  border-color: #1D4ED8 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 10px -1px rgba(37, 99, 235, 0.35);
+}
+
+.bsa-session-notice-hint {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #64748B;
+}
+
+/* Animations */
+@keyframes bsaFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bsaScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes bsaGradientFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes bsaSpinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bsaPulseFast {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.04); opacity: 0.85; }
+}

@@ -105,13 +105,26 @@ class RecordPaymentConcurrencyMySqlIntegrationTest {
                 medicalRecordId.toString(), visitId.toString(), DOCTOR_ID.toString()
         );
 
-        // 3. Insert Prescription (DISPENSED)
+        // 3. Insert Prescription (DISPENSED) with at least one item
         jdbcTemplate.update("""
                 INSERT INTO prescriptions (id, prescription_code, medical_record_id, status, prescribed_by, prescribed_at)
                 VALUES (UUID_TO_BIN(?), ?, UUID_TO_BIN(?), 'DISPENSED', UUID_TO_BIN(?), '2026-08-20 09:20:00')
                 """,
                 prescriptionId.toString(), "RX-" + UUID.randomUUID().toString().substring(0, 6),
                 medicalRecordId.toString(), DOCTOR_ID.toString()
+        );
+
+        byte[] medicineId = jdbcTemplate.queryForObject("SELECT id FROM medicines LIMIT 1", byte[].class);
+        jdbcTemplate.update("""
+                INSERT INTO prescription_items (
+                    id, prescription_id, medicine_id, medicine_name, active_ingredient,
+                    strength, unit, dosage, frequency, route, duration_days, quantity, instructions, created_at, updated_at
+                ) VALUES (
+                    UUID_TO_BIN(?), UUID_TO_BIN(?), ?, 'Paracetamol 500mg', 'Paracetamol',
+                    '500mg', 'VIEN', '1 vien', 2, 'ORAL', 5, 10, 'Uong sau an', NOW(), NOW()
+                )
+                """,
+                UUID.randomUUID().toString(), prescriptionId.toString(), medicineId
         );
 
         return visitId;

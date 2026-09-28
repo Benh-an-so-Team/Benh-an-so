@@ -1,6 +1,7 @@
 package com.benhsoan.persistence.adapterRepository.appointment;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.benhsoan.port.outbound.repository.appointment.AppointmentCodeSequenceRepository;
 
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 
 @Repository
 @RequiredArgsConstructor
+@Transactional
 public class AppointmentCodeSequenceRepositoryAdapter implements AppointmentCodeSequenceRepository {
 
     private final EntityManager entityManager;

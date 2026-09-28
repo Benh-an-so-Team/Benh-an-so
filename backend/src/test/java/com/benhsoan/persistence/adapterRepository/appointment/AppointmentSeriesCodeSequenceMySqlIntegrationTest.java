@@ -112,7 +112,7 @@ class AppointmentSeriesCodeSequenceMySqlIntegrationTest {
         }
 
         assertEquals((long) threads * batchSize, jdbc.queryForObject(
-                "SELECT last_value FROM appointment_code_sequences WHERE code_prefix = ?",
+                "SELECT `last_value` FROM appointment_code_sequences WHERE code_prefix = ?",
                 Long.class,
                 "APT"
         ));

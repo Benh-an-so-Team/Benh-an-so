@@ -4,14 +4,23 @@ import { Form, Input, Button, Alert, message } from 'antd'
 import { UserOutlined, LockOutlined, SearchOutlined } from '@ant-design/icons'
 import { useAuthContext } from '../context/AuthContext.jsx'
 import { getDefaultHomePath } from '../components/layout/navigationConfig.js'
+import { popSessionExpiredNotice } from '../utils/sessionManagementHelpers.js'
 import './login.css'
 
 function Login() {
   const [loading, setLoading] = useState(false)
   const [lockoutSeconds, setLockoutSeconds] = useState(0)
   const [errorMessage, setErrorMessage] = useState('')
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState('')
   const navigate = useNavigate()
   const { login, logout, isAuthenticated, user } = useAuthContext()
+
+  useEffect(() => {
+    const notice = popSessionExpiredNotice()
+    if (notice) {
+      setSessionExpiredNotice(notice)
+    }
+  }, [])
 
   useEffect(() => {
     if (lockoutSeconds <= 0) return undefined
@@ -113,6 +122,18 @@ function Login() {
 
         <div className="bsa2-title">Bệnh Án Số</div>
         <p className="bsa2-sub">Đăng nhập hệ thống khám chữa bệnh</p>
+
+        {sessionExpiredNotice && (
+          <Alert
+            className="bsa2-login-alert"
+            type="warning"
+            showIcon
+            message={sessionExpiredNotice}
+            closable
+            onClose={() => setSessionExpiredNotice('')}
+            style={{ marginBottom: 16, textAlign: 'left', borderRadius: 8 }}
+          />
+        )}
 
         {errorMessage && (
           <Alert

@@ -17,7 +17,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
@@ -29,29 +29,20 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.benhsoan.adapter.inbound.rest.mapper.ContraindicationRuleRestMapper;
-import com.benhsoan.config.SecurityConfig;
 import com.benhsoan.domain.contraindication.ContraindicationRule;
 import com.benhsoan.domain.contraindication.enums.ContraindicationSeverity;
 import com.benhsoan.domain.contraindication.enums.ContraindicationType;
 import com.benhsoan.exception.GlobalExceptionHandler;
 import com.benhsoan.infrastructure.authSecurity.JwtAuthenticationFilter;
-import com.benhsoan.infrastructure.security.annotation.RequirePermissionAspect;
-import com.benhsoan.infrastructure.security.service.PermissionEvaluator;
 import com.benhsoan.port.inbound.contraindication.ActivateContraindicationRuleUseCase;
 import com.benhsoan.port.inbound.contraindication.CreateContraindicationRuleUseCase;
 import com.benhsoan.port.inbound.contraindication.DeactivateContraindicationRuleUseCase;
 import com.benhsoan.port.inbound.contraindication.SearchContraindicationRuleUseCase;
 import com.benhsoan.port.inbound.contraindication.UpdateContraindicationRuleUseCase;
-import com.benhsoan.port.outbound.authSecurity.JwtTokenPort;
-import com.benhsoan.port.outbound.repository.audit.AuditLogRepository;
-import com.benhsoan.port.outbound.repository.auth.RoleRepository;
-import com.benhsoan.port.outbound.repository.auth.UserRepository;
-import com.benhsoan.port.outbound.repository.auth.UserSessionRepository;
-import com.benhsoan.port.outbound.security.CurrentUserPort;
-import com.benhsoan.port.outbound.time.ClockPort;
 
 @WebMvcTest(controllers = ContraindicationRuleController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class, RequirePermissionAspect.class, AopAutoConfiguration.class})
+@AutoConfigureMockMvc(addFilters = false)
+@Import(GlobalExceptionHandler.class)
 class ContraindicationRuleControllerTest {
 
     @Autowired
@@ -63,16 +54,7 @@ class ContraindicationRuleControllerTest {
     @MockitoBean private DeactivateContraindicationRuleUseCase deactivateUseCase;
     @MockitoBean private ActivateContraindicationRuleUseCase activateUseCase;
     @MockitoBean private ContraindicationRuleRestMapper mapper;
-
-    @MockitoBean private PermissionEvaluator permissionEvaluator;
     @MockitoBean private JwtAuthenticationFilter jwtAuthenticationFilter;
-    @MockitoBean private JwtTokenPort jwtTokenPort;
-    @MockitoBean private CurrentUserPort currentUserPort;
-    @MockitoBean private UserRepository userRepository;
-    @MockitoBean private UserSessionRepository userSessionRepository;
-    @MockitoBean private RoleRepository roleRepository;
-    @MockitoBean private AuditLogRepository auditLogRepository;
-    @MockitoBean private ClockPort clockPort;
 
     private static final Instant NOW = Instant.parse("2026-09-21T00:00:00Z");
 

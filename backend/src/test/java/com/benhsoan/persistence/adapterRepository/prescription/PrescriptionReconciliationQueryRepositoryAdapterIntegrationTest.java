@@ -26,7 +26,6 @@ import com.benhsoan.persistence.entity.prescription.PrescriptionEntity;
 import com.benhsoan.persistence.entity.prescription.PrescriptionReconciliationNoteEntity;
 import com.benhsoan.persistence.jpaRepository.prescription.JpaPrescriptionDispenseItemRepository;
 import com.benhsoan.persistence.jpaRepository.prescription.JpaPrescriptionReconciliationNoteRepository;
-import com.benhsoan.persistence.jpaRepository.prescription.JpaPrescriptionRepository;
 import com.benhsoan.port.dto.query.prescription.ReconciliationOutcomeGroup;
 import com.benhsoan.port.dto.query.prescription.ReconciliationQueryFilter;
 import com.benhsoan.port.dto.result.PrescriptionReconciliationItemResult;
@@ -57,9 +56,6 @@ class PrescriptionReconciliationQueryRepositoryAdapterIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
-
-    @Autowired
-    private JpaPrescriptionRepository prescriptionRepository;
 
     @Autowired
     private JpaPrescriptionDispenseItemRepository dispenseItemRepository;

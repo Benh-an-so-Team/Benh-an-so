@@ -91,7 +91,7 @@ export function calculateConsentImpact(currentScopes = [], newScopes = [], isWit
         'Hạn chế tối đa việc truy xuất thông tin cá nhân cho các mục đích ngoài quy định khám chữa bệnh bắt buộc.',
       ],
       legalRetentionNotice:
-        'Lưu ý: Dữ liệu hồ sơ bệnh án đã phát sinh trong các lượt khám trước đây vẫn được lưu trữ bảo mật tối thiểu 10 năm theo Luật Khám bệnh, chữa bệnh (QTN-19).',
+        'Lưu ý: Dữ liệu hồ sơ bệnh án đã phát sinh trong các lượt khám trước đây vẫn được lưu trữ bảo mật tối thiểu 10 năm theo Luật Khám bệnh, chữa bệnh.',
     }
   }
 
@@ -183,7 +183,7 @@ export function getConsentStatusMeta(statusStr) {
  * để lễ tân truyền đạt trực tiếp cho bệnh nhân
  */
 export const QTN19_PLAIN_EXPLANATION = {
-  title: 'Quy định lưu trữ hồ sơ bệnh án (Luật Khám bệnh, chữa bệnh & QTN-19)',
+  title: 'Quy định lưu trữ hồ sơ bệnh án (Luật Khám bệnh, chữa bệnh)',
   summaryForPatient:
     'Theo Luật Khám bệnh, chữa bệnh của Bộ Y tế, hồ sơ bệnh án là tài liệu y khoa bắt buộc cơ sở khám chữa bệnh phải lưu trữ bảo mật tối thiểu 10 năm kể từ ngày lượt khám kết thúc. Quy định này nhằm bảo vệ quyền lợi y tế trọn đời, phục vụ theo dõi tiền sử bệnh lý và đối soát pháp lý khi cần thiết. Vì vậy, phòng khám không thể xóa ngay hồ sơ bệnh án trước thời hạn pháp luật quy định.',
   actionTakenText:

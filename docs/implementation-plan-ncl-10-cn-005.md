@@ -75,7 +75,7 @@
 │ [Persistence / Database]                                                               │
 │  - Bảng visits: Đã có khóa ngoại patient_id, doctor_id, completed_at, status (ĐÃ CÓ)  │
 │  - Flyway migration hiện tại: V99 (ĐÃ CÓ)                                              │
-│  - THIẾU: Migration V100, Bảng patient_satisfaction_surveys, Entity, JPA Repository   │
+│  - THIẾU: Migration V104, Bảng patient_satisfaction_surveys, Entity, JPA Repository   │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -86,7 +86,7 @@
 4. **Chuẩn hóa Exception & Mã lỗi**: Đã có `DomainExceptionHttpStatusMapper` và `GlobalExceptionHandler` tuân thủ nghiêm ngặt `docs/exception-conventions.md`.
 
 ### 2.3. Điểm còn thiếu (Missing Components)
-1. **Database Schema**: Chưa có bảng lưu trữ khảo sát hài lòng sau khám. Cần tạo migration script `V100__create_patient_satisfaction_surveys_table.sql`.
+1. **Database Schema**: Chưa có bảng lưu trữ khảo sát hài lòng sau khám. Cần tạo migration script `V104__create_patient_satisfaction_surveys_table.sql`.
 2. **Domain Layer**: Chưa có entity `PatientSatisfactionSurvey`, các domain exceptions `SatisfactionSurveyAlreadyExistsException`, `SatisfactionSurveyNotFoundException`, và các mã lỗi `SATISFACTION_SURVEY_ALREADY_EXISTS`, `SATISFACTION_SURVEY_NOT_FOUND` trong `DomainErrorCode`.
 3. **Persistence Layer**: Chưa có `SatisfactionSurveyEntity`, `JpaSatisfactionSurveyRepository`, mapper và adapter cài đặt `SatisfactionSurveyRepository`.
 4. **Application Services**:
@@ -135,11 +135,11 @@
 
 ## 4. Thiết kế Kỹ thuật Chi tiết (Detailed Technical Design)
 
-### 4.1. Thiết kế Cơ sở dữ liệu (Flyway Migration `V100`)
-File: `backend/src/main/resources/db/migration/V100__create_patient_satisfaction_surveys_table.sql`
+### 4.1. Thiết kế Cơ sở dữ liệu (Flyway Migration `V104`)
+File: `backend/src/main/resources/db/migration/V104__create_patient_satisfaction_surveys_table.sql`
 ```sql
 -- =====================================================
--- V100__create_patient_satisfaction_surveys_table.sql
+-- V104__create_patient_satisfaction_surveys_table.sql
 -- NCL-10-CN-005: Khảo sát hài lòng sau khám
 -- =====================================================
 
@@ -346,7 +346,7 @@ Thứ tự phụ thuộc kiến trúc:
 ```
 ┌────────────────────────────────────────────────────────┐
 │ Giai đoạn 1: Database & Persistence Layer               │
-│ - Migration V100, Entity, JpaRepository, Adapter       │
+│ - Migration V104, Entity, JpaRepository, Adapter       │
 └──────────────────────────┬─────────────────────────────┘
                            │
 ┌──────────────────────────▼─────────────────────────────┐
@@ -375,7 +375,7 @@ Thứ tự phụ thuộc kiến trúc:
 ### Giai đoạn 1: Cơ sở dữ liệu và Tầng Persistence
 - **Mục tiêu:** Tạo cấu trúc bảng lưu trữ với ràng buộc toàn vẹn dữ liệu, các chỉ mục truy vấn hiệu năng cao, entity JPA và adapter persistence.
 - **File / Layer dự kiến tác động:**
-  - `backend/src/main/resources/db/migration/V100__create_patient_satisfaction_surveys_table.sql`
+  - `backend/src/main/resources/db/migration/V104__create_patient_satisfaction_surveys_table.sql`
   - `backend/src/main/java/com/benhsoan/persistence/entity/survey/SatisfactionSurveyEntity.java`
   - `backend/src/main/java/com/benhsoan/persistence/jpaRepository/survey/JpaSatisfactionSurveyRepository.java`
   - `backend/src/main/java/com/benhsoan/persistence/mapper/survey/SatisfactionSurveyPersistenceMapper.java`

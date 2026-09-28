@@ -4,11 +4,15 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -66,6 +70,7 @@ public class InvoiceController {
     private final GetInvoiceByIdUseCase getInvoiceByIdUseCase;
     private final GetInvoiceAdjustmentsUseCase getInvoiceAdjustmentsUseCase;
     private final RecordInvoiceReprintUseCase recordInvoiceReprintUseCase;
+    private final com.benhsoan.port.inbound.billing.PrintInvoiceUseCase printInvoiceUseCase;
     private final BillingRestMapper mapper;
 
     @PostMapping("/payments")
@@ -172,6 +177,17 @@ public class InvoiceController {
     @RequirePermission("INVOICE_READ")
     public InvoiceResponse reprint(@PathVariable UUID invoiceId) {
         return mapper.toResponse(recordInvoiceReprintUseCase.recordReprint(invoiceId));
+    }
+
+    @GetMapping("/{invoiceId}/print")
+    @RequirePermission("INVOICE_READ")
+    public ResponseEntity<ByteArrayResource> print(@PathVariable UUID invoiceId) {
+        var printResult = printInvoiceUseCase.print(invoiceId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + printResult.fileName() + "\"")
+                .contentType(MediaType.parseMediaType(printResult.contentType()))
+                .contentLength(printResult.content().length)
+                .body(new ByteArrayResource(printResult.content()));
     }
 
     @PostMapping("/{invoiceId}/adjustments")

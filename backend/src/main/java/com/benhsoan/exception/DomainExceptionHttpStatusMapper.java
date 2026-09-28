@@ -41,6 +41,7 @@ final class DomainExceptionHttpStatusMapper {
                     PATIENT_IMPORT_LOG_NOT_FOUND,
                     PATIENT_PORTAL_NOTIFICATION_NOT_FOUND,
                     PRESCRIPTION_TEMPLATE_NOT_FOUND,
+                    PRINT_TEMPLATE_NOT_FOUND,
                     PAYMENT_NOT_FOUND,
                     PORTAL_LOOKUP_NOT_FOUND,
                     PRESCRIPTION_ITEM_NOT_FOUND,
@@ -71,6 +72,7 @@ final class DomainExceptionHttpStatusMapper {
                     UNAUTHORIZED_APPOINTMENT_OPERATION,
                     UNAUTHORIZED_PRESCRIPTION_AMENDMENT,
                     UNAUTHORIZED_PRESCRIPTION_CANCELLATION,
+                    UNAUTHORIZED_PRESCRIPTION_REPLACEMENT,
                     UNAUTHORIZED_QUEUE_OPERATION,
                     VISIT_ENCOUNTER_ACCESS_DENIED,
                     CASHIER_SHIFT_SELF_CONFIRMATION_NOT_ALLOWED -> HttpStatus.FORBIDDEN;

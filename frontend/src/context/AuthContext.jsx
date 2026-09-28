@@ -272,21 +272,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null)
   }
 
-  useEffect(() => {
-    if (!user) return undefined
-    const TIMEOUT = 15 * 60 * 1000
-    let timer = setTimeout(logout, TIMEOUT)
-    const resetTimer = () => {
-      clearTimeout(timer)
-      timer = setTimeout(logout, TIMEOUT)
-    }
-    const events = ['mousedown', 'keydown', 'scroll']
-    events.forEach((e) => window.addEventListener(e, resetTimer))
-    return () => {
-      clearTimeout(timer)
-      events.forEach((e) => window.removeEventListener(e, resetTimer))
-    }
-  }, [user])
+  // Session idle timeout and warning countdown is handled dynamically by SessionTimeoutWarningModal (NCL-01-CN-007)
 
   const updateMustChangePassword = (val) => {
     setUser((prev) => {

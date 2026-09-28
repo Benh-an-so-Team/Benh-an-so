@@ -56,6 +56,7 @@ class QueuePriorityConcurrencyMySqlIntegrationTest {
     @Autowired private JpaQueueItemRepository queueItemRepository;
     @Autowired private JpaMedicalQueueRepository medicalQueueRepository;
     @Autowired private PlatformTransactionManager transactionManager;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @Test
     void concurrentPrioritizeRequestsSerializeOnQueueItemPessimisticLock() throws Exception {
@@ -63,22 +64,34 @@ class QueuePriorityConcurrencyMySqlIntegrationTest {
         UUID itemId = UUID.randomUUID();
         Instant now = Instant.parse("2026-08-02T02:00:00Z");
 
+        UUID doctorId = UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM users LIMIT 1", String.class));
+        UUID roomId = UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM rooms LIMIT 1", String.class));
+        UUID patientId = UUID.fromString(jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM patients LIMIT 1", String.class));
+
         medicalQueueRepository.saveAndFlush(MedicalQueueEntity.builder()
-                .id(queueId).doctorId(UUID.randomUUID()).roomId(UUID.randomUUID()).queueDate(LocalDate.of(2026, 8, 2))
+                .id(queueId).doctorId(doctorId).roomId(roomId).queueDate(LocalDate.of(2026, 8, 2))
                 .status(MedicalQueueStatus.OPEN).createdAt(now).updatedAt(now).build());
+
+        UUID visitId = UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO visits (id, visit_code, patient_id, doctor_id, visit_type, status, visit_at, reason, created_by, created_at, updated_at)
+                VALUES (UUID_TO_BIN(?), ?, UUID_TO_BIN(?), UUID_TO_BIN(?), 'WALK_IN', 'IN_PROGRESS', NOW(), 'Kham benh', UUID_TO_BIN(?), NOW(), NOW())
+                """,
+                visitId.toString(), "VIS-" + visitId.toString().substring(0, 8),
+                patientId.toString(), doctorId.toString(), doctorId.toString());
 
         QueueItemEntity item = new QueueItemEntity();
         item.setId(itemId);
         item.setMedicalQueueId(queueId);
-        item.setPatientId(UUID.randomUUID());
-        item.setVisitId(UUID.randomUUID());
+        item.setPatientId(patientId);
+        item.setVisitId(visitId);
         item.setSourceType(QueueItemSourceType.WALK_IN);
         item.setStatus(QueueItemStatus.WAITING);
         item.setQueueNumber(1);
         item.setQueueDate(LocalDate.of(2026, 8, 2));
         item.setCheckedInAt(now);
         item.setPriority(QueuePriority.NORMAL);
-        item.setCreatedBy(UUID.randomUUID());
+        item.setCreatedBy(doctorId);
         item.setCreatedAt(now);
         item.setUpdatedAt(now);
         queueItemRepository.saveAndFlush(item);

@@ -597,7 +597,7 @@ function PatientDetail() {
                   key: 'consent',
                   label: (
                     <span>
-                      <SafetyCertificateOutlined /> Phiếu đồng ý & Quyền riêng tư (NCL-15)
+                      <SafetyCertificateOutlined /> Phiếu đồng ý & Quyền riêng tư
                     </span>
                   ),
                   children: (

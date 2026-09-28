@@ -1,5 +1,5 @@
 -- =====================================================
--- V96__add_doctor_dashboard_permission.sql
+-- V103__add_doctor_dashboard_permission.sql
 -- NCL-08-CN-010: Bảng điều khiển dành cho bác sĩ (Doctor Dashboard).
 -- Permission to view doctor's start-of-day operational dashboard.
 -- Granted to DOCTOR and ADMIN.

@@ -21,7 +21,6 @@ import com.benhsoan.domain.auditlog.AuditLog;
 import com.benhsoan.domain.auditlog.enums.ActionType;
 import com.benhsoan.domain.auditlog.enums.ResourceType;
 import com.benhsoan.domain.auth.User;
-import com.benhsoan.domain.auth.exception.UserNotFoundException;
 import com.benhsoan.domain.clinic.ClinicConfiguration;
 import com.benhsoan.domain.clinical.ClinicalOrder;
 import com.benhsoan.domain.clinical.ClinicalOrderItem;
@@ -115,8 +114,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                 fileName,
                 JSON_CONTENT_TYPE,
                 contentBytes,
-                1
-        );
+                1);
     }
 
     @Override
@@ -129,14 +127,16 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
             throw new ValidationException("No medical records found for the requested export.");
         }
         if (records.size() > MAX_BATCH_SIZE) {
-            throw new ValidationException("Maximum " + MAX_BATCH_SIZE + " medical records can be exported in a single batch.");
+            throw new ValidationException(
+                    "Maximum " + MAX_BATCH_SIZE + " medical records can be exported in a single batch.");
         }
 
         // QTN-41 & QTN-22 Verification across all records before building documents
         Map<UUID, List<MedicalRecordDiagnosis>> diagnosesByRecordId = new LinkedHashMap<>();
         for (MedicalRecord record : records) {
             ensureSigned(record);
-            List<MedicalRecordDiagnosis> diagnoses = medicalRecordDiagnosisRepository.findByMedicalRecordId(record.getId());
+            List<MedicalRecordDiagnosis> diagnoses = medicalRecordDiagnosisRepository
+                    .findByMedicalRecordId(record.getId());
             ensureValidDiagnoses(record.getId(), diagnoses);
             diagnosesByRecordId.put(record.getId(), diagnoses);
         }
@@ -157,8 +157,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                 now,
                 actorId,
                 documents.size(),
-                documents
-        );
+                documents);
         byte[] contentBytes = serializeToJson(bundle);
         String fileName = "emr-exchange-bundle-" + now.toEpochMilli() + ".json";
 
@@ -168,15 +167,15 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                 fileName,
                 JSON_CONTENT_TYPE,
                 contentBytes,
-                documents.size()
-        );
+                documents.size());
     }
 
     private void authorizeExportRole() {
         if (!currentUserPort.hasPermission("MEDICAL_RECORD_EXPORT")
                 && !currentUserPort.hasRole("ADMIN")
                 && !currentUserPort.hasRole("MANAGER")) {
-            throw new AccessDeniedException("Only managers and administrators can export medical records for data exchange.");
+            throw new AccessDeniedException(
+                    "Only managers and administrators can export medical records for data exchange.");
         }
     }
 
@@ -214,8 +213,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
         if (!record.isContentLocked()) {
             throw new MedicalRecordNotSignedException(
                     record.getId(),
-                    "Medical record with ID " + record.getId() + " must be signed before it can be exported."
-            );
+                    "Medical record with ID " + record.getId() + " must be signed before it can be exported.");
         }
     }
 
@@ -234,8 +232,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
             MedicalRecord record,
             List<MedicalRecordDiagnosis> diagnoses,
             ClinicConfiguration clinicConfig,
-            Instant generatedAt
-    ) {
+            Instant generatedAt) {
         Visit visit = visitRepository.findById(record.getVisitId())
                 .orElseThrow(() -> new VisitNotFoundException(record.getVisitId()));
         Patient patient = patientRepository.findById(visit.getPatientId())
@@ -262,10 +259,10 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                 clinicConfig != null ? clinicConfig.getClinicName() : "Clinic",
                 clinicConfig != null ? clinicConfig.getAddress() : null,
                 clinicConfig != null ? clinicConfig.getPhone() : null,
-                null
-        );
+                null);
 
-        // 2. Patient Info (mask name, phone, address, and omit identity/insurance if anonymization enabled - F-04)
+        // 2. Patient Info (mask name, phone, address, and omit identity/insurance if
+        // anonymization enabled - F-04)
         boolean anonymized = anonymizationModeState.isEnabled();
         String patientFullName = anonymized
                 ? PatientAnonymizer.maskFullName(patient.getPatientCode())
@@ -288,8 +285,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                 patientPhone,
                 patientIdentityNumber,
                 patientInsuranceNumber,
-                patientAddress
-        );
+                patientAddress);
 
         // 3. Encounter Info
         MedicalRecordExchangeDocument.EncounterInfo encounterInfo = new MedicalRecordExchangeDocument.EncounterInfo(
@@ -301,8 +297,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                 visit.getVisitType() != null ? visit.getVisitType().name() : null,
                 visit.getReason(),
                 doctor != null ? doctor.getId() : doctorId,
-                doctorFullName
-        );
+                doctorFullName);
 
         // 4. Clinical Record Info
         MedicalRecordExchangeDocument.ClinicalRecordInfo clinicalRecordInfo = new MedicalRecordExchangeDocument.ClinicalRecordInfo(
@@ -320,8 +315,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                 record.getTreatmentPlan(),
                 record.getDoctorInstructions(),
                 record.getConclusion(),
-                record.getRevisitDate() != null ? record.getRevisitDate().toString() : null
-        );
+                record.getRevisitDate() != null ? record.getRevisitDate().toString() : null);
 
         // 5. Diagnoses Items
         List<MedicalRecordExchangeDocument.DiagnosisItem> diagnosisItems = diagnoses.stream()
@@ -330,8 +324,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                         d.getDiagnosisCode(),
                         d.getDiagnosisName(),
                         d.getNote(),
-                        d.getDiagnosedAt()
-                ))
+                        d.getDiagnosedAt()))
                 .toList();
 
         // 6. Clinical Orders
@@ -356,16 +349,14 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                                 item.getServiceName(),
                                 null,
                                 item.getInstruction(),
-                                item.getStatus() != null ? item.getStatus().name() : null
-                        ))
+                                item.getStatus() != null ? item.getStatus().name() : null))
                         .toList();
 
                 return new MedicalRecordExchangeDocument.ClinicalOrderItem(
                         order.getId(),
                         order.getOrderCode(),
                         order.getOrderedAt(),
-                        serviceItems
-                );
+                        serviceItems);
             }).toList();
         }
 
@@ -386,7 +377,8 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                         serviceCode = item.getServiceCode();
                         serviceName = item.getServiceName();
                     } else if (res.getClinicalOrderItemId() != null) {
-                        ClinicalOrderItem fallbackItem = clinicalOrderItemRepository.findById(res.getClinicalOrderItemId()).orElse(null);
+                        ClinicalOrderItem fallbackItem = clinicalOrderItemRepository
+                                .findById(res.getClinicalOrderItemId()).orElse(null);
                         if (fallbackItem != null) {
                             serviceCode = fallbackItem.getServiceCode();
                             serviceName = fallbackItem.getServiceName();
@@ -404,8 +396,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                             res.getReferenceRange(),
                             res.getAbnormalFlag() != null ? res.getAbnormalFlag().name() : null,
                             res.getConclusion(),
-                            res.getStatus() != null ? res.getStatus().name() : null
-                    );
+                            res.getStatus() != null ? res.getStatus().name() : null);
                 })
                 .toList();
 
@@ -419,37 +410,41 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                 .distinct()
                 .toList();
 
-        Map<UUID, String> medicineCodeById = medicineIds.isEmpty() ? Map.of() : medicineRepository.findAllById(medicineIds).stream()
-                .collect(Collectors.toMap(com.benhsoan.domain.medicine.Medicine::getId, com.benhsoan.domain.medicine.Medicine::getMedicineCode, (a, b) -> a));
+        Map<UUID, String> medicineCodeById = medicineIds.isEmpty() ? Map.of()
+                : medicineRepository.findAllById(medicineIds).stream()
+                        .collect(Collectors.toMap(com.benhsoan.domain.medicine.Medicine::getId,
+                                com.benhsoan.domain.medicine.Medicine::getMedicineCode, (a, b) -> a));
 
-        List<MedicalRecordExchangeDocument.PrescriptionItemDocument> prescriptionDocs = prescriptions.stream().map(p -> {
-            List<MedicalRecordExchangeDocument.PrescriptionMedicationItem> meds = Collections.emptyList();
-            if (p.getItems() != null) {
-                meds = p.getItems().stream().map(item -> new MedicalRecordExchangeDocument.PrescriptionMedicationItem(
-                        item.getMedicineId() != null ? medicineCodeById.get(item.getMedicineId()) : null,
-                        item.getMedicineName(),
-                        item.getActiveIngredient(),
-                        item.getStrength(),
-                        item.getDosage(),
-                        item.getFrequency(),
-                        item.getRoute() != null ? item.getRoute().name() : null,
-                        item.getQuantity(),
-                        item.getUnit(),
-                        item.getInstructions(),
-                        item.getDurationDays()
-                )).toList();
-            }
+        List<MedicalRecordExchangeDocument.PrescriptionItemDocument> prescriptionDocs = prescriptions.stream()
+                .map(p -> {
+                    List<MedicalRecordExchangeDocument.PrescriptionMedicationItem> meds = Collections.emptyList();
+                    if (p.getItems() != null) {
+                        meds = p.getItems().stream()
+                                .map(item -> new MedicalRecordExchangeDocument.PrescriptionMedicationItem(
+                                        item.getMedicineId() != null ? medicineCodeById.get(item.getMedicineId())
+                                                : null,
+                                        item.getMedicineName(),
+                                        item.getActiveIngredient(),
+                                        item.getStrength(),
+                                        item.getDosage(),
+                                        item.getFrequency(),
+                                        item.getRoute() != null ? item.getRoute().name() : null,
+                                        item.getQuantity(),
+                                        item.getUnit(),
+                                        item.getInstructions(),
+                                        item.getDurationDays()))
+                                .toList();
+                    }
 
-            return new MedicalRecordExchangeDocument.PrescriptionItemDocument(
-                    p.getId(),
-                    p.getPrescriptionCode(),
-                    p.getStatus() != null ? p.getStatus().name() : null,
-                    p.getPrescribedAt(),
-                    p.getInterconnectionReceiptCode(),
-                    p.getNote(),
-                    meds
-            );
-        }).toList();
+                    return new MedicalRecordExchangeDocument.PrescriptionItemDocument(
+                            p.getId(),
+                            p.getPrescriptionCode(),
+                            p.getStatus() != null ? p.getStatus().name() : null,
+                            p.getPrescribedAt(),
+                            p.getInterconnectionReceiptCode(),
+                            p.getNote(),
+                            meds);
+                }).toList();
 
         return new MedicalRecordExchangeDocument(
                 "1.0",
@@ -461,8 +456,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                 diagnosisItems,
                 orderItems,
                 resultItems,
-                prescriptionDocs
-        );
+                prescriptionDocs);
     }
 
     private byte[] serializeToJson(Object value) {
@@ -478,8 +472,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
             List<MedicalRecordExchangeDocument> documents,
             UUID actorId,
             Instant now,
-            String format
-    ) {
+            String format) {
         Map<String, Object> detail = new LinkedHashMap<>();
         detail.put("exportedBy", actorId.toString());
         detail.put("recordCount", records.size());
@@ -497,8 +490,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                 primaryResourceId,
                 toJsonString(detail),
                 null,
-                now
-        ));
+                now));
 
         for (MedicalRecordExchangeDocument doc : documents) {
             accessAuditService.recordRecordAccess(
@@ -508,8 +500,7 @@ public class ExportMedicalRecordExchangeService implements ExportMedicalRecordEx
                     actorId,
                     MedicalRecordAccessAction.EXPORT,
                     "Medical record exported according to standard data exchange structure (NCL-11-CN-007)",
-                    now
-            );
+                    now);
         }
     }
 

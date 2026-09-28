@@ -25,7 +25,9 @@ import {
   PrinterOutlined,
   FileExcelOutlined,
   PercentageOutlined,
+  SafetyCertificateOutlined,
   ShoppingCartOutlined,
+  SyncOutlined,
 } from '@ant-design/icons'
 
 export const roleNames = {
@@ -41,10 +43,10 @@ export const navigationSections = [
   { key: 'overview', paths: ['/'] },
   { key: 'reception', label: 'Tiếp nhận & Chăm sóc', paths: ['/patients', '/patients/import', '/appointments', '/appointments/weekly-schedule', '/after-care', '/visit-summaries', '/doctor-schedules'] },
   { key: 'examination', label: 'Khám bệnh', paths: ['/medical-records', '/medical-records/overdue-signing', '/medical-records/version-history', '/medical-records/copy-issuance', '/medical-records/visit-summaries', '/prescriptions', '/clinical-orders', '/clinical-results', '/results'] },
-  { key: 'pharmacy', label: 'Nhà thuốc', paths: ['/pharmacy', '/medicines', '/pharmacy/receipts', '/inventory/stock-report', '/pharmacy/special-control-register', '/pharmacy/procurement-plans'] },
+  { key: 'pharmacy', label: 'Nhà thuốc', paths: ['/pharmacy', '/medicines', '/pharmacy/receipts', '/inventory/stock-report', '/pharmacy/special-control-register', '/pharmacy/procurement-plans', '/prescription-reconciliation'] },
   { key: 'finance', label: 'Tài chính', paths: ['/billing', '/invoices/lookup', '/cashier-shifts/close', '/cashier-shifts/history', '/invoices/discount-requests'] },
   { key: 'reports', label: 'Báo cáo', paths: ['/reports', '/reports/disease-patterns', '/reports/revenue-breakdown', '/reports/appointment-effectiveness'] },
-  { key: 'system', label: 'Hệ thống & Bảng giá', paths: ['/users', '/services', '/system/specialties', '/system/clinical-services', '/system/diagnosis-catalog', '/system/medical-record-templates', '/system-management', '/admin/operation-logs', '/prescription-interconnections', '/system/anonymization', '/contraindication-rules'] },
+  { key: 'system', label: 'Hệ thống & Bảng giá', paths: ['/users', '/services', '/system/specialties', '/system/clinical-services', '/system/diagnosis-catalog', '/system/medical-record-templates', '/system-management', '/admin/operation-logs', '/prescription-interconnections', '/system/anonymization', '/contraindication-rules', '/admin/sessions'] },
 ]
 
 export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
@@ -93,6 +95,7 @@ export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
     { key: '/inventory/stock-report', label: 'Báo cáo xuất nhập tồn', icon: BarChartOutlined, check: () => !isDoctor && !isReceptionist && (hasPerm('INVENTORY_REPORT_VIEW') || isPharmacist || isManager || isAdmin) },
     { key: '/pharmacy/special-control-register', label: 'Sổ theo dõi thuốc KSĐB', icon: AuditOutlined, check: () => isPharmacist || isDoctor || isAdmin },
     { key: '/pharmacy/procurement-plans', label: 'Dự trù mua thuốc', icon: ShoppingCartOutlined, check: () => !isDoctor && !isReceptionist && (hasPerm('MEDICATION_PROCUREMENT_READ') || isPharmacist || isManager || isAdmin) },
+    { key: '/prescription-reconciliation', label: 'Đối chiếu đơn liên thông', icon: SyncOutlined, check: () => hasPerm('PRESCRIPTION_RECONCILIATION_VIEW') || isAdmin || isPharmacist },
     { key: '/billing', label: 'Thu phí & hóa đơn', icon: FileTextOutlined, check: () => !isAdmin && !isDoctor && (hasPerm('INVOICE_READ') || hasPerm('INVOICE_CREATE') || isManager || isReceptionist) },
     { key: '/invoices/discount-requests', label: 'Duyệt giảm giá & miễn phí', icon: PercentageOutlined, check: () => !isDoctor && !isPharmacist && (hasPerm('INVOICE_READ') || isReceptionist || isManager || isAdmin) },
     { key: '/invoices/lookup', label: 'Tra cứu & in lại hóa đơn', icon: PrinterOutlined, check: () => !isDoctor && !isPharmacist && (hasPerm('INVOICE_READ') || isReceptionist || isManager || isAdmin) },
@@ -108,6 +111,7 @@ export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
     { key: '/system/specialties', label: 'Danh mục chuyên khoa & phòng khám', icon: MedicineBoxOutlined, check: () => hasPerm('SPECIALTY_MANAGE') || isAdmin },
     { key: '/system-management', label: 'Quản trị hệ thống', icon: SettingOutlined, check: () => isAdmin },
     { key: '/admin/operation-logs', label: 'Nhật ký thao tác', icon: AuditOutlined, check: () => !isDoctor && !isReceptionist && !isPharmacist && (isAdmin || isManager || hasPerm('ADMIN_OPERATION_LOG_READ')) },
+    { key: '/admin/sessions', label: 'Quản lý phiên làm việc', icon: SafetyCertificateOutlined, check: () => hasPerm('SESSION_READ') || isAdmin },
     { key: '/prescription-interconnections', label: 'Liên thông đơn thuốc', icon: CloudServerOutlined, check: () => hasPerm('PRESCRIPTION_INTERCONNECTION_READ') || isAdmin },
     { key: '/system/anonymization', label: 'Chế độ ẩn danh dữ liệu', icon: EyeInvisibleOutlined, check: () => hasPerm('SYSTEM_CONFIG_READ') || isAdmin },
     { key: '/contraindication-rules', label: 'Quy tắc chống chỉ định', icon: MedicineBoxOutlined, check: () => hasPerm('CONTRAINDICATION_RULE_MANAGE') || isAdmin },

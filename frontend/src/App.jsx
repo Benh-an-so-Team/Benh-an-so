@@ -6,6 +6,7 @@ import viVN from 'antd/locale/vi_VN'
 import dayjs from 'dayjs'
 import 'dayjs/locale/vi'
 import ForceChangePasswordModal from './components/auth/ForceChangePasswordModal'
+import SessionTimeoutWarningModal from './components/auth/SessionTimeoutWarningModal'
 
 dayjs.locale('vi')
 
@@ -81,6 +82,7 @@ function App() {
         }}
       >
         <ForceChangePasswordModal />
+        <SessionTimeoutWarningModal />
         <AppRoutes />
       </ConfigProvider>
   )

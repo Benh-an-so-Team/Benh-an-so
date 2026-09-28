@@ -81,7 +81,7 @@ class PrescriptionCodeSequenceRepositoryAdapterMySqlIntegrationTest {
             );
         }
         assertEquals(2L, jdbc.queryForObject(
-                "SELECT last_value FROM prescription_code_sequences WHERE code_prefix = ?",
+                "SELECT `last_value` FROM prescription_code_sequences WHERE code_prefix = ?",
                 Long.class,
                 "RX"
         ));

@@ -1,5 +1,5 @@
 -- =====================================================
--- V100__create_patient_satisfaction_surveys_table.sql
+-- V104__create_patient_satisfaction_surveys_table.sql
 -- NCL-10-CN-005: Khảo sát hài lòng sau khám
 -- =====================================================
 

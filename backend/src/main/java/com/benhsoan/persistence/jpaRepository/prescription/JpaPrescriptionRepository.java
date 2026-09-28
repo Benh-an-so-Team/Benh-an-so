@@ -1,6 +1,5 @@
 package com.benhsoan.persistence.jpaRepository.prescription;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.time.Instant;
@@ -55,6 +54,8 @@ public interface JpaPrescriptionRepository
     @Query("select prescription from PrescriptionEntity prescription "
             + "where prescription.id = :id")
     Optional<PrescriptionEntity> findByIdForUpdate(@Param("id") UUID id);
+
+    Optional<PrescriptionEntity> findByReplacesPrescriptionId(UUID replacesPrescriptionId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select prescription from PrescriptionEntity prescription "

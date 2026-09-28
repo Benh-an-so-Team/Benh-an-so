@@ -22,7 +22,15 @@ public record CreatePrescriptionCommand(
 
         List<PrescriptionMaxDailyDoseOverrideCommand> maxDailyDoseOverrides,
 
-        boolean controlledMedicineConfirmed
+        boolean controlledMedicineConfirmed,
+
+        PrescriptionCreationContext creationContext
 
 ) {
+
+    public CreatePrescriptionCommand {
+        creationContext = creationContext == null
+                ? PrescriptionCreationContext.STANDARD
+                : creationContext;
+    }
 }

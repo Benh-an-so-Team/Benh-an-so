@@ -1,7 +1,5 @@
 package com.benhsoan.adapter.inbound.rest.mapper;
 
-import java.util.List;
-
 import org.springframework.stereotype.Component;
 
 import com.benhsoan.adapter.inbound.rest.response.prescription.AppliedPrescriptionTemplateResponse;
@@ -31,8 +29,7 @@ public class PrescriptionTemplateRestMapper {
                 result.diagnosisName(),
                 result.createdBy(),
                 result.createdAt(),
-                result.items().stream().map(this::toItem).toList()
-        );
+                result.items().stream().map(this::toItem).toList());
     }
 
     public AppliedPrescriptionTemplateResponse toResponse(AppliedPrescriptionTemplateResult result) {
@@ -48,8 +45,7 @@ public class PrescriptionTemplateRestMapper {
                 result.interactionWarnings().stream().map(this::toInteractionWarning).toList(),
                 result.allergyWarnings().stream().map(this::toAllergyWarning).toList(),
                 result.contraindicationWarnings().stream().map(this::toContraindicationWarning).toList(),
-                result.contraindicationMissingData().stream().map(this::toMissingData).toList()
-        );
+                result.contraindicationMissingData().stream().map(this::toMissingData).toList());
     }
 
     private PrescriptionTemplateResponse.Item toItem(PrescriptionTemplateResult.Item item) {
@@ -67,13 +63,11 @@ public class PrescriptionTemplateRestMapper {
                 item.durationDays(),
                 item.quantity(),
                 item.instructions(),
-                item.sortOrder()
-        );
+                item.sortOrder());
     }
 
     private AppliedPrescriptionTemplateResponse.DraftItem toDraftItem(
-            AppliedPrescriptionTemplateResult.DraftItem item
-    ) {
+            AppliedPrescriptionTemplateResult.DraftItem item) {
         return new AppliedPrescriptionTemplateResponse.DraftItem(
                 item.medicineId(),
                 item.medicineCode(),
@@ -86,18 +80,15 @@ public class PrescriptionTemplateRestMapper {
                 item.route(),
                 item.durationDays(),
                 item.quantity(),
-                item.instructions()
-        );
+                item.instructions());
     }
 
     private AppliedPrescriptionTemplateResponse.SkippedItem toSkippedItem(
-            AppliedPrescriptionTemplateResult.SkippedItem item
-    ) {
+            AppliedPrescriptionTemplateResult.SkippedItem item) {
         return new AppliedPrescriptionTemplateResponse.SkippedItem(
                 item.medicineId(),
                 item.medicineName(),
-                item.reason()
-        );
+                item.reason());
     }
 
     private DrugInteractionWarningResponse toInteractionWarning(DrugInteractionWarningResult warning) {
@@ -107,8 +98,7 @@ public class PrescriptionTemplateRestMapper {
                 warning.drugIdB(),
                 warning.severity(),
                 warning.description(),
-                warning.clinicalRecommendation()
-        );
+                warning.clinicalRecommendation());
     }
 
     private PatientAllergyWarningResponse toAllergyWarning(PatientAllergyWarningResult warning) {
@@ -120,8 +110,7 @@ public class PrescriptionTemplateRestMapper {
                 warning.activeIngredient(),
                 warning.allergenName(),
                 warning.severity(),
-                warning.reaction()
-        );
+                warning.reaction());
     }
 
     private ContraindicationWarningResponse toContraindicationWarning(ContraindicationWarningResult warning) {
@@ -132,8 +121,7 @@ public class PrescriptionTemplateRestMapper {
                 warning.type(),
                 warning.severity(),
                 warning.message(),
-                warning.recommendation()
-        );
+                warning.recommendation());
     }
 
     private ContraindicationMissingDataResponse toMissingData(ContraindicationMissingDataResult missing) {
@@ -141,7 +129,6 @@ public class PrescriptionTemplateRestMapper {
                 missing.medicineId(),
                 missing.medicineName(),
                 missing.type(),
-                missing.message()
-        );
+                missing.message());
     }
 }

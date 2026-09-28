@@ -2,7 +2,6 @@ package com.benhsoan.persistence.adapterRepository.medicalrecord;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 

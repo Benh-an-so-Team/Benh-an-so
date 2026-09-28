@@ -94,7 +94,7 @@ export default function DataErasureRequestModal({
           </div>
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}>
-              Tiếp nhận yêu cầu xóa toàn bộ dữ liệu (Quy định QTN-19)
+              Tiếp nhận yêu cầu xóa dữ liệu cá nhân
             </div>
             <Text type="secondary" style={{ fontSize: 12.5 }}>
               Người bệnh: <strong>{patient?.fullName}</strong> ({patient?.patientCode})

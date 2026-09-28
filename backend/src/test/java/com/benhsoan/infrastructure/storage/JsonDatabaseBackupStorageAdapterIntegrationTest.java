@@ -105,7 +105,9 @@ class JsonDatabaseBackupStorageAdapterIntegrationTest {
         jdbc.update("UPDATE medical_record_template_versions SET template_name = ? WHERE id = ?", "CORRUPTED", fixture.templateVersionId());
         jdbc.update("UPDATE medical_record_template_sections SET label = ? WHERE id = ?", "CORRUPTED", fixture.templateSectionId());
         jdbc.update("UPDATE visits SET queue_item_id = NULL WHERE id = ?", fixture.visitId());
-        jdbc.update("UPDATE invoices SET original_invoice_id = NULL WHERE id = ?", fixture.adjustmentInvoiceId());
+        String otherInvoiceId = UUID.randomUUID().toString();
+        jdbc.update("INSERT INTO invoices VALUES (?, ?, ?, ?, ?)", otherInvoiceId, "INV-OTHER", null, null, "ORIGINAL");
+        jdbc.update("UPDATE invoices SET original_invoice_id = ? WHERE id = ?", otherInvoiceId, fixture.adjustmentInvoiceId());
 
         transactions.executeWithoutResult(status -> adapter.restoreSnapshot("BKP-MYSQL-FK.json"));
 
@@ -228,12 +230,17 @@ class JsonDatabaseBackupStorageAdapterIntegrationTest {
     }
 
     private void recreateSchema() {
-        jdbc.execute("SET FOREIGN_KEY_CHECKS = 0");
-        for (String table : BACKUP_PLAN.snapshotTables()) {
-            jdbc.execute("DROP TABLE IF EXISTS " + table);
-        }
-        jdbc.execute("DROP TABLE IF EXISTS flyway_schema_history");
-        jdbc.execute("SET FOREIGN_KEY_CHECKS = 1");
+        jdbc.execute((org.springframework.jdbc.core.ConnectionCallback<Void>) con -> {
+            try (java.sql.Statement st = con.createStatement()) {
+                st.execute("SET FOREIGN_KEY_CHECKS = 0");
+                for (String table : BACKUP_PLAN.snapshotTables()) {
+                    st.execute("DROP TABLE IF EXISTS " + table);
+                }
+                st.execute("DROP TABLE IF EXISTS flyway_schema_history");
+                st.execute("SET FOREIGN_KEY_CHECKS = 1");
+            }
+            return null;
+        });
         jdbc.execute("CREATE TABLE flyway_schema_history (installed_rank INT PRIMARY KEY, version VARCHAR(50), success BOOLEAN NOT NULL) ENGINE=InnoDB");
         jdbc.update("INSERT INTO flyway_schema_history VALUES (?, ?, ?)", 1, "test-schema-1", true);
         jdbc.execute("CREATE TABLE clinic_configuration (id TINYINT PRIMARY KEY, clinic_name VARCHAR(150) NOT NULL) ENGINE=InnoDB");

@@ -1,7 +1,6 @@
 package com.benhsoan.persistence.adapterRepository.patient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,7 +39,8 @@ import com.benhsoan.persistence.mapper.patient.PatientConsentHistoryPersistenceM
 import com.benhsoan.persistence.mapper.patient.PatientPersistenceMapper;
 
 /**
- * Kiểm thử đa luồng chứng minh cơ chế khóa bi quan (findByIdForUpdate) bảo vệ tính tuần tự hóa
+ * Kiểm thử đa luồng chứng minh cơ chế khóa bi quan (findByIdForUpdate) bảo vệ
+ * tính tuần tự hóa
  * của lịch sử phiếu đồng ý dưới tải đồng thời (Finding P1, P2-2, P3-2).
  */
 @DataJpaTest(properties = {
@@ -62,11 +62,16 @@ class PatientConsentConcurrencyIntegrationTest {
 
     private static final Instant NOW = Instant.parse("2026-09-24T10:00:00Z");
 
-    @Autowired private PatientRepositoryAdapter patientRepository;
-    @Autowired private PatientConsentHistoryRepositoryAdapter consentHistoryRepository;
-    @Autowired private JpaPatientRepository jpaPatientRepository;
-    @Autowired private JpaPatientConsentHistoryRepository jpaConsentHistoryRepository;
-    @Autowired private PlatformTransactionManager transactionManager;
+    @Autowired
+    private PatientRepositoryAdapter patientRepository;
+    @Autowired
+    private PatientConsentHistoryRepositoryAdapter consentHistoryRepository;
+    @Autowired
+    private JpaPatientRepository jpaPatientRepository;
+    @Autowired
+    private JpaPatientConsentHistoryRepository jpaConsentHistoryRepository;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @BeforeEach
     void cleanDatabase() {
@@ -100,8 +105,7 @@ class PatientConsentConcurrencyIntegrationTest {
                     "Nguyễn Văn A",
                     true,
                     "v1.0",
-                    userId
-            );
+                    userId);
             Patient saved = patientRepository.save(patient);
 
             // Version 1 ban đầu
@@ -119,8 +123,7 @@ class PatientConsentConcurrencyIntegrationTest {
                     false,
                     "Nguyễn Văn A",
                     userId,
-                    NOW.minusSeconds(3600)
-            );
+                    NOW.minusSeconds(3600));
             consentHistoryRepository.save(v1);
 
             return saved;
@@ -162,8 +165,7 @@ class PatientConsentConcurrencyIntegrationTest {
                                 true,
                                 patient.getConsentSignerName(),
                                 userId,
-                                NOW
-                        );
+                                NOW);
                         consentHistoryRepository.save(record);
                         patient.withdrawConsent("Yêu cầu xóa dữ liệu (QTN-19)", NOW);
                         patientRepository.save(patient);
@@ -195,8 +197,7 @@ class PatientConsentConcurrencyIntegrationTest {
                                 true,
                                 patient.getConsentSignerName(),
                                 userId,
-                                NOW
-                        );
+                                NOW);
                         consentHistoryRepository.save(record);
                         patient.updateConsentScope(true, NOW);
                         patientRepository.save(patient);
@@ -212,7 +213,8 @@ class PatientConsentConcurrencyIntegrationTest {
             future1.get(10, TimeUnit.SECONDS);
             future2.get(10, TimeUnit.SECONDS);
 
-            // Xác nhận cả 2 luồng đều không gặp ngoại lệ (đặc biệt không gặp DataIntegrityViolationException)
+            // Xác nhận cả 2 luồng đều không gặp ngoại lệ (đặc biệt không gặp
+            // DataIntegrityViolationException)
             if (thread1Error.get() != null) {
                 throw new AssertionError("Thread 1 gặp lỗi: " + thread1Error.get().getMessage(), thread1Error.get());
             }
@@ -222,7 +224,8 @@ class PatientConsentConcurrencyIntegrationTest {
 
             // Kiểm tra kết quả trong cơ sở dữ liệu
             List<PatientConsentRecord> history = consentHistoryRepository.findByPatientId(patientId);
-            assertEquals(3, history.size(), "Bắt buộc phải có đúng 3 bản ghi lịch sử (v1 ban đầu, v2 và v3 sau 2 giao dịch đồng thời)");
+            assertEquals(3, history.size(),
+                    "Bắt buộc phải có đúng 3 bản ghi lịch sử (v1 ban đầu, v2 và v3 sau 2 giao dịch đồng thời)");
 
             // Các version phải được sắp xếp giảm dần: 3, 2, 1
             assertEquals(3, history.get(0).getVersionNumber(), "Bản ghi mới nhất phải có version = 3");

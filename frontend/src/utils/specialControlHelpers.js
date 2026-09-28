@@ -124,13 +124,14 @@ export function getSpecialControlMeta(group) {
 export function validateSpecialControlMedicineForm(values = {}) {
   const isSpecial = Boolean(values.isSpecialControl)
   if (!isSpecial) {
-    return { valid: true, error: null }
+    return { valid: true, isValid: true, error: null }
   }
 
   if (!values.specialControlGroup) {
     return {
       valid: false,
-      error: 'Vui lòng chọn nhóm kiểm soát đặc biệt cho thuốc (Gây nghiện, Hướng thần, Tiền chất...).',
+      isValid: false,
+      error: 'Vui lòng chọn nhóm thuốc kiểm soát đặc biệt cho thuốc (Gây nghiện, Hướng thần, Tiền chất...).',
     }
   }
 
@@ -138,7 +139,8 @@ export function validateSpecialControlMedicineForm(values = {}) {
   if (!validGroups.includes(String(values.specialControlGroup).toUpperCase())) {
     return {
       valid: false,
-      error: 'Nhóm kiểm soát đặc biệt không hợp lệ.',
+      isValid: false,
+      error: 'Nhóm thuốc kiểm soát đặc biệt không hợp lệ.',
     }
   }
 
@@ -146,24 +148,26 @@ export function validateSpecialControlMedicineForm(values = {}) {
     if (values.specialControlNote.trim().length > 500) {
       return {
         valid: false,
-        error: 'Ghi chú / cảnh báo lâm sàng không được vượt quá 500 ký tự.',
+        isValid: false,
+        error: 'Ghi chú cảnh báo lâm sàng specialControlNote không được vượt quá 500 ký tự.',
       }
     }
   }
 
-  return { valid: true, error: null }
+  return { valid: true, isValid: true, error: null }
 }
 
 /**
  * Kiểm tra tính hợp lệ của lý do xác nhận kê đơn (Bác sĩ)
  * @param {string} reason
- * @returns {{ valid: boolean, error: string | null, trimmedReason: string }}
+ * @returns {{ valid: boolean, isValid: boolean, error: string | null, trimmedReason: string }}
  */
 export function validatePrescribeConfirmReason(reason) {
   if (typeof reason !== 'string') {
     return {
       valid: false,
-      error: 'Vui lòng nhập lý do / chỉ định lâm sàng bắt buộc.',
+      isValid: false,
+      error: 'Vui lòng nhập lý do chỉ định lâm sàng bắt buộc.',
       trimmedReason: '',
     }
   }
@@ -172,7 +176,8 @@ export function validatePrescribeConfirmReason(reason) {
   if (!trimmed) {
     return {
       valid: false,
-      error: 'Lý do / chỉ định lâm sàng khi kê thuốc kiểm soát đặc biệt là bắt buộc.',
+      isValid: false,
+      error: 'Vui lòng nhập lý do chỉ định lâm sàng khi kê thuốc kiểm soát đặc biệt (1 - 500 ký tự).',
       trimmedReason: '',
     }
   }
@@ -180,6 +185,7 @@ export function validatePrescribeConfirmReason(reason) {
   if (trimmed.length > 500) {
     return {
       valid: false,
+      isValid: false,
       error: 'Lý do chỉ định không được vượt quá 500 ký tự.',
       trimmedReason: trimmed.slice(0, 500),
     }
@@ -187,6 +193,7 @@ export function validatePrescribeConfirmReason(reason) {
 
   return {
     valid: true,
+    isValid: true,
     error: null,
     trimmedReason: trimmed,
   }
@@ -195,15 +202,62 @@ export function validatePrescribeConfirmReason(reason) {
 /**
  * Kiểm tra tính hợp lệ khi Dược sĩ cấp phát thuốc kiểm soát đặc biệt
  * Tuân thủ QTN-06 (không cấp phát vượt tồn kho) và QTN-39 (xác nhận)
- * @param {object} params { batchId, quantity, availableStock, reason }
- * @returns {{ valid: boolean, error: string | null, trimmedReason: string }}
+ * @param {object} params { batchId, quantity, availableStock, reason, receiverName, receiverIdCard, confirmed }
+ * @returns {{ valid: boolean, isValid: boolean, error: string | null, trimmedReason?: string }}
  */
 export function validateDispenseConfirm(params = {}) {
+  if (
+    params.receiverName !== undefined ||
+    params.receiverIdCard !== undefined ||
+    params.confirmed !== undefined
+  ) {
+    const receiverName = typeof params.receiverName === 'string' ? params.receiverName.trim() : ''
+    if (!receiverName) {
+      return {
+        valid: false,
+        isValid: false,
+        error: 'Vui lòng nhập họ tên người nhận thuốc.',
+      }
+    }
+
+    const idCard = typeof params.receiverIdCard === 'string' ? params.receiverIdCard.trim() : String(params.receiverIdCard || '').trim()
+    if (!idCard) {
+      return {
+        valid: false,
+        isValid: false,
+        error: 'Vui lòng nhập số CCCD hoặc CMND của người nhận thuốc.',
+      }
+    }
+
+    if (!/^\d+$/.test(idCard) || (idCard.length !== 9 && idCard.length !== 12)) {
+      return {
+        valid: false,
+        isValid: false,
+        error: 'Số CCCD hoặc CMND không hợp lệ (phải gồm 9 chữ số đối với CMND hoặc 12 chữ số đối với CCCD).',
+      }
+    }
+
+    if (!params.confirmed) {
+      return {
+        valid: false,
+        isValid: false,
+        error: 'Vui lòng xác nhận cam kết đối chiếu trước khi thực hiện cấp phát thuốc kiểm soát đặc biệt.',
+      }
+    }
+
+    return {
+      valid: true,
+      isValid: true,
+      error: null,
+    }
+  }
+
   const { batchId, quantity, availableStock, reason } = params
 
   if (!batchId) {
     return {
       valid: false,
+      isValid: false,
       error: 'Vui lòng chọn lô thuốc để xuất cấp phát.',
       trimmedReason: '',
     }
@@ -215,6 +269,7 @@ export function validateDispenseConfirm(params = {}) {
   if (isNaN(numQty) || numQty <= 0) {
     return {
       valid: false,
+      isValid: false,
       error: 'Số lượng thuốc cấp phát phải lớn hơn 0.',
       trimmedReason: '',
     }
@@ -224,6 +279,7 @@ export function validateDispenseConfirm(params = {}) {
   if (!isNaN(numStock) && numQty > numStock) {
     return {
       valid: false,
+      isValid: false,
       error: `Số lượng yêu cầu (${numQty}) vượt quá tồn kho khả dụng của lô (${numStock}). Không thể cấp phát theo quy định tồn kho.`,
       trimmedReason: '',
     }
@@ -232,6 +288,7 @@ export function validateDispenseConfirm(params = {}) {
   if (typeof reason !== 'string' || !reason.trim()) {
     return {
       valid: false,
+      isValid: false,
       error: 'Nội dung xác nhận cấp phát thuốc kiểm soát đặc biệt là bắt buộc.',
       trimmedReason: '',
     }
@@ -241,6 +298,7 @@ export function validateDispenseConfirm(params = {}) {
   if (trimmed.length > 500) {
     return {
       valid: false,
+      isValid: false,
       error: 'Nội dung xác nhận không được vượt quá 500 ký tự.',
       trimmedReason: trimmed.slice(0, 500),
     }
@@ -248,6 +306,7 @@ export function validateDispenseConfirm(params = {}) {
 
   return {
     valid: true,
+    isValid: true,
     error: null,
     trimmedReason: trimmed,
   }

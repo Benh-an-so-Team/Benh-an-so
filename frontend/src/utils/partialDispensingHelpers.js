@@ -104,10 +104,17 @@ export const mapDispenseError = (error, prescriptionId, payloadItems = []) => {
   }
 
   if (status === 409) {
+    const isDispensedOrCancelled =
+      code === 'PRESCRIPTION_ALREADY_DISPENSED' ||
+      code === 'PRESCRIPTION_CANCELLED' ||
+      code === 'PRESCRIPTION_INVALID_STATUS' ||
+      String(responseData?.message || '').toLowerCase().includes('already dispensed')
     return {
       status: 409,
       code: code || 'PRESCRIPTION_INVALID_STATUS',
-      message: responseData?.message || 'Đơn thuốc đã được cấp phát đầy đủ hoặc đã bị hủy, không thể tiếp tục cấp phát.',
+      message: isDispensedOrCancelled
+        ? 'Đơn thuốc đã được cấp phát đầy đủ hoặc đã bị hủy, không thể tiếp tục cấp phát.'
+        : (responseData?.message || 'Đơn thuốc đã được cấp phát đầy đủ hoặc đã bị hủy, không thể tiếp tục cấp phát.'),
       shortages: [],
     }
   }

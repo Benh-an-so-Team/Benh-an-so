@@ -25,7 +25,6 @@ import com.benhsoan.port.outbound.repository.reporting.DailyVisitSummary;
 import com.benhsoan.port.outbound.repository.reporting.DiseasePatternSummary;
 import com.benhsoan.port.outbound.repository.reporting.DoctorVisitSummary;
 import com.benhsoan.port.outbound.repository.reporting.OperationalReportQueryRepository;
-import com.benhsoan.port.outbound.repository.reporting.TopMedicineSummary;
 import com.benhsoan.port.outbound.repository.reporting.VisitReportDetailItem;
 import com.benhsoan.port.outbound.time.ClockPort;
 
@@ -51,8 +50,7 @@ public class OperationalReportDataService {
                 to,
                 operationalReportQueryRepository.countCompletedVisits(range.fromInclusive(), range.toExclusive()),
                 operationalReportQueryRepository.sumNetRevenue(range.fromInclusive(), range.toExclusive()),
-                DEFAULT_CURRENCY
-        );
+                DEFAULT_CURRENCY);
     }
 
     public OperationalTimelineResult getTimeline(LocalDate from, LocalDate to) {
@@ -68,8 +66,7 @@ public class OperationalReportDataService {
     public OperationalReportData getReportData(LocalDate from, LocalDate to) {
         return new OperationalReportData(
                 getSummary(from, to),
-                getTimeline(from, to)
-        );
+                getTimeline(from, to));
     }
 
     public List<VisitReportDetailItem> getCompletedVisitDetails(LocalDate from, LocalDate to) {
@@ -81,8 +78,7 @@ public class OperationalReportDataService {
         return operationalReportQueryRepository.findCompletedVisitDetails(
                 range.fromInclusive(),
                 range.toExclusive(),
-                doctorId
-        );
+                doctorId);
     }
 
     public boolean hasReportData(ReportType reportType, LocalDate from, LocalDate to) {
@@ -107,8 +103,8 @@ public class OperationalReportDataService {
     public TopMedicinesReportResult getTopMedicines(LocalDate from, LocalDate to) {
         ReportingTimeRange range = ReportingTimeRange.of(from, to);
         List<TopMedicineItemResult> items = new ArrayList<>();
-        List<com.benhsoan.port.outbound.repository.reporting.TopMedicineSummary> summaries =
-                operationalReportQueryRepository.findTopDispensedMedicines(range.fromInclusive(), range.toExclusive());
+        List<com.benhsoan.port.outbound.repository.reporting.TopMedicineSummary> summaries = operationalReportQueryRepository
+                .findTopDispensedMedicines(range.fromInclusive(), range.toExclusive());
 
         for (int index = 0; index < summaries.size(); index++) {
             var item = summaries.get(index);
@@ -124,15 +120,14 @@ public class OperationalReportDataService {
                 from,
                 to,
                 null,
-                items
-        );
+                items);
     }
 
     public DoctorVisitsReportResult getDoctorVisits(LocalDate from, LocalDate to) {
         ReportingTimeRange range = ReportingTimeRange.of(from, to);
         List<DoctorVisitSummaryResult> items = new ArrayList<>();
-        List<DoctorVisitSummary> summaries =
-                operationalReportQueryRepository.findDoctorVisitSummaries(range.fromInclusive(), range.toExclusive());
+        List<DoctorVisitSummary> summaries = operationalReportQueryRepository
+                .findDoctorVisitSummaries(range.fromInclusive(), range.toExclusive());
 
         for (int index = 0; index < summaries.size(); index++) {
             var item = summaries.get(index);
@@ -148,20 +143,17 @@ public class OperationalReportDataService {
                 from,
                 to,
                 null,
-                items
-        );
+                items);
     }
 
     public DiseasePatternReportResult getDiseasePatterns(
             LocalDate from,
             LocalDate to,
             UUID doctorId,
-            String doctorName
-    ) {
+            String doctorName) {
         ReportingTimeRange range = ReportingTimeRange.of(from, to);
-        List<DiseasePatternSummary> summaries =
-                operationalReportQueryRepository.findDiseasePatternSummaries(
-                        range.fromInclusive(), range.toExclusive(), doctorId);
+        List<DiseasePatternSummary> summaries = operationalReportQueryRepository.findDiseasePatternSummaries(
+                range.fromInclusive(), range.toExclusive(), doctorId);
 
         long totalDiagnoses = 0L;
         for (DiseasePatternSummary summary : summaries) {
@@ -181,8 +173,7 @@ public class OperationalReportDataService {
                     item.diseaseName(),
                     item.diseaseGroup(),
                     item.diagnosisCount(),
-                    percentage
-            ));
+                    percentage));
         }
 
         return new DiseasePatternReportResult(
@@ -192,8 +183,7 @@ public class OperationalReportDataService {
                 doctorName,
                 totalDiagnoses,
                 clockPort.now(),
-                items
-        );
+                items);
     }
 
     private Map<LocalDate, Long> aggregateVisitsByDate(List<DailyVisitSummary> visits) {
@@ -216,16 +206,14 @@ public class OperationalReportDataService {
             LocalDate from,
             LocalDate to,
             Map<LocalDate, Long> visitsByDate,
-            Map<LocalDate, BigDecimal> revenueByDate
-    ) {
+            Map<LocalDate, BigDecimal> revenueByDate) {
         java.util.ArrayList<OperationalTimelineItemResult> items = new java.util.ArrayList<>();
         LocalDate current = from;
         while (!current.isAfter(to)) {
             items.add(new OperationalTimelineItemResult(
                     current,
                     visitsByDate.getOrDefault(current, 0L),
-                    revenueByDate.getOrDefault(current, BigDecimal.ZERO)
-            ));
+                    revenueByDate.getOrDefault(current, BigDecimal.ZERO)));
             current = current.plusDays(1);
         }
         return items;
