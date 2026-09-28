@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -129,7 +128,8 @@ public class LoginAttemptAdapter implements LoginAttemptPort {
                                 if (entity == null) {
                                     return null;
                                 }
-                                boolean blocked = entity.getBlockedUntil() != null && now.isBefore(entity.getBlockedUntil());
+                                boolean blocked = entity.getBlockedUntil() != null
+                                        && now.isBefore(entity.getBlockedUntil());
                                 boolean newlyBlocked = blocked && (entity.getAttempts() == maxAttempts);
                                 long retryAfter = calculateRetryAfterSeconds(entity.getBlockedUntil(), now);
                                 return new LoginAttemptResult(
@@ -165,7 +165,8 @@ public class LoginAttemptAdapter implements LoginAttemptPort {
                                     return null;
                                 }
                             }
-                        } catch (org.springframework.dao.ConcurrencyFailureException | org.springframework.dao.DataIntegrityViolationException ex) {
+                        } catch (org.springframework.dao.ConcurrencyFailureException
+                                | org.springframework.dao.DataIntegrityViolationException ex) {
                             status.setRollbackOnly();
                             return null;
                         }
@@ -188,7 +189,8 @@ public class LoginAttemptAdapter implements LoginAttemptPort {
 
             LoginAttemptEntity entity = repository.findById(identifier).orElse(null);
             int attempts = entity != null ? entity.getAttempts() : 1;
-            boolean blocked = entity != null && entity.getBlockedUntil() != null && now.isBefore(entity.getBlockedUntil());
+            boolean blocked = entity != null && entity.getBlockedUntil() != null
+                    && now.isBefore(entity.getBlockedUntil());
             boolean newlyBlocked = blocked && (attempts == maxAttempts);
             Instant blockedUntil = (blocked && entity != null) ? entity.getBlockedUntil() : null;
             long retryAfter = calculateRetryAfterSeconds(blockedUntil, now);

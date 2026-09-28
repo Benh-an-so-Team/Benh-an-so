@@ -2,7 +2,6 @@ package com.benhsoan.config;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -56,7 +55,9 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
 
                                                 // ===== AUTHENTICATION =====
-                                                .requestMatchers("/auth/change-password", "/auth/sessions/current/extend").authenticated()
+                                                .requestMatchers("/auth/change-password",
+                                                                "/auth/sessions/current/extend")
+                                                .authenticated()
                                                 .requestMatchers("/auth/**").permitAll()
 
                                                 .requestMatchers(

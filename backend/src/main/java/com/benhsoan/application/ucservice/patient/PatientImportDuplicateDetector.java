@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import com.benhsoan.domain.patient.Patient;
@@ -34,9 +35,9 @@ public class PatientImportDuplicateDetector {
         List<ValidatedPatientRowDto> nonDuplicateRows = new ArrayList<>();
         List<SuspectedDuplicateResult> suspectedDuplicates = new ArrayList<>();
 
-        Set<String> seenIdentityNumbers = new HashSet<>();
-        Set<GroupKey> seenGroupKeys = new HashSet<>();
-        Map<String, Boolean> identityExistsCache = new HashMap<>();
+        Map<String, ValidatedPatientRowDto> seenIdentityNumbers = new HashMap<>();
+        Map<GroupKey, ValidatedPatientRowDto> seenGroupKeys = new HashMap<>();
+        Map<String, Patient> identityPatientCache = new HashMap<>();
         Map<String, List<Patient>> phonePatientsCache = new HashMap<>();
         Map<String, List<Patient>> nameDobPatientsCache = new HashMap<>();
 
@@ -46,7 +47,8 @@ public class PatientImportDuplicateDetector {
             GroupKey key = new GroupKey(normName, row.getDateOfBirth(), phone);
 
             // 1. Check Internal Duplicates within the same file
-            if (row.getIdentityNumber() != null && seenIdentityNumbers.contains(row.getIdentityNumber())) {
+            if (row.getIdentityNumber() != null && seenIdentityNumbers.containsKey(row.getIdentityNumber())) {
+                ValidatedPatientRowDto firstRow = seenIdentityNumbers.get(row.getIdentityNumber());
                 suspectedDuplicates.add(new SuspectedDuplicateResult(
                         row.getRowNumber(),
                         row.getFullName(),
@@ -54,14 +56,15 @@ public class PatientImportDuplicateDetector {
                         row.getPhone(),
                         row.getIdentityNumber(),
                         null,
-                        null,
-                        null,
-                        "Trùng số CCCD/CMND với một dòng khác trong cùng tệp tải lên."
+                        "Dòng " + firstRow.getRowNumber(),
+                        firstRow.getFullName(),
+                        "Trùng số CCCD/CMND với dòng " + firstRow.getRowNumber() + " (" + firstRow.getFullName() + ") trong cùng tệp tải lên."
                 ));
                 continue;
             }
 
-            if (seenGroupKeys.contains(key)) {
+            if (seenGroupKeys.containsKey(key)) {
+                ValidatedPatientRowDto firstRow = seenGroupKeys.get(key);
                 suspectedDuplicates.add(new SuspectedDuplicateResult(
                         row.getRowNumber(),
                         row.getFullName(),
@@ -69,22 +72,38 @@ public class PatientImportDuplicateDetector {
                         row.getPhone(),
                         row.getIdentityNumber(),
                         null,
-                        null,
-                        null,
+                        "Dòng " + firstRow.getRowNumber(),
+                        firstRow.getFullName(),
                         phone.isEmpty()
-                                ? "Trùng Họ tên và Ngày sinh với một dòng khác trong cùng tệp tải lên."
-                                : "Trùng Họ tên, Ngày sinh và Số điện thoại với một dòng khác trong cùng tệp tải lên."
+                                ? "Trùng Họ tên và Ngày sinh với dòng " + firstRow.getRowNumber() + " (" + firstRow.getFullName() + ") trong cùng tệp tải lên."
+                                : "Trùng Họ tên, Ngày sinh và Số điện thoại với dòng " + firstRow.getRowNumber() + " (" + firstRow.getFullName() + ") trong cùng tệp tải lên."
                 ));
                 continue;
             }
 
             // 2. Check Database Duplicates by CCCD/CMND (using cache to avoid repeated queries)
             if (row.getIdentityNumber() != null) {
-                boolean existsInDb = identityExistsCache.computeIfAbsent(
-                        row.getIdentityNumber(),
-                        patientRepository::existsByIdentityNumber
-                );
-                if (existsInDb) {
+                if (!identityPatientCache.containsKey(row.getIdentityNumber())) {
+                    identityPatientCache.put(
+                            row.getIdentityNumber(),
+                            patientRepository.findByIdentityNumber(row.getIdentityNumber()).orElse(null)
+                    );
+                }
+                Patient matchedPatient = identityPatientCache.get(row.getIdentityNumber());
+                if (matchedPatient != null) {
+                    suspectedDuplicates.add(new SuspectedDuplicateResult(
+                            row.getRowNumber(),
+                            row.getFullName(),
+                            row.getDateOfBirth(),
+                            row.getPhone(),
+                            row.getIdentityNumber(),
+                            matchedPatient.getId(),
+                            matchedPatient.getPatientCode(),
+                            matchedPatient.getFullName(),
+                            "Số CCCD/CMND trùng khớp với bệnh nhân " + matchedPatient.getPatientCode() + " (" + matchedPatient.getFullName() + ") đã có trong hệ thống."
+                    ));
+                    continue;
+                } else if (patientRepository.existsByIdentityNumber(row.getIdentityNumber())) {
                     suspectedDuplicates.add(new SuspectedDuplicateResult(
                             row.getRowNumber(),
                             row.getFullName(),
@@ -173,6 +192,7 @@ public class PatientImportDuplicateDetector {
                                 var searchCmd = com.benhsoan.port.dto.command.patient.SearchPatientCommand.builder()
                                         .fullName(row.getFullName())
                                         .dateOfBirth(row.getDateOfBirth())
+                                        .pageable(PageRequest.of(0, 20))
                                         .build();
                                 var searchPage = patientRepository.search(searchCmd);
                                 return searchPage != null && searchPage.getContent() != null ? searchPage.getContent() : List.of();
@@ -211,9 +231,9 @@ public class PatientImportDuplicateDetector {
 
             // Record as seen
             if (row.getIdentityNumber() != null) {
-                seenIdentityNumbers.add(row.getIdentityNumber());
+                seenIdentityNumbers.put(row.getIdentityNumber(), row);
             }
-            seenGroupKeys.add(key);
+            seenGroupKeys.put(key, row);
 
             nonDuplicateRows.add(row);
         }

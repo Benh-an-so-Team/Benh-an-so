@@ -73,4 +73,37 @@ class ExcelPatientSheetParserTest {
                     .isInstanceOf(ValidationException.class);
         }
     }
+
+    @Test
+    @DisplayName("Should automatically restore leading zero when phone or CCCD is stored as numeric in Excel")
+    void shouldRestoreLeadingZeroForPhoneAndCccdFromNumericCells() throws Exception {
+        try (Workbook wb = new XSSFWorkbook();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = wb.createSheet("Data");
+            Row header = sheet.createRow(0);
+            header.createCell(0).setCellValue("Họ và tên");
+            header.createCell(1).setCellValue("Ngày sinh");
+            header.createCell(2).setCellValue("Giới tính");
+            header.createCell(3).setCellValue("Số điện thoại");
+            header.createCell(4).setCellValue("Số CCCD/CMND");
+
+            Row dataRow = sheet.createRow(1);
+            dataRow.createCell(0).setCellValue("Nguyễn Văn Tuấn");
+            dataRow.createCell(1).setCellValue("15/05/2005");
+            dataRow.createCell(2).setCellValue("Nam");
+            // Numeric cell: 345678910 (Excel stripped leading 0)
+            dataRow.createCell(3).setCellValue(345678910d);
+            // Numeric cell: 1088012346 (Excel stripped leading 00)
+            dataRow.createCell(4).setCellValue(1088012346d);
+
+            wb.write(out);
+            byte[] bytes = out.toByteArray();
+
+            List<RawPatientRowDto> rows = parser.parse(new ByteArrayInputStream(bytes));
+            assertThat(rows).hasSize(1);
+            RawPatientRowDto row = rows.get(0);
+            assertThat(row.getPhone()).isEqualTo("0345678910");
+            assertThat(row.getIdentityNumber()).isEqualTo("001088012346");
+        }
+    }
 }

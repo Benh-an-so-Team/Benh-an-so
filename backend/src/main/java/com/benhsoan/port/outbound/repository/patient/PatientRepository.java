@@ -26,6 +26,8 @@ public interface PatientRepository {
 
     boolean existsByIdentityNumber(String identityNumber);
 
+    Optional<Patient> findByIdentityNumber(String identityNumber);
+
     Optional<Patient> findTopByOrderByPatientCodeDesc();
 
     boolean existsByIdentityNumberAndIdNot( String identityNumber, UUID id);
