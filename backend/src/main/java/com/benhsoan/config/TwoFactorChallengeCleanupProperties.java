@@ -1,6 +1,7 @@
 package com.benhsoan.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
@@ -11,10 +12,21 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  */
 @ConfigurationProperties(prefix = "app.security.two-factor.challenge.cleanup")
 public record TwoFactorChallengeCleanupProperties(
-        @DefaultValue("true") boolean enabled,
-        @DefaultValue("30") int retentionDays,
-        @DefaultValue("0 0 3 * * *") String cron
+        boolean enabled,
+        int retentionDays,
+        String cron
 ) {
+    @ConstructorBinding
+    public TwoFactorChallengeCleanupProperties(
+            @DefaultValue("true") boolean enabled,
+            @DefaultValue("30") int retentionDays,
+            @DefaultValue("0 0 3 * * *") String cron
+    ) {
+        this.enabled = enabled;
+        this.retentionDays = retentionDays;
+        this.cron = cron;
+    }
+
     public TwoFactorChallengeCleanupProperties(int retentionDays) {
         this(true, retentionDays, "0 0 3 * * *");
     }
