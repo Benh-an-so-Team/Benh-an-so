@@ -92,6 +92,14 @@ public class PatientMergeDataPersistenceAdapter implements PatientMergeDataPort 
                 // 12. Transfer Patient Family Histories
                 transferFamilyHistories(sourcePatientId, targetPatientId);
 
+                // 13. Transfer Personal Data Requests (NCL-15-CN-006: patient-owned historical
+                // data that must follow the patient on merge)
+                entityManager.createQuery(
+                                "UPDATE PersonalDataRequestEntity p SET p.patientId = :targetId WHERE p.patientId = :sourceId")
+                                .setParameter("targetId", targetPatientId)
+                                .setParameter("sourceId", sourcePatientId)
+                                .executeUpdate();
+
                 return transferredVisits;
         }
 
