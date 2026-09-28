@@ -82,7 +82,7 @@ app:
     secret: ${JWT_SECRET:DEV_SECRET_CHANGE_ME_MUST_BE_32_CHARS_LONG_123}
     expiration-ms: ${JWT_EXPIRATION_MS:900000}
   cors:
-    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:3000,http://localhost:5173,http://localhost:4200,https://*.vercel.app}
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*,http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:4200,https://*.vercel.app}
   security:
     login:
       max-attempts: 5
