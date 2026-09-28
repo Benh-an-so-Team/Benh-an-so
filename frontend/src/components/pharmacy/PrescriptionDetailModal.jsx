@@ -40,6 +40,7 @@ import {
   WarningOutlined,
   FireOutlined,
   StopOutlined,
+  BookOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import pharmacyApi from '../../api/pharmacyApi'
@@ -50,6 +51,9 @@ import {
   isStandardRxCode,
 } from '../../utils/electronicPrescriptionValidation'
 import SpecialControlBadge from './SpecialControlBadge.jsx'
+import { useAuthContext } from '../../context/AuthContext'
+import { canSaveAsTemplate } from '../../utils/prescriptionTemplateHelpers.js'
+import SaveAsTemplateModal from '../prescription/SaveAsTemplateModal.jsx'
 
 const { Text, Paragraph, Title } = Typography
 
@@ -82,11 +86,23 @@ function PrescriptionDetailModal({
   canCancel = false,
   onCancelClick,
   canSendInterconnection = true,
+  diagnoses = [],
+  onTemplateSaved,
 }) {
+  const { user } = useAuthContext()
   const [sendingInterconnection, setSendingInterconnection] = useState(false)
   const [interconnectionState, setInterconnectionState] = useState(null)
   const [printing, setPrinting] = useState(false)
   const [allergyLogs, setAllergyLogs] = useState([])
+  const [saveTemplateModalOpen, setSaveTemplateModalOpen] = useState(false)
+
+  const currentUserId = user?.id
+  const userRoles = user?.roles || []
+  const canSaveTemplate = canSaveAsTemplate({
+    prescription,
+    currentUserId,
+    userRoles,
+  }).allowed
 
   useEffect(() => {
     if (prescription) {
@@ -453,6 +469,17 @@ function PrescriptionDetailModal({
             >
               In đơn thuốc
             </Button>
+            {canSaveTemplate && (
+              <Button
+                type="default"
+                icon={<BookOutlined />}
+                onClick={() => setSaveTemplateModalOpen(true)}
+                id="btn-save-as-template"
+                style={{ borderColor: '#2563eb', color: '#2563eb' }}
+              >
+                Lưu thành mẫu
+              </Button>
+            )}
             {canEdit && isPending && (
               <Button
                 type="default"
@@ -949,6 +976,16 @@ function PrescriptionDetailModal({
             ),
           },
         ]}
+      />
+
+      <SaveAsTemplateModal
+        open={saveTemplateModalOpen}
+        onClose={() => setSaveTemplateModalOpen(false)}
+        prescription={prescription}
+        diagnoses={diagnoses}
+        onSuccess={(savedTpl) => {
+          if (onTemplateSaved) onTemplateSaved(savedTpl)
+        }}
       />
     </Modal>
   )

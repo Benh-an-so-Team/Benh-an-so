@@ -53,7 +53,6 @@ jobs:
       - name: Run Backend Unit & Integration Tests
         working-directory: backend
         env:
-          SPRING_PROFILES_ACTIVE: test
           TESTCONTAINERS_RYUK_DISABLED: "false"
         run: |
           if [ -f "./mvnw" ] && [ -f "./.mvn/wrapper/maven-wrapper.properties" ]; then

@@ -53,6 +53,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.benhsoan.port.outbound.repository.appointment.AppointmentWaitlistRepository;
 
+/**
+ * NCL-14-CN-003 CV-03: books an appointment on behalf of the authenticated patient via the
+ * online portal, guarding past time (TC-03), slot collision (TC-02 / QTN-04) and writing an
+ * audit trail (TC-04).
+ */
+
 @Service
 @Transactional
 public class PatientBookAppointmentService implements PatientBookAppointmentUseCase {

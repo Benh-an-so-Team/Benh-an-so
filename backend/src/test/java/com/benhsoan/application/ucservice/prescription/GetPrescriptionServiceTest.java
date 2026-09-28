@@ -199,6 +199,68 @@ class GetPrescriptionServiceTest {
         verify(resultMapper, never()).toResult(any(), any());
     }
 
+    @Test
+    @DisplayName("getById - enriches a REPLACED prescription with the replacement link")
+    void getById_whenReplaced_enrichesReplacementLink() {
+        UUID originalId = UUID.randomUUID();
+        UUID replacementId = UUID.randomUUID();
+        Prescription original = createSamplePrescription(originalId, "RX000001", PrescriptionStatus.REPLACED, null);
+        PrescriptionResult mappedResult = createSampleResult(originalId, "RX000001", PrescriptionStatus.REPLACED, null);
+        Prescription replacement = createSamplePrescription(replacementId, "RX000002", PrescriptionStatus.PENDING_DISPENSE, null);
+
+        when(prescriptionRepository.findById(originalId)).thenReturn(Optional.of(original));
+        when(warningLogRepository.findByPrescriptionId(originalId)).thenReturn(List.of());
+        when(resultMapper.toResult(original, List.of())).thenReturn(mappedResult);
+        when(prescriptionRepository.findReplacementOf(originalId)).thenReturn(Optional.of(replacement));
+
+        PrescriptionResult actual = service.getById(originalId);
+
+        assertEquals(replacementId, actual.replacedByPrescriptionId());
+        assertEquals("RX000002", actual.replacedByPrescriptionCode());
+        verify(prescriptionRepository).findReplacementOf(originalId);
+    }
+
+    @Test
+    @DisplayName("getByCode - enriches a REPLACED prescription with the replacement link")
+    void getByCode_whenReplaced_enrichesReplacementLink() {
+        String originalCode = "RX000001";
+        UUID originalId = UUID.randomUUID();
+        UUID replacementId = UUID.randomUUID();
+        Prescription original = createSamplePrescription(originalId, originalCode, PrescriptionStatus.REPLACED, null);
+        PrescriptionResult mappedResult = createSampleResult(originalId, originalCode, PrescriptionStatus.REPLACED, null);
+        Prescription replacement = createSamplePrescription(replacementId, "RX000002", PrescriptionStatus.PENDING_DISPENSE, null);
+
+        when(prescriptionRepository.findByPrescriptionCode(originalCode)).thenReturn(Optional.of(original));
+        when(warningLogRepository.findByPrescriptionId(originalId)).thenReturn(List.of());
+        when(resultMapper.toResult(original, List.of())).thenReturn(mappedResult);
+        when(prescriptionRepository.findReplacementOf(originalId)).thenReturn(Optional.of(replacement));
+
+        PrescriptionResult actual = service.getByCode(originalCode);
+
+        assertEquals(replacementId, actual.replacedByPrescriptionId());
+        assertEquals("RX000002", actual.replacedByPrescriptionCode());
+        verify(prescriptionRepository).findReplacementOf(originalId);
+    }
+
+    @Test
+    @DisplayName("getById - leaves the replacement link empty when no replacement exists")
+    void getById_whenReplacedWithoutReplacement_leavesLinkEmpty() {
+        UUID originalId = UUID.randomUUID();
+        Prescription original = createSamplePrescription(originalId, "RX000001", PrescriptionStatus.REPLACED, null);
+        PrescriptionResult mappedResult = createSampleResult(originalId, "RX000001", PrescriptionStatus.REPLACED, null);
+
+        when(prescriptionRepository.findById(originalId)).thenReturn(Optional.of(original));
+        when(warningLogRepository.findByPrescriptionId(originalId)).thenReturn(List.of());
+        when(resultMapper.toResult(original, List.of())).thenReturn(mappedResult);
+        when(prescriptionRepository.findReplacementOf(originalId)).thenReturn(Optional.empty());
+
+        PrescriptionResult actual = service.getById(originalId);
+
+        assertEquals(originalId, actual.id());
+        assertEquals(null, actual.replacedByPrescriptionId());
+        assertEquals(null, actual.replacedByPrescriptionCode());
+    }
+
     private Prescription createSamplePrescription(UUID id, String code, PrescriptionStatus status, String cancelReason) {
         UUID medicineId = UUID.randomUUID();
         PrescriptionItem item = PrescriptionItem.create(

@@ -10,8 +10,19 @@ public record PrescriptionInterconnectionGatewayRequest(
         Clinic clinic,
         Doctor doctor,
         Patient patient,
-        List<Item> items
+        List<Item> items,
+        String replacesPrescriptionCode
 ) {
+    public PrescriptionInterconnectionGatewayRequest(
+            String prescriptionCode,
+            Instant prescribedAt,
+            Clinic clinic,
+            Doctor doctor,
+            Patient patient,
+            List<Item> items
+    ) {
+        this(prescriptionCode, prescribedAt, clinic, doctor, patient, items, null);
+    }
     public record Clinic(String id, String name, String address, String phone) {
     }
 

@@ -85,6 +85,10 @@ import com.benhsoan.port.dto.result.MaxDailyDoseCheckResult;
 import com.benhsoan.port.dto.result.MaxDailyDoseMissingDataResult;
 import com.benhsoan.port.dto.result.MaxDailyDoseWarningResult;
 import com.benhsoan.port.dto.result.PrescriptionAllergyWarningLogResult;
+import com.benhsoan.adapter.inbound.rest.request.prescription.ReplacePrescriptionRequest;
+import com.benhsoan.adapter.inbound.rest.response.prescription.PrescriptionReplacementResponse;
+import com.benhsoan.port.dto.command.prescription.ReplacePrescriptionCommand;
+import com.benhsoan.port.dto.result.PrescriptionReplacementResult;
 
 @Component
 public class PrescriptionRestMapper {
@@ -189,6 +193,34 @@ public class PrescriptionRestMapper {
                 .build();
     }
 
+    public ReplacePrescriptionCommand toReplacementCommand(
+            UUID originalPrescriptionId,
+            ReplacePrescriptionRequest request
+    ) {
+        return new ReplacePrescriptionCommand(
+                originalPrescriptionId,
+                request.replacementReason(),
+                toCommand(new CreatePrescriptionRequest(
+                        null,
+                        request.note(),
+                        request.items(),
+                        request.interactionOverrides(),
+                        request.allergyOverrides(),
+                        request.contraindicationOverrides(),
+                        request.maxDailyDoseOverrides(),
+                        request.controlledMedicineConfirmed()
+                ))
+        );
+    }
+
+    public PrescriptionReplacementResponse toResponse(PrescriptionReplacementResult result) {
+        return new PrescriptionReplacementResponse(
+                toResponse(result.originalPrescription()),
+                toResponse(result.replacementPrescription()),
+                result.interconnection()
+        );
+    }
+
     public CancelPrescriptionCommand toCommand(
             UUID prescriptionId,
             CancelPrescriptionRequest request
@@ -239,6 +271,11 @@ public class PrescriptionRestMapper {
                                 .stream()
                                 .map(this::toResponse)
                                 .toList())
+                .replacesPrescriptionId(result.replacesPrescriptionId())
+                .replacesPrescriptionCode(result.replacesPrescriptionCode())
+                .replacementReason(result.replacementReason())
+                .replacedByPrescriptionId(result.replacedByPrescriptionId())
+                .replacedByPrescriptionCode(result.replacedByPrescriptionCode())
                 .build();
     }
 

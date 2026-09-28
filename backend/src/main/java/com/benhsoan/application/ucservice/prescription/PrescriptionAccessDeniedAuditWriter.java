@@ -40,6 +40,27 @@ public class PrescriptionAccessDeniedAuditWriter {
             Instant deniedAt,
             String errorReason
     ) {
+        writeDenied(actorId, prescriptionId, prescribedBy, deniedAt, errorReason);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void writeReplacementDenied(
+            UUID actorId,
+            UUID prescriptionId,
+            UUID prescribedBy,
+            Instant deniedAt,
+            String errorReason
+    ) {
+        writeDenied(actorId, prescriptionId, prescribedBy, deniedAt, errorReason);
+    }
+
+    private void writeDenied(
+            UUID actorId,
+            UUID prescriptionId,
+            UUID prescribedBy,
+            Instant deniedAt,
+            String errorReason
+    ) {
         Map<String, Object> detail = new LinkedHashMap<>();
         detail.put("error", errorReason != null ? errorReason : "Attempted to cancel prescription prescribed by another doctor");
         if (prescribedBy != null) {

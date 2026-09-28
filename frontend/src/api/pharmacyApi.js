@@ -10,6 +10,8 @@ const pharmacyApi = {
     axiosClient.post('/prescriptions/check-allergy-warnings', { medicalRecordId, medicineIds }),
   checkContraindications: (medicalRecordId, medicineIds) =>
     axiosClient.post('/prescriptions/check-contraindications', { medicalRecordId, medicineIds }),
+  checkMaxDailyDose: (medicalRecordId, items) =>
+    axiosClient.post('/prescriptions/check-max-daily-dose', { medicalRecordId, items }),
   getAllergyWarningLogs: (params) => axiosClient.get('/prescriptions/allergy-warning-logs', { params }),
   createPrescription: (data) => axiosClient.post('/prescriptions', data),
   updatePrescription: (id, data) => axiosClient.patch(`/prescriptions/${id}`, data),

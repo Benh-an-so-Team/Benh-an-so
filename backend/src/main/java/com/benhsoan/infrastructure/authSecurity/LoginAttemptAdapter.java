@@ -70,81 +70,122 @@ public class LoginAttemptAdapter implements LoginAttemptPort {
         this(maxAttempts, blockDurationMs, repository, clockPort, null);
     }
 
+    private static final int STRIPE_COUNT = 64;
+    private final Object[] stripeLocks = new Object[STRIPE_COUNT];
+    {
+        for (int i = 0; i < STRIPE_COUNT; i++) {
+            stripeLocks[i] = new Object();
+        }
+    }
+
+    private Object getStripeLock(String identifier) {
+        if (identifier == null) {
+            return stripeLocks[0];
+        }
+        int index = (identifier.hashCode() & 0x7FFFFFFF) % STRIPE_COUNT;
+        return stripeLocks[index];
+    }
+
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void loginSucceeded(String identifier) {
-        repository.deleteById(identifier);
+        synchronized (getStripeLock(identifier)) {
+            repository.deleteById(identifier);
+        }
     }
 
     @Override
     @Transactional
     public void unlock(String identifier) {
-        repository.deleteById(identifier);
+        synchronized (getStripeLock(identifier)) {
+            repository.deleteById(identifier);
+        }
     }
+
+    private static final int MAX_RECORD_FAILED_RETRIES = 15;
 
     @Override
     public LoginAttemptResult recordLoginFailed(String identifier) {
-        Instant now = clockPort.now();
-        Instant newBlockedUntil = now.plusMillis(blockDurationMs);
+        synchronized (getStripeLock(identifier)) {
+            Instant now = clockPort.now();
+            Instant newBlockedUntil = now.plusMillis(blockDurationMs);
 
-        for (int i = 0; i < 3; i++) {
-            LoginAttemptResult result = executeInTransaction(status -> {
-                int updatedRows = repository.atomicIncrement(identifier, now, maxAttempts, newBlockedUntil);
-                if (updatedRows > 0) {
-                    LoginAttemptEntity entity = repository.findById(identifier).orElse(null);
-                    if (entity == null) {
-                        return null;
-                    }
-                    boolean blocked = entity.getBlockedUntil() != null && now.isBefore(entity.getBlockedUntil());
-                    boolean newlyBlocked = blocked && (entity.getAttempts() == maxAttempts);
-                    long retryAfter = calculateRetryAfterSeconds(entity.getBlockedUntil(), now);
-                    return new LoginAttemptResult(
-                            entity.getAttempts(),
-                            blocked,
-                            newlyBlocked,
-                            blocked ? entity.getBlockedUntil() : null,
-                            retryAfter);
-                } else {
-                    LoginAttemptEntity newEntity = new LoginAttemptEntity();
-                    newEntity.setIdentifier(identifier);
-                    newEntity.setAttempts(1);
-                    newEntity.setUpdatedAt(now);
-                    if (maxAttempts <= 1) {
-                        newEntity.setBlockedUntil(newBlockedUntil);
-                    } else {
-                        newEntity.setBlockedUntil(null);
-                    }
-                    try {
-                        repository.saveAndFlush(newEntity);
-                        boolean blocked = newEntity.getBlockedUntil() != null
-                                && now.isBefore(newEntity.getBlockedUntil());
-                        boolean newlyBlocked = blocked && (newEntity.getAttempts() == maxAttempts);
-                        long retryAfter = calculateRetryAfterSeconds(newEntity.getBlockedUntil(), now);
-                        return new LoginAttemptResult(
-                                newEntity.getAttempts(),
-                                blocked,
-                                newlyBlocked,
-                                blocked ? newEntity.getBlockedUntil() : null,
-                                retryAfter);
-                    } catch (org.springframework.dao.DataIntegrityViolationException ex) {
-                        status.setRollbackOnly();
-                        return null;
-                    }
+            for (int i = 0; i < MAX_RECORD_FAILED_RETRIES; i++) {
+                LoginAttemptResult result = null;
+                try {
+                    result = executeInTransaction(status -> {
+                        try {
+                            int updatedRows = repository.atomicIncrement(identifier, now, maxAttempts, newBlockedUntil);
+                            if (updatedRows > 0) {
+                                LoginAttemptEntity entity = repository.findById(identifier).orElse(null);
+                                if (entity == null) {
+                                    return null;
+                                }
+                                boolean blocked = entity.getBlockedUntil() != null && now.isBefore(entity.getBlockedUntil());
+                                boolean newlyBlocked = blocked && (entity.getAttempts() == maxAttempts);
+                                long retryAfter = calculateRetryAfterSeconds(entity.getBlockedUntil(), now);
+                                return new LoginAttemptResult(
+                                        entity.getAttempts(),
+                                        blocked,
+                                        newlyBlocked,
+                                        blocked ? entity.getBlockedUntil() : null,
+                                        retryAfter);
+                            } else {
+                                LoginAttemptEntity newEntity = new LoginAttemptEntity();
+                                newEntity.setIdentifier(identifier);
+                                newEntity.setAttempts(1);
+                                newEntity.setUpdatedAt(now);
+                                if (maxAttempts <= 1) {
+                                    newEntity.setBlockedUntil(newBlockedUntil);
+                                } else {
+                                    newEntity.setBlockedUntil(null);
+                                }
+                                try {
+                                    repository.saveAndFlush(newEntity);
+                                    boolean blocked = newEntity.getBlockedUntil() != null
+                                            && now.isBefore(newEntity.getBlockedUntil());
+                                    boolean newlyBlocked = blocked && (newEntity.getAttempts() == maxAttempts);
+                                    long retryAfter = calculateRetryAfterSeconds(newEntity.getBlockedUntil(), now);
+                                    return new LoginAttemptResult(
+                                            newEntity.getAttempts(),
+                                            blocked,
+                                            newlyBlocked,
+                                            blocked ? newEntity.getBlockedUntil() : null,
+                                            retryAfter);
+                                } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+                                    status.setRollbackOnly();
+                                    return null;
+                                }
+                            }
+                        } catch (org.springframework.dao.ConcurrencyFailureException | org.springframework.dao.DataIntegrityViolationException ex) {
+                            status.setRollbackOnly();
+                            return null;
+                        }
+                    });
+                } catch (org.springframework.dao.DataAccessException ex) {
+                    result = null;
                 }
-            });
 
-            if (result != null) {
-                return result;
+                if (result != null) {
+                    return result;
+                }
+
+                try {
+                    Thread.sleep(5 + (long) (Math.random() * 15));
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
-        }
 
-        LoginAttemptEntity entity = repository.findById(identifier).orElse(null);
-        int attempts = entity != null ? entity.getAttempts() : 1;
-        boolean blocked = entity != null && entity.getBlockedUntil() != null && now.isBefore(entity.getBlockedUntil());
-        boolean newlyBlocked = blocked && (attempts == maxAttempts);
-        Instant blockedUntil = (blocked && entity != null) ? entity.getBlockedUntil() : null;
-        long retryAfter = calculateRetryAfterSeconds(blockedUntil, now);
-        return new LoginAttemptResult(attempts, blocked, newlyBlocked, blockedUntil, retryAfter);
+            LoginAttemptEntity entity = repository.findById(identifier).orElse(null);
+            int attempts = entity != null ? entity.getAttempts() : 1;
+            boolean blocked = entity != null && entity.getBlockedUntil() != null && now.isBefore(entity.getBlockedUntil());
+            boolean newlyBlocked = blocked && (attempts == maxAttempts);
+            Instant blockedUntil = (blocked && entity != null) ? entity.getBlockedUntil() : null;
+            long retryAfter = calculateRetryAfterSeconds(blockedUntil, now);
+            return new LoginAttemptResult(attempts, blocked, newlyBlocked, blockedUntil, retryAfter);
+        }
     }
 
     @Override
