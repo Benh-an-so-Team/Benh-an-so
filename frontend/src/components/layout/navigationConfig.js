@@ -116,7 +116,6 @@ export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
     { key: '/prescription-interconnections', label: 'Liên thông đơn thuốc', icon: CloudServerOutlined, check: () => hasPerm('PRESCRIPTION_INTERCONNECTION_READ') || isAdmin },
     { key: '/system/anonymization', label: 'Chế độ ẩn danh dữ liệu', icon: EyeInvisibleOutlined, check: () => hasPerm('SYSTEM_CONFIG_READ') || isAdmin },
     { key: '/contraindication-rules', label: 'Quy tắc chống chỉ định', icon: MedicineBoxOutlined, check: () => hasPerm('CONTRAINDICATION_RULE_MANAGE') || isAdmin },
-    { key: '/system/scheduled-backup', label: 'Lịch sao lưu tự động', icon: CloudServerOutlined, check: () => isAdmin || hasPerm('BACKUP_READ') },
     { key: '/cashier-shifts/close', label: 'Chốt ca thu ngân', icon: DollarCircleOutlined, check: () => hasPerm('CASHIER_SHIFT_CREATE') || isReceptionist || isAdmin },
     { key: '/cashier-shifts/history', label: 'Lịch sử chốt ca', icon: HistoryOutlined, check: () => hasPerm('CASHIER_SHIFT_READ') || isReceptionist || isManager || isAdmin },
   ]

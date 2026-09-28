@@ -93,22 +93,22 @@ test('TC-SB-05: getVerificationStatusInfo trả về thông tin kết quả ki�
   assert.ok(brokenRes.label.includes('Cảnh báo'))
 })
 
-test('TC-SB-06: navigationConfig.js tích hợp menu Lịch sao lưu tự động cho Quản trị viên', () => {
+test('TC-SB-06: SystemManagementPage tích hợp module Lịch sao lưu tự động và navigationConfig không bị lặp menu', () => {
   const adminItems = getNavigationItems(['admin'], [])
-  const hasAdminMenu = adminItems.some((item) => item.key === '/system/scheduled-backup')
-  assert.ok(hasAdminMenu, 'Admin phải thấy menu Lịch sao lưu tự động')
+  const hasSystemManagement = adminItems.some((item) => item.key === '/system-management')
+  assert.ok(hasSystemManagement, 'Admin phải thấy menu Quản trị hệ thống')
 
-  const permItems = getNavigationItems(['manager'], ['BACKUP_READ'])
-  const hasPermMenu = permItems.some((item) => item.key === '/system/scheduled-backup')
-  assert.ok(hasPermMenu, 'User có quyền BACKUP_READ phải thấy menu Lịch sao lưu tự động')
+  const hasDuplicateScheduledBackup = adminItems.some((item) => item.key === '/system/scheduled-backup')
+  assert.equal(hasDuplicateScheduledBackup, false, 'Menu Lịch sao lưu tự động không bị trùng lặp ở sidebar vì đã có trong Quản trị hệ thống')
 
-  const doctorItems = getNavigationItems(['doctor'], [])
-  const hasDoctorMenu = doctorItems.some((item) => item.key === '/system/scheduled-backup')
-  assert.equal(hasDoctorMenu, false, 'Bác sĩ không có quyền không được thấy menu sao lưu')
-
-  const recepItems = getNavigationItems(['receptionist'], [])
-  const hasRecepMenu = recepItems.some((item) => item.key === '/system/scheduled-backup')
-  assert.equal(hasRecepMenu, false, 'Lễ tân không được thấy menu sao lưu')
+  const systemPageContent = fs.readFileSync(
+    path.join(frontendDir, 'src/pages/SystemManagementPage.jsx'),
+    'utf-8',
+  )
+  assert.ok(
+    systemPageContent.includes('ScheduledBackupPage') && systemPageContent.includes('scheduled-backup'),
+    'SystemManagementPage phải tích hợp tab Lịch sao lưu tự động',
+  )
 })
 
 test('TC-SB-07: AppRoutes.jsx đăng ký route /system/scheduled-backup và ScheduledBackupPage', () => {
