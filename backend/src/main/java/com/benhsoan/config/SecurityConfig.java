@@ -2,6 +2,7 @@ package com.benhsoan.config;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -39,6 +40,9 @@ public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthenticationFilter;
         private final ObjectMapper objectMapper;
+
+        @Value("${app.cors.allowed-origin-patterns:http://localhost:3000,http://localhost:5173,http://localhost:4200,https://*.vercel.app}")
+        private List<String> allowedOriginPatterns;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -153,10 +157,7 @@ public class SecurityConfig {
 
                 CorsConfiguration configuration = new CorsConfiguration();
 
-                configuration.setAllowedOrigins(List.of(
-                                "http://localhost:3000",
-                                "http://localhost:5173",
-                                "http://localhost:4200"));
+                configuration.setAllowedOriginPatterns(allowedOriginPatterns);
 
                 configuration.setAllowedMethods(List.of(
                                 "GET",
