@@ -108,6 +108,9 @@ import PrioritizeQueueItemModal from '../components/queue/PrioritizeQueueItemMod
 import AppointmentWaitlistPanel from '../components/appointment/AppointmentWaitlistPanel.jsx'
 import WaitlistSuggestionModal from '../components/appointment/WaitlistSuggestionModal.jsx'
 import AddToWaitlistModal from '../components/appointment/AddToWaitlistModal.jsx'
+import CreateAppointmentSeriesModal from '../components/appointment/CreateAppointmentSeriesModal.jsx'
+import AppointmentSeriesDetailDrawer from '../components/appointment/AppointmentSeriesDetailDrawer.jsx'
+import { canUserCreateSeries } from '../utils/appointmentSeriesHelpers.js'
 import { sortQueueItemsByPriority } from '../utils/queuePriorityHelpers.js'
 import {
   canRescheduleAppointment,
@@ -205,6 +208,9 @@ function AppointmentQueue() {
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
   const [historyPatientTarget, setHistoryPatientTarget] = useState(null)
   const [completedSearchKeyword, setCompletedSearchKeyword] = useState('')
+  const [seriesModalOpen, setSeriesModalOpen] = useState(false)
+  const [seriesDrawerOpen, setSeriesDrawerOpen] = useState(false)
+  const [selectedSeriesId, setSelectedSeriesId] = useState(null)
 
   const openPatientHistory = useCallback((patientId, patientName, patientCode) => {
     if (!patientId) {
@@ -213,6 +219,12 @@ function AppointmentQueue() {
     }
     setHistoryPatientTarget({ patientId, patientName, patientCode })
     setHistoryModalOpen(true)
+  }, [])
+
+  const handleOpenSeriesDetail = useCallback((seriesId) => {
+    if (!seriesId) return
+    setSelectedSeriesId(seriesId)
+    setSeriesDrawerOpen(true)
   }, [])
 
   const [bookForm] = Form.useForm()
@@ -401,10 +413,14 @@ function AppointmentQueue() {
 
   useEffect(() => {
     if (location.state?.patientId) {
-      setBookModalOpen(true)
-      bookForm.setFieldsValue({
-        patientId: location.state.patientId,
-      })
+      if (location.state?.openSeries) {
+        setSeriesModalOpen(true)
+      } else {
+        setBookModalOpen(true)
+        bookForm.setFieldsValue({
+          patientId: location.state.patientId,
+        })
+      }
     }
   }, [location.state, bookForm])
 
@@ -444,6 +460,7 @@ function AppointmentQueue() {
       const isKeywordMatch =
         !appKeyword ||
         app.appointmentCode?.toLowerCase().includes(appKeyword.toLowerCase()) ||
+        app.seriesCode?.toLowerCase().includes(appKeyword.toLowerCase()) ||
         pInfo.name?.toLowerCase().includes(appKeyword.toLowerCase()) ||
         pInfo.code?.toLowerCase().includes(appKeyword.toLowerCase())
 
@@ -1279,6 +1296,7 @@ function AppointmentQueue() {
         permissions,
         user,
         onOpenDetail: handleOpenAppointmentDetail,
+        onOpenSeriesDetail: handleOpenSeriesDetail,
         onConfirm: handleConfirmAppointment,
         onCheckIn: handleCheckInAppointment,
         onReschedule: handleOpenRescheduleModal,
@@ -1295,6 +1313,7 @@ function AppointmentQueue() {
       permissions,
       user,
       handleOpenAppointmentDetail,
+      handleOpenSeriesDetail,
       handleConfirmAppointment,
       handleCheckInAppointment,
       handleOpenRescheduleModal,
@@ -1367,58 +1386,92 @@ function AppointmentQueue() {
           background-color: #fef3c7 !important;
         }
       `}</style>
-      <Card style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-        <Row justify="space-between" align="middle" gutter={[16, 16]}>
-          <Col>
+      <Card
+        style={{ marginBottom: 20, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+        bodyStyle={{ padding: '16px 20px' }}
+      >
+        {/* Hàng 1: Tiêu đề trang & Các nút hành động chính */}
+        <Row justify="space-between" align="middle" gutter={[16, 12]}>
+          <Col xs={24} md={9}>
             <Space align="center" size="middle">
-              <Avatar size={48} icon={<CalendarOutlined />} style={{ backgroundColor: '#2563eb' }} />
+              <Avatar size={44} icon={<CalendarOutlined />} style={{ backgroundColor: '#2563eb' }} />
               <div>
-                <Title level={4} style={{ margin: 0 }}>Quản Lý Lịch Hẹn & Hàng Đợi Khám Bệnh</Title>
+                <Title level={4} style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>
+                  Quản Lý Lịch Hẹn & Hàng Đợi Khám Bệnh
+                </Title>
               </div>
             </Space>
           </Col>
+          <Col xs={24} md={15} style={{ textAlign: 'right' }}>
+            <Space size={10} wrap style={{ justifyContent: 'flex-end' }}>
+              {permissions.canManageWalkIn && (
+                <Button
+                  type="primary"
+                  icon={<UserAddOutlined />}
+                  onClick={() => setWalkInModalOpen(true)}
+                  style={{ backgroundColor: '#16a34a', borderColor: '#16a34a', fontWeight: 600, height: 38, borderRadius: 8 }}
+                >
+                  Tiếp nhận tự đến
+                </Button>
+              )}
+              {permissions.canCreateAppointment && (
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => setBookModalOpen(true)}
+                  style={{ backgroundColor: '#2563eb', fontWeight: 600, height: 38, borderRadius: 8 }}
+                >
+                  Đặt lịch hẹn mới
+                </Button>
+              )}
+              {canUserCreateSeries(user) && (
+                <Button
+                  type="primary"
+                  icon={<CalendarOutlined />}
+                  onClick={() => setSeriesModalOpen(true)}
+                  className="series-header-btn"
+                  style={{ fontWeight: 600, height: 38, borderRadius: 8 }}
+                >
+                  Đặt lịch theo liệu trình
+                </Button>
+              )}
+            </Space>
+          </Col>
+        </Row>
+
+        <Divider style={{ margin: '12px 0' }} />
+
+        {/* Hàng 2: Bộ lọc ngày khám & Tiện ích */}
+        <Row justify="space-between" align="middle" gutter={[12, 12]}>
           <Col>
-            <Space wrap>
+            <Space size="middle" align="center">
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Ngày khám:</span>
               <DatePicker
                 value={selectedDate}
                 onChange={(date) => date && setSelectedDate(date)}
                 format="DD/MM/YYYY"
                 allowClear={false}
+                style={{ width: 140, borderRadius: 6 }}
               />
-              <Button icon={<ReloadOutlined />} onClick={refreshAllData} loading={loading}>
+              <Button icon={<ReloadOutlined />} onClick={refreshAllData} loading={loading} style={{ borderRadius: 6 }}>
                 Làm mới
               </Button>
-              <Button icon={<HistoryOutlined />} onClick={() => setLogsDrawerOpen(true)}>
+            </Space>
+          </Col>
+          <Col>
+            <Space size={10}>
+              <Button icon={<HistoryOutlined />} onClick={() => setLogsDrawerOpen(true)} style={{ borderRadius: 6 }}>
                 Nhật ký & Thông báo
               </Button>
               <Tooltip title="Mở màn hình công cộng hiển thị số thứ tự sảnh chờ (Kiosk / Smart TV)">
                 <Button
                   icon={<DesktopOutlined />}
                   onClick={() => window.open('/display/waiting-room', '_blank')}
+                  style={{ borderRadius: 6 }}
                 >
                   Màn hình sảnh chờ
                 </Button>
               </Tooltip>
-              {permissions.canCreateAppointment && (
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => setBookModalOpen(true)}
-                  style={{ backgroundColor: '#2563eb' }}
-                >
-                  + Đặt lịch hẹn mới
-                </Button>
-              )}
-              {permissions.canManageWalkIn && (
-                <Button
-                  type="primary"
-                  icon={<UserAddOutlined />}
-                  onClick={() => setWalkInModalOpen(true)}
-                  style={{ backgroundColor: '#16a34a', borderColor: '#16a34a' }}
-                >
-                  + Tiếp nhận tự đến
-                </Button>
-              )}
             </Space>
           </Col>
         </Row>
@@ -2349,6 +2402,35 @@ function AppointmentQueue() {
             appointmentDate: target.date ? dayjs(target.date) : dayjs(),
             appointmentTime: dayjs().add(1, 'hour'),
           })
+        }}
+      />
+
+      <CreateAppointmentSeriesModal
+        open={seriesModalOpen}
+        onCancel={() => setSeriesModalOpen(false)}
+        patients={patients}
+        doctorList={doctorList}
+        initialPatientId={location.state?.patientId}
+        onOpenQuickPatient={() => setQuickPatientModalOpen(true)}
+        onSuccess={async (createdSeries) => {
+          await refreshAllData()
+          if (createdSeries?.id) {
+            handleOpenSeriesDetail(createdSeries.id)
+          }
+        }}
+      />
+
+      <AppointmentSeriesDetailDrawer
+        open={seriesDrawerOpen}
+        onClose={() => {
+          setSeriesDrawerOpen(false)
+          setSelectedSeriesId(null)
+        }}
+        seriesId={selectedSeriesId}
+        getPatientInfo={getPatientInfo}
+        getDoctorInfo={getDoctorInfo}
+        onCancelAppointmentSuccess={async () => {
+          await refreshAllData()
         }}
       />
     </div>

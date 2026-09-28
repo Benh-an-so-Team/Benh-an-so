@@ -1,0 +1,448 @@
+/**
+ * notice.css
+ * Giao diện hệ thống thông báo góc dưới bên phải (Bottom-Right Notice System).
+ * Đồng bộ phong cách y tế hiện đại: Bo góc mềm, tông xanh dương chủ đạo, rõ icon và chữ tiếng Việt.
+ */
+
+/* Viewport Container cố định góc dưới bên phải */
+.notice-viewport-container {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 995; /* Nằm trên nội dung và menu, nhưng dưới dialog xác nhận Ant Design (z-index: 1000+) */
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none; /* Không cản trở click ở các vùng trống xung quanh */
+  max-width: 440px;
+  width: 100%;
+}
+
+/* Danh sách xếp chồng từ dưới lên */
+.notice-stack-list {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* Thẻ thông báo đơn lẻ */
+.notice-card {
+  pointer-events: auto;
+  position: relative;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  outline: none;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  animation: noticeSlideInBottomRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.notice-card:hover,
+.notice-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -4px rgba(15, 23, 42, 0.16), 0 10px 12px -5px rgba(15, 23, 42, 0.08);
+}
+
+.notice-card:focus-visible {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+/* Bố cục nội dung thẻ */
+.notice-card-content {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 14px 12px 12px;
+  gap: 12px;
+}
+
+/* Vùng Icon */
+.notice-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 17px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Khối nội dung văn bản */
+.notice-text-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.notice-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Badge số lần lặp liên tiếp (×2, ×3) */
+.notice-repeat-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  animation: noticeBadgePulse 0.3s ease;
+}
+
+/* Pill đếm ngược giây */
+.notice-countdown-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dòng mô tả chi tiết */
+.notice-message {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #475569;
+  word-break: break-word;
+}
+
+/* Mã tham chiếu lỗi */
+.notice-ref-code {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.notice-ref-code code {
+  background: #f8fafc;
+  padding: 1px 4px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+/* Nút thao tác nhanh */
+.notice-action-row {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.notice-action-btn {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.notice-action-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.notice-action-btn-primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.notice-action-btn-primary:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* Nút Đóng X */
+.notice-close-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  margin-top: -2px;
+}
+
+.notice-close-btn:hover {
+  color: #334155;
+  background-color: #f1f5f9;
+}
+
+/* ========================================================
+   4 MỨC ĐỘ VÀ MÀU SẮC
+   ======================================================== */
+
+/* 1. Lỗi (Đỏ) */
+.notice-card-error {
+  border-left: 4px solid #dc2626;
+}
+.notice-icon-error {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+.notice-card-error .notice-title {
+  color: #991b1b;
+}
+
+/* 2. Cảnh báo thường (Vàng/Cam) */
+.notice-card-warning {
+  border-left: 4px solid #d97706;
+}
+.notice-icon-warning {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+.notice-card-warning .notice-title {
+  color: #92400e;
+}
+
+/* 3. Cảnh báo nghiêm trọng (Đỏ đậm, KHÔNG tự tắt) */
+.notice-card-critical {
+  border-left: 4px solid #991b1b;
+  background: #fff8f8;
+  box-shadow: 0 12px 30px -4px rgba(185, 28, 28, 0.22), 0 8px 12px -5px rgba(185, 28, 28, 0.12);
+}
+.notice-icon-critical {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+.notice-card-critical .notice-title {
+  color: #7f1d1d;
+}
+
+/* 4. Thành công (Xanh lá) */
+.notice-card-success {
+  border-left: 4px solid #16a34a;
+}
+.notice-icon-success {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+.notice-card-success .notice-title {
+  color: #166534;
+}
+
+/* 5. Thông tin (Xanh dương y tế) */
+.notice-card-info {
+  border-left: 4px solid #2563eb;
+}
+.notice-icon-info {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+.notice-card-info .notice-title {
+  color: #1e40af;
+}
+
+/* Thanh tiến trình thời gian tự tắt */
+.notice-progress-container {
+  height: 3px;
+  width: 100%;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.notice-progress-bar {
+  height: 100%;
+  width: 100%;
+  animation-name: noticeShrinkWidth;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  transform-origin: left;
+}
+
+.notice-progress-bar-error { background-color: #f87171; }
+.notice-progress-bar-warning { background-color: #fbbf24; }
+.notice-progress-bar-success { background-color: #4ade80; }
+.notice-progress-bar-info { background-color: #60a5fa; }
+
+/* Tạm dừng thanh tiến trình khi rê chuột */
+.notice-progress-paused {
+  animation-play-state: paused !important;
+}
+
+/* Pill tóm tắt khi quá 4 thông báo */
+.notice-overflow-pill {
+  pointer-events: auto;
+  align-self: flex-end;
+  background: #1e293b;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+  animation: noticeSlideInBottomRight 0.2s ease forwards;
+}
+
+.notice-overflow-text {
+  font-weight: 500;
+}
+
+.notice-overflow-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.notice-overflow-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s ease;
+}
+
+.notice-overflow-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.notice-overflow-btn-dismiss:hover {
+  background: #dc2626;
+}
+
+.notice-expanded-header {
+  pointer-events: auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+/* ========================================================
+   KEYFRAME ANIMATIONS
+   ======================================================== */
+@keyframes noticeSlideInBottomRight {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes noticeShrinkWidth {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
+}
+
+@keyframes noticeBadgePulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.notice-icon-pulse {
+  animation: noticeIconPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes noticeIconPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+/* ========================================================
+   RESPONSIVE DESIGN (Điện thoại, Cổng Bệnh nhân)
+   ======================================================== */
+@media (max-width: 640px) {
+  .notice-viewport-container {
+    right: 12px;
+    left: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    max-width: none;
+    width: auto;
+    align-items: stretch;
+  }
+
+  .notice-card {
+    border-radius: 10px;
+  }
+
+  .notice-overflow-pill {
+    align-self: center;
+  }
+}
+
+/* Hỗ trợ chế độ giảm chuyển động của hệ điều hành */
+@media (prefers-reduced-motion: reduce) {
+  .notice-card,
+  .notice-overflow-pill,
+  .notice-repeat-badge,
+  .notice-icon-pulse {
+    animation: none !important;
+    transition: none !important;
+  }
+}
