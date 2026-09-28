@@ -509,14 +509,14 @@ export default function ContraindicationRuleManagementPage() {
       {/* Header */}
       <Card style={{ marginBottom: 20, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <Row justify="space-between" align="middle" gutter={[16, 16]}>
-          <Col xs={24} md={14}>
-            <Title level={3} style={{ margin: 0, color: '#0f172a' }}>
+          <Col flex="auto">
+            <Title level={3} style={{ margin: 0, color: '#0f172a', whiteSpace: 'nowrap' }}>
               <MedicineBoxOutlined style={{ color: '#0284c7', marginRight: 10 }} />
               Quản lý danh mục quy tắc chống chỉ định
             </Title>
           </Col>
-          <Col xs={24} md={10} style={{ textAlign: 'right' }}>
-            <Space wrap>
+          <Col style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+            <Space wrap={false} size="middle" style={{ flexWrap: 'nowrap' }}>
               <Button
                 icon={<ReloadOutlined />}
                 onClick={loadRules}
