@@ -40,6 +40,7 @@ const SECURITY_PATHS = [
   '/admin/sessions',
   '/system/anonymization',
   '/prescription-interconnections',
+  '/system/scheduled-backup',
 ]
 
 const buildSectionChildren = (section, navItems) => {
