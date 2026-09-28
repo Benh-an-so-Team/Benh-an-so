@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.benhsoan.domain.personaldata.PersonalDataRequestDeadlineAlert;
 import com.benhsoan.domain.personaldata.enums.PersonalDataRequestDeadlineAlertType;
-import com.benhsoan.persistence.entity.personaldata.PersonalDataRequestDeadlineAlertEntity;
 import com.benhsoan.persistence.jpaRepository.personaldata.JpaPersonalDataRequestDeadlineAlertRepository;
 import com.benhsoan.persistence.mapper.personaldata.PersonalDataRequestDeadlineAlertPersistenceMapper;
 import com.benhsoan.port.outbound.repository.personaldata.PersonalDataRequestDeadlineAlertRepository;
