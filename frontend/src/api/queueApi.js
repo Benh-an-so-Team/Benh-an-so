@@ -52,6 +52,9 @@ const queueApi = {
 
   prioritize: (itemId, priority, reason) =>
     axiosClient.post(`/queue-items/${itemId}/prioritize`, { priority, reason }),
+
+  getWaitingRoomDisplay: (params) =>
+    axiosClient.get('/queues/display', { params }),
 }
 
 export default queueApi
