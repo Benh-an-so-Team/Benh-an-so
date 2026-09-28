@@ -1,7 +1,8 @@
 import React from 'react'
-import { DatabaseOutlined, KeyOutlined, SafetyCertificateOutlined, SettingOutlined, TeamOutlined } from '@ant-design/icons'
+import { ClockCircleOutlined, DatabaseOutlined, KeyOutlined, SafetyCertificateOutlined, SettingOutlined, TeamOutlined } from '@ant-design/icons'
 import { Card, Empty, Tabs, Typography } from 'antd'
 import BackupRestorePage from './BackupRestorePage'
+import ScheduledBackupPage from './ScheduledBackupPage'
 import ClinicConfigurationPage from './ClinicConfigurationPage'
 import MedicalRecordAccessLogsPage from './MedicalRecordAccessLogsPage'
 import RolePermissionsPage from './RolePermissionsPage'
@@ -46,8 +47,13 @@ function SystemManagementPage() {
     },
     canViewBackup && {
       key: 'backup-restore',
-      label: <span><DatabaseOutlined /> Sao lưu & Phục hồi</span>,
+      label: <span><DatabaseOutlined /> Sao lưu & Phục hồi thủ công</span>,
       children: <BackupRestorePage />,
+    },
+    canViewBackup && {
+      key: 'scheduled-backup',
+      label: <span><ClockCircleOutlined /> Lịch sao lưu tự động</span>,
+      children: <ScheduledBackupPage />,
     },
   ].filter(Boolean)
 

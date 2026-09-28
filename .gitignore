@@ -45,3 +45,7 @@ backend/src/main/resources/application-*.local.properties
 # Graphify
 graphify-out/
 .graphifyignore
+
+# Backups
+backend/backups/
+backups/

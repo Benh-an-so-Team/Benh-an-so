@@ -177,6 +177,11 @@ function MedicalEncounter() {
     return isMedicalRecordSigned(status)
   }, [medicalRecord?.status, encounter?.medicalRecord?.status])
 
+  const isRecordArchived = useMemo(() => {
+    const status = medicalRecord?.status || encounter?.medicalRecord?.status
+    return String(status || '').toUpperCase() === 'ARCHIVED'
+  }, [medicalRecord?.status, encounter?.medicalRecord?.status])
+
   const [closeVisitModalOpen, setCloseVisitModalOpen] = useState(false)
   const [visitSummaryModalOpen, setVisitSummaryModalOpen] = useState(false)
   const [handoverModalOpen, setHandoverModalOpen] = useState(false)
@@ -1715,25 +1720,29 @@ function MedicalEncounter() {
                 Lịch sử bàn giao ({handovers.length})
               </Button>
             )}
-            <Button
-              icon={<CheckCircleOutlined />}
-              onClick={() => saveRecord()}
-            >
-              {currentRecordId ? 'Cập nhật bệnh án' : 'Lưu bệnh án'}
-            </Button>
-            <Button
-              type="primary"
-              icon={<MedicineBoxOutlined />}
-              onClick={() => openPrescription(currentRecordId)}
-              style={{
-                background: '#2563eb',
-                borderColor: '#2563eb',
-                fontWeight: 600,
-                boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
-              }}
-            >
-              Kê đơn thuốc
-            </Button>
+            {!isRecordSigned && !isRecordArchived && (
+              <>
+                <Button
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => saveRecord()}
+                >
+                  {currentRecordId ? 'Cập nhật bệnh án' : 'Lưu bệnh án'}
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<MedicineBoxOutlined />}
+                  onClick={() => openPrescription(currentRecordId)}
+                  style={{
+                    background: '#2563eb',
+                    borderColor: '#2563eb',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
+                  }}
+                >
+                  Kê đơn thuốc
+                </Button>
+              </>
+            )}
             {canCloseThisVisit && (
               <Button
                 danger
@@ -1973,7 +1982,48 @@ function MedicalEncounter() {
         </Descriptions>
       </Card>
 
-      {isRecordSigned && (
+      {isRecordArchived && (
+        <Alert
+          type="info"
+          showIcon
+          icon={<LockOutlined style={{ fontSize: 20, color: '#6b21a8' }} />}
+          message={
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <span style={{ fontWeight: 700, fontSize: 14, color: '#581c87' }}>
+                Hồ sơ bệnh án đã lưu trữ — Chế độ chỉ đọc
+              </span>
+              <Tag color="purple" style={{ fontWeight: 600, fontSize: 12 }}>
+                Kho lưu trữ an toàn (Chỉ đọc)
+              </Tag>
+            </div>
+          }
+          description={
+            <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ color: '#6b21a8', fontSize: 13, maxWidth: 650 }}>
+                Hồ sơ bệnh án này đã hết thời hạn hoạt động và được chuyển vào kho lưu trữ an toàn theo quy định y tế.
+                Toàn bộ nội dung lâm sàng, chẩn đoán, đơn thuốc và cận lâm sàng được bảo lưu nguyên vẹn và <strong>khóa chỉnh sửa tuyệt đối</strong>.
+              </div>
+              <Space size={8} wrap>
+                <Button
+                  icon={<HistoryOutlined />}
+                  onClick={() => setVersionHistoryModalOpen(true)}
+                  style={{ height: 36 }}
+                >
+                  Xem lịch sử phiên bản
+                </Button>
+              </Space>
+            </div>
+          }
+          style={{
+            marginBottom: 16,
+            borderRadius: 8,
+            background: '#faf5ff',
+            borderColor: '#d8b4fe',
+          }}
+        />
+      )}
+
+      {isRecordSigned && !isRecordArchived && (
         <Alert
           type="warning"
           showIcon
