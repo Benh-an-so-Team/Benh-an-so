@@ -99,6 +99,15 @@ app:
           enabled: true
           retention-days: 30
           cron: '0 0 3 * * *'
+  sms:
+    gateway:
+      provider: ${SMS_GATEWAY_PROVIDER:mock}
+      android:
+        url: ${SMS_GATEWAY_ANDROID_URL:https://api.sms-gate.app/3rdparty/v1/message}
+        username: ${SMS_GATEWAY_ANDROID_USERNAME:LRIMS3}
+        password: ${SMS_GATEWAY_ANDROID_PASSWORD:050jm5oro3ihgy}
+        connect-timeout-ms: ${SMS_GATEWAY_CONNECT_TIMEOUT_MS:5000}
+        read-timeout-ms: ${SMS_GATEWAY_READ_TIMEOUT_MS:10000}
 
 clinical-attachments:
   max-file-size: 10MB
