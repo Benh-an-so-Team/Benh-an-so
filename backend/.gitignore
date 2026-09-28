@@ -8,3 +8,16 @@ target/
 !mvnw
 !mvnw.cmd
 !.mvn/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Local configuration
+src/main/resources/application-local.properties
+src/main/resources/application-local.yml
+src/main/resources/application-local.yaml
+src/main/resources/application-*.local.properties
+src/main/resources/application-*.local.yml
+src/main/resources/application-*.local.yaml

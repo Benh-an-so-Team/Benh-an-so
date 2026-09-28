@@ -7,9 +7,10 @@ import java.util.Date;
 import java.util.UUID;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.benhsoan.config.JwtProperties;
 import com.benhsoan.port.outbound.authSecurity.JwtTokenPort;
 
 import io.jsonwebtoken.Claims;
@@ -23,16 +24,18 @@ public class JwtTokenAdapter implements JwtTokenPort {
 
     private final long expiration;
 
-    public JwtTokenAdapter(
-        @Value("${app.jwt.secret}") String secret,
-        @Value("${app.jwt.expiration-ms}") long expiration
-) {
-    this.secretKey = Keys.hmacShaKeyFor(
-            secret.getBytes(StandardCharsets.UTF_8)
-    );
+    @Autowired
+    public JwtTokenAdapter(JwtProperties jwtProperties) {
+        this(jwtProperties.secret(), jwtProperties.expirationMs());
+    }
 
-    this.expiration = expiration;
-}
+    public JwtTokenAdapter(String secret, long expiration) {
+        this.secretKey = Keys.hmacShaKeyFor(
+                secret.getBytes(StandardCharsets.UTF_8)
+        );
+
+        this.expiration = expiration;
+    }
 
     @Override
     public String generateToken(

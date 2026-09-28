@@ -44,11 +44,19 @@ public class LoginAttemptAdapter implements LoginAttemptPort {
 
     @Autowired
     public LoginAttemptAdapter(
-            @Value("${app.security.login.max-attempts:5}") int maxAttempts,
-            @Value("${app.security.login.block-duration-ms:900000}") long blockDurationMs,
+            com.benhsoan.config.LoginSecurityProperties properties,
             JpaLoginAttemptRepository repository,
             ClockPort clockPort,
             @Autowired(required = false) PlatformTransactionManager transactionManager) {
+        this(properties.maxAttempts(), properties.blockDurationMs(), repository, clockPort, transactionManager);
+    }
+
+    public LoginAttemptAdapter(
+            int maxAttempts,
+            long blockDurationMs,
+            JpaLoginAttemptRepository repository,
+            ClockPort clockPort,
+            PlatformTransactionManager transactionManager) {
         this.maxAttempts = maxAttempts;
         this.blockDurationMs = blockDurationMs;
         this.repository = repository;

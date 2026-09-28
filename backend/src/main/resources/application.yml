@@ -1,0 +1,141 @@
+# ==========================================================
+# Cấu hình gốc hệ thống (Application Base Configuration)
+# Bệnh số án - Hệ thống chuyển đổi số cơ sở khám chữa bệnh
+# ==========================================================
+spring:
+  application:
+    name: benh-so-an
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
+    serialization:
+      write-dates-as-timestamps: false
+
+  # Cấu hình kết nối cơ sở dữ liệu mặc định
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://localhost:3306/digital_medical_record?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=UTF-8}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+
+  # JPA / Hibernate: Schema do Flyway quản lý
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+  # Quản lý Database Migration với Flyway
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    repair-on-migrate: true
+    out-of-order: true
+  sql:
+    init:
+      mode: never
+
+  # Cấu hình gửi Mail mặc định
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  h2:
+    console:
+      enabled: false
+
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /api/v1
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
+
+# ==========================================================
+# Cấu hình Nghiệp vụ & Bảo mật (Domain & Security Properties)
+# ==========================================================
+app:
+  jwt:
+    secret: ${JWT_SECRET:DEV_SECRET_CHANGE_ME_MUST_BE_32_CHARS_LONG_123}
+    expiration-ms: ${JWT_EXPIRATION_MS:900000}
+  cors:
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:3000,http://localhost:5173,http://localhost:4200,https://*.vercel.app}
+  security:
+    login:
+      max-attempts: 5
+      block-duration-ms: 900000
+    anomaly:
+      max-views-per-hour: 20
+      working-hours-start: '07:00'
+      working-hours-end: '18:00'
+      zone-id: Asia/Ho_Chi_Minh
+    two-factor:
+      challenge:
+        cleanup:
+          enabled: true
+          retention-days: 30
+          cron: '0 0 3 * * *'
+
+clinical-attachments:
+  max-file-size: 10MB
+  allowed-content-types:
+    - image/jpeg
+    - image/png
+    - application/pdf
+  cloudinary:
+    enabled: ${CLOUDINARY_ENABLED:false}
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+    api-key: ${CLOUDINARY_API_KEY:}
+    api-secret: ${CLOUDINARY_API_SECRET:}
+    folder-prefix: ${CLOUDINARY_FOLDER_PREFIX:benh-soan/clinical-results}
+    signed-url-ttl: ${CLOUDINARY_SIGNED_URL_TTL:PT5M}
+
+appointment:
+  reminder:
+    enabled: true
+    advance-hours: 24
+    scan-interval-ms: 60000
+    zone-id: Asia/Ho_Chi_Minh
+
+interconnection:
+  mock-gateway:
+    enabled: ${INTERCONNECTION_MOCK_GATEWAY_ENABLED:false}
+    mode: ${INTERCONNECTION_MOCK_GATEWAY_MODE:ACCEPT}
+    no-response-delay: ${INTERCONNECTION_MOCK_GATEWAY_NO_RESPONSE_DELAY:PT15S}
+
+personal-data-request:
+  deadline-check:
+    enabled: true
+    scan-interval-ms: 60000
+    upcoming-window-hours: 24
+
+inventory:
+  expiry-alert-days: 30
+
+logging:
+  level:
+    root: INFO

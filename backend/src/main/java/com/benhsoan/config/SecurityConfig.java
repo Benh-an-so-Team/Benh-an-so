@@ -40,9 +40,7 @@ public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthenticationFilter;
         private final ObjectMapper objectMapper;
-
-        @Value("${app.cors.allowed-origin-patterns:http://localhost:3000,http://localhost:5173,http://localhost:4200,https://*.vercel.app}")
-        private List<String> allowedOriginPatterns;
+        private final CorsProperties corsProperties;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -157,7 +155,7 @@ public class SecurityConfig {
 
                 CorsConfiguration configuration = new CorsConfiguration();
 
-                configuration.setAllowedOriginPatterns(allowedOriginPatterns);
+                configuration.setAllowedOriginPatterns(corsProperties.allowedOriginPatterns());
 
                 configuration.setAllowedMethods(List.of(
                                 "GET",
