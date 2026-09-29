@@ -18,7 +18,11 @@ export const getDefaultHomePath = (roles = [], permissions = []) => {
     return '/'
   }
 
-  if (hasRole('doctor') || hasPerm('MEDICAL_RECORD_READ') || hasPerm('MEDICAL_RECORD_CREATE')) {
+  if (hasRole('doctor')) {
+    return '/doctor/dashboard'
+  }
+
+  if (hasPerm('MEDICAL_RECORD_READ') || hasPerm('MEDICAL_RECORD_CREATE')) {
     return '/medical-records'
   }
 

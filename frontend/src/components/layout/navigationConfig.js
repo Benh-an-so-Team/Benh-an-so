@@ -40,7 +40,7 @@ export const roleNames = {
 }
 
 export const navigationSections = [
-  { key: 'overview', paths: ['/'] },
+  { key: 'overview', paths: ['/', '/doctor/dashboard'] },
   { key: 'reception', label: 'Tiếp nhận & Chăm sóc', paths: ['/patients', '/patients/import', '/appointments', '/appointments/weekly-schedule', '/after-care', '/visit-summaries', '/doctor-schedules'] },
   { key: 'examination', label: 'Khám bệnh', paths: ['/medical-records', '/medical-records/overdue-signing', '/medical-records/version-history', '/medical-records/copy-issuance', '/medical-records/visit-summaries', '/medical-records/archive', '/prescriptions', '/clinical-orders', '/clinical-results', '/results'] },
   { key: 'pharmacy', label: 'Nhà thuốc', paths: ['/pharmacy', '/medicines', '/pharmacy/receipts', '/inventory/stock-report', '/pharmacy/special-control-register', '/pharmacy/procurement-plans', '/prescription-reconciliation'] },
@@ -74,7 +74,8 @@ export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
     : '/medical-records/visit-summaries'
 
   const items = [
-    { key: '/', label: 'Tổng quan', icon: DashboardOutlined, check: () => hasPerm('DASHBOARD_OPERATIONAL_READ') || isAdmin || isManager },
+    { key: '/doctor/dashboard', label: 'Bảng điều khiển Bác sĩ', icon: DashboardOutlined, check: () => isDoctor },
+    { key: '/', label: 'Tổng quan', icon: DashboardOutlined, check: () => !isDoctor && (hasPerm('DASHBOARD_OPERATIONAL_READ') || isAdmin || isManager) },
     { key: '/patients', label: 'Quản lý hồ sơ bệnh nhân', icon: UserOutlined, check: () => !isAdmin && (hasPerm('PATIENT_READ') || hasPerm('PATIENT_CREATE') || isDoctor || isReceptionist || isManager) },
     { key: '/patients/import', label: 'Nhập hồ sơ Excel', icon: FileExcelOutlined, check: () => (hasPerm('PATIENT_IMPORT') || isAdmin || isReceptionist) && !isDoctor && !isPharmacist },
     { key: '/appointments', label: 'Lịch hẹn và hàng đợi khám', icon: CalendarOutlined, check: () => !isAdmin && !isManager && (hasPerm('APPOINTMENT_READ') || hasPerm('APPOINTMENT_CREATE') || isDoctor || isReceptionist) },
