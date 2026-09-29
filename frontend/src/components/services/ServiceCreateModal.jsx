@@ -7,7 +7,6 @@ import {
   Input,
   InputNumber,
   Modal,
-  Space,
   Typography,
 } from 'antd'
 import {
@@ -16,6 +15,8 @@ import {
   PlusOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { focusFirstErrorField } from '../../utils/serviceCatalogValidation'
+import { showNotice } from '../common/notice/index.js'
 
 const { Title, Text } = Typography
 
@@ -37,6 +38,32 @@ function ServiceCreateModal({
       form.setFields([{ name: changedField, errors: [] }])
     }
   }
+
+  const handleFinishFailed = (errorInfo) => {
+    const errorFields = errorInfo?.errorFields || []
+    if (errorFields.length > 0) {
+      const firstField = errorFields[0]
+      const fieldName = Array.isArray(firstField.name) ? firstField.name[0] : firstField.name
+      if (form?.scrollToField) {
+        form.scrollToField(fieldName, { behavior: 'smooth', block: 'center' })
+      }
+      setTimeout(() => {
+        focusFirstErrorField(fieldName)
+      }, 100)
+      showNotice.validationSummary({ errorCount: errorFields.length })
+    }
+  }
+
+  const isFieldLevelError = Boolean(
+    formError && (
+      formError.includes('Tên dịch vụ') ||
+      formError.includes('Mã dịch vụ') ||
+      formError.includes('Giá dịch vụ') ||
+      formError.includes('Đơn giá') ||
+      formError.includes('ngày hiệu lực') ||
+      formError.includes('mức giá')
+    )
+  )
 
   const computedDescription =
     formErrorDescription ||
@@ -75,7 +102,10 @@ function ServiceCreateModal({
         className="service-form"
         form={form}
         layout="vertical"
+        validateTrigger={['onBlur', 'onChange']}
+        scrollToFirstError={{ behavior: 'smooth', block: 'center' }}
         onFinish={onFinish}
+        onFinishFailed={handleFinishFailed}
         onValuesChange={handleValuesChange}
       >
         {!canSubmit && (
@@ -88,7 +118,7 @@ function ServiceCreateModal({
           />
         )}
 
-        {formError && (
+        {formError && !isFieldLevelError && (
           <Alert
             className="service-modal-alert"
             type="error"
@@ -106,37 +136,56 @@ function ServiceCreateModal({
             name="serviceCode"
             label="Mã dịch vụ"
             normalize={(val) => (val ? String(val).toUpperCase() : val)}
+            validateTrigger={['onBlur', 'onChange']}
             rules={[
-              { required: true, message: 'Vui lòng nhập mã dịch vụ' },
-              { max: 50, message: 'Mã không quá 50 ký tự' },
+              { required: true, whitespace: true, message: 'Vui lòng nhập mã dịch vụ' },
+              { max: 50, message: 'Mã dịch vụ không được vượt quá 50 ký tự' },
               {
                 pattern: /^[A-Za-z0-9_.-]+$/,
                 message: 'Mã dịch vụ chỉ gồm chữ cái, chữ số, gạch ngang (-) hoặc gạch dưới (_)',
               },
             ]}
           >
-            <Input size="large" placeholder="VD: DV-KHAM-NOI, XQ-TIM-PHOI..." />
+            <Input id="serviceCode" size="large" placeholder="VD: DV-KHAM-NOI, XQ-TIM-PHOI..." />
           </Form.Item>
 
           <Form.Item
             name="name"
             label="Tên dịch vụ khám / thủ thuật"
+            validateTrigger={['onBlur', 'onChange']}
             rules={[
-              { required: true, message: 'Vui lòng nhập tên dịch vụ' },
-              { max: 255, message: 'Tên không quá 255 ký tự' },
+              { required: true, whitespace: true, message: 'Vui lòng nhập tên dịch vụ' },
+              { max: 255, message: 'Tên dịch vụ không được vượt quá 255 ký tự' },
             ]}
           >
-            <Input size="large" placeholder="Nhập tên dịch vụ y tế" />
+            <Input id="name" size="large" placeholder="Nhập tên dịch vụ y tế" />
           </Form.Item>
 
           <Form.Item
             name="price"
             label="Đơn giá niêm yết ban đầu"
-            rules={[{ required: true, message: 'Vui lòng nhập đơn giá' }]}
+            validateTrigger={['onBlur', 'onChange']}
+            rules={[
+              {
+                validator: (_, value) => {
+                  if (value === null || value === undefined || value === '') {
+                    return Promise.reject(new Error('Vui lòng nhập giá dịch vụ'))
+                  }
+                  const numeric = Number(value)
+                  if (Number.isNaN(numeric)) {
+                    return Promise.reject(new Error('Giá dịch vụ phải là số'))
+                  }
+                  if (numeric < 0) {
+                    return Promise.reject(new Error('Giá dịch vụ không được là số âm'))
+                  }
+                  return Promise.resolve()
+                },
+              },
+            ]}
           >
             <InputNumber
+              id="price"
               size="large"
-              min={0}
               step={10000}
               controls={false}
               formatter={(val) => `${val || ''}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
@@ -150,10 +199,12 @@ function ServiceCreateModal({
           <Form.Item
             name="effectiveFrom"
             label="Ngày bắt đầu hiệu lực"
+            validateTrigger={['onBlur', 'onChange']}
             rules={[{ required: true, message: 'Vui lòng chọn ngày hiệu lực' }]}
           >
             <div>
               <DatePicker
+                id="effectiveFrom"
                 size="large"
                 format="DD/MM/YYYY"
                 style={{ width: '100%' }}
@@ -168,6 +219,7 @@ function ServiceCreateModal({
                   onClick={() => {
                     form.setFieldsValue({ effectiveFrom: dayjs() })
                     if (onClearError) onClearError()
+                    form.setFields([{ name: 'effectiveFrom', errors: [] }])
                   }}
                   style={{ fontSize: 11, height: 24, padding: '0 8px' }}
                 >
@@ -179,6 +231,7 @@ function ServiceCreateModal({
                   onClick={() => {
                     form.setFieldsValue({ effectiveFrom: dayjs().add(1, 'day') })
                     if (onClearError) onClearError()
+                    form.setFields([{ name: 'effectiveFrom', errors: [] }])
                   }}
                   style={{ fontSize: 11, height: 24, padding: '0 8px' }}
                 >

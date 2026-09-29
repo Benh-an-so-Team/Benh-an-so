@@ -46,6 +46,57 @@ export function fixMojibake(str) {
 }
 
 /**
+ * Focus and scroll to first form item with error
+ */
+export function focusFirstErrorField(fieldName) {
+  if (typeof document === 'undefined' || !fieldName) return false
+  const selectors = [
+    `#${fieldName}`,
+    `input[name="${fieldName}"]`,
+    `input[id*="${fieldName}"]`,
+    `input[id$="${fieldName}"]`,
+    `[data-field="${fieldName}"] input`,
+    `[id*="${fieldName}"] input`,
+    `[id*="${fieldName}"]`,
+  ]
+  for (const sel of selectors) {
+    const el = document.querySelector(sel)
+    if (el && typeof el.focus === 'function') {
+      try {
+        el.focus()
+        return true
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return false
+}
+
+/**
+ * Check if a service name already exists in the given service list.
+ * Normalized comparison (trimmed, multiple spaces collapsed, case-insensitive).
+ * @param {string} name - The candidate service name
+ * @param {Array} servicesList - The existing services list
+ * @param {string|number|null} excludeId - Current service ID to exclude if editing
+ * @returns {boolean}
+ */
+export function isDuplicateServiceName(name, servicesList = [], excludeId = null) {
+  if (!name || typeof name !== 'string') return false
+  const normalizedCandidate = name.trim().replace(/\s+/g, ' ').toLowerCase()
+  if (!normalizedCandidate) return false
+
+  return (servicesList || []).some((s) => {
+    const sId = s.id || s.serviceCatalogId
+    if (excludeId !== null && excludeId !== undefined && String(sId) === String(excludeId)) {
+      return false
+    }
+    const sName = (s.name || '').trim().replace(/\s+/g, ' ').toLowerCase()
+    return sName === normalizedCandidate
+  })
+}
+
+/**
  * Validate service code (Mã dịch vụ)
  * Rules: Required, max 50 chars, alphanumeric + underscores + dashes
  */
@@ -315,8 +366,11 @@ export function translateRawMessage(msg) {
   if (lower.includes('service code already exists') || lower.includes('uk_service_catalog_code')) {
     return 'Mã dịch vụ đã tồn tại trong hệ thống.'
   }
-  if (lower.includes('service name already exists')) {
+  if (lower.includes('service name already exists') || lower.includes('tên dịch vụ đã tồn tại')) {
     return 'Tên dịch vụ đã tồn tại trong hệ thống.'
+  }
+  if (lower.includes('price must be greater than or equal to 0') || lower.includes('lớn hơn hoặc bằng 0') || lower.includes('không được là số âm') || lower.includes('số âm')) {
+    return 'Đơn giá phải lớn hơn hoặc bằng 0.'
   }
   if (lower.includes('price already exists') || (lower.includes('effective') && lower.includes('date'))) {
     return 'Đã tồn tại mức giá cho ngày hiệu lực này.'
@@ -329,16 +383,17 @@ export function translateRawMessage(msg) {
 
 function mapMessageToFieldErrors(msg) {
   if (!msg) return []
-  if (msg.includes('Mã dịch vụ') || msg.toLowerCase().includes('service code')) {
+  const lower = msg.toLowerCase()
+  if (msg.includes('Mã dịch vụ') || lower.includes('service code')) {
     return [{ name: 'serviceCode', errors: [msg] }]
   }
-  if (msg.includes('Tên dịch vụ') || msg.toLowerCase().includes('service name')) {
+  if (msg.includes('Tên dịch vụ') || lower.includes('service name')) {
     return [{ name: 'name', errors: [msg] }]
   }
-  if (msg.includes('Đơn giá') || msg.toLowerCase().includes('price')) {
+  if (msg.includes('Giá dịch vụ') || msg.includes('Đơn giá') || lower.includes('price')) {
     return [{ name: 'price', errors: [msg] }]
   }
-  if (msg.includes('ngày hiệu lực') || msg.includes('Ngày bắt đầu') || msg.toLowerCase().includes('effective')) {
+  if (msg.includes('ngày hiệu lực') || msg.includes('Ngày bắt đầu') || lower.includes('effective')) {
     return [{ name: 'effectiveFrom', errors: [msg] }]
   }
   return []
@@ -418,19 +473,20 @@ export function extractServiceFormErrors(error) {
   }
 
   if (rootMsg && !isGenericValidation) {
-    if ((rootMsg.includes('Mã dịch vụ') || rootMsg.toLowerCase().includes('service code')) && !fieldErrorsMap.serviceCode) {
+    const rootLower = rootMsg.toLowerCase()
+    if ((rootMsg.includes('Mã dịch vụ') || rootLower.includes('service code')) && !fieldErrorsMap.serviceCode) {
       fieldErrorsMap.serviceCode = rootMsg
       generalDescription = 'Vui lòng kiểm tra lại mã dịch vụ hoặc đặt một mã khác để phân biệt.'
     }
-    if ((rootMsg.includes('Tên dịch vụ') || rootMsg.toLowerCase().includes('service name')) && !fieldErrorsMap.name) {
+    if ((rootMsg.includes('Tên dịch vụ') || rootLower.includes('service name')) && !fieldErrorsMap.name) {
       fieldErrorsMap.name = rootMsg
       generalDescription = 'Vui lòng đặt tên phân biệt với các dịch vụ kỹ thuật hiện có.'
     }
-    if ((rootMsg.includes('mức giá') || rootMsg.includes('ngày hiệu lực') || rootMsg.toLowerCase().includes('effective date')) && !fieldErrorsMap.effectiveFrom) {
+    if ((rootMsg.includes('mức giá') || rootMsg.includes('ngày hiệu lực') || rootLower.includes('effective date')) && !fieldErrorsMap.effectiveFrom) {
       fieldErrorsMap.effectiveFrom = rootMsg
       generalDescription = 'Vui lòng chọn ngày hiệu lực khác hoặc nhấn nút Gợi ý ngày áp dụng.'
     }
-    if ((rootMsg.includes('Đơn giá') || rootMsg.toLowerCase().includes('service price')) && !rootMsg.includes('ngày hiệu lực') && !fieldErrorsMap.price) {
+    if ((rootMsg.includes('Giá') || rootMsg.includes('Đơn giá') || rootLower.includes('service price')) && !rootMsg.includes('ngày hiệu lực') && !fieldErrorsMap.price) {
       fieldErrorsMap.price = rootMsg
     }
   }

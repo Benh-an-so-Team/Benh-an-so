@@ -8,7 +8,6 @@ import {
   InputNumber,
   Modal,
   Radio,
-  Space,
   Typography,
 } from 'antd'
 import {
@@ -19,7 +18,12 @@ import {
   StopOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import { suggestNextEffectiveDate, formatDateDisplay } from '../../utils/serviceCatalogValidation'
+import {
+  suggestNextEffectiveDate,
+  formatDateDisplay,
+  focusFirstErrorField,
+} from '../../utils/serviceCatalogValidation'
+import { showNotice } from '../common/notice/index.js'
 
 const { Title, Text } = Typography
 
@@ -80,6 +84,21 @@ function ServiceEditModal({
     }
   }
 
+  const handleFinishFailed = (errorInfo) => {
+    const errorFields = errorInfo?.errorFields || []
+    if (errorFields.length > 0) {
+      const firstField = errorFields[0]
+      const fieldName = Array.isArray(firstField.name) ? firstField.name[0] : firstField.name
+      if (form?.scrollToField) {
+        form.scrollToField(fieldName, { behavior: 'smooth', block: 'center' })
+      }
+      setTimeout(() => {
+        focusFirstErrorField(fieldName)
+      }, 100)
+      showNotice.validationSummary({ errorCount: errorFields.length })
+    }
+  }
+
   const handleApplySuggestedDate = () => {
     const nextDate = suggestNextEffectiveDate(priceHistory)
     form.setFieldsValue({ effectiveFrom: dayjs(nextDate) })
@@ -90,6 +109,17 @@ function ServiceEditModal({
   }
 
   const suggestedDateStr = suggestNextEffectiveDate(priceHistory)
+
+  const isFieldLevelError = Boolean(
+    formError && (
+      formError.includes('Tên dịch vụ') ||
+      formError.includes('Mã dịch vụ') ||
+      formError.includes('Giá dịch vụ') ||
+      formError.includes('Đơn giá') ||
+      formError.includes('ngày hiệu lực') ||
+      formError.includes('mức giá')
+    )
+  )
 
   const computedDescription =
     formErrorDescription ||
@@ -128,7 +158,10 @@ function ServiceEditModal({
         className="service-form"
         form={form}
         layout="vertical"
+        validateTrigger={['onBlur', 'onChange']}
+        scrollToFirstError={{ behavior: 'smooth', block: 'center' }}
         onFinish={onFinish}
+        onFinishFailed={handleFinishFailed}
         onValuesChange={handleValuesChange}
       >
         {!canSubmit && (
@@ -141,28 +174,12 @@ function ServiceEditModal({
           />
         )}
 
-        {formError && (
+        {formError && !isFieldLevelError && (
           <Alert
             className="service-modal-alert"
             type="error"
             showIcon
-            message={
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ fontWeight: 600 }}>{formError}</div>
-                {(formError.includes('ngày hiệu lực') || formError.includes('mức giá')) && (
-                  <div>
-                    <Button
-                      size="small"
-                      type="primary"
-                      onClick={handleApplySuggestedDate}
-                      style={{ fontSize: 12, height: 26, padding: '0 10px' }}
-                    >
-                      Áp dụng ngày gợi ý ({formatDateDisplay(suggestedDateStr)})
-                    </Button>
-                  </div>
-                )}
-              </div>
-            }
+            message={<span style={{ fontWeight: 600 }}>{formError}</span>}
             description={computedDescription}
             closable
             onClose={onClearError}
@@ -186,28 +203,46 @@ function ServiceEditModal({
 
         <div className="service-form-grid">
           <Form.Item name="serviceCode" label="Mã dịch vụ">
-            <Input size="large" disabled style={{ background: '#f8fafc', color: '#0f172a', fontWeight: 600 }} />
+            <Input id="serviceCode" size="large" disabled style={{ background: '#f8fafc', color: '#0f172a', fontWeight: 600 }} />
           </Form.Item>
 
           <Form.Item
             name="name"
             label="Tên dịch vụ"
+            validateTrigger={['onBlur', 'onChange']}
             rules={[
-              { required: true, message: 'Vui lòng nhập tên dịch vụ' },
-              { max: 255, message: 'Tên không quá 255 ký tự' },
+              { required: true, whitespace: true, message: 'Vui lòng nhập tên dịch vụ' },
+              { max: 255, message: 'Tên dịch vụ không được vượt quá 255 ký tự' },
             ]}
           >
-            <Input size="large" placeholder="Nhập tên dịch vụ" />
+            <Input id="name" size="large" placeholder="Nhập tên dịch vụ" />
           </Form.Item>
 
           <Form.Item
             name="price"
             label="Đơn giá niêm yết"
-            rules={[{ required: true, message: 'Vui lòng nhập đơn giá' }]}
+            validateTrigger={['onBlur', 'onChange']}
+            rules={[
+              {
+                validator: (_, value) => {
+                  if (value === null || value === undefined || value === '') {
+                    return Promise.reject(new Error('Vui lòng nhập giá dịch vụ'))
+                  }
+                  const numeric = Number(value)
+                  if (Number.isNaN(numeric)) {
+                    return Promise.reject(new Error('Giá dịch vụ phải là số'))
+                  }
+                  if (numeric < 0) {
+                    return Promise.reject(new Error('Giá dịch vụ không được là số âm'))
+                  }
+                  return Promise.resolve()
+                },
+              },
+            ]}
           >
             <InputNumber
+              id="price"
               size="large"
-              min={0}
               step={10000}
               controls={false}
               formatter={(val) => `${val || ''}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
@@ -221,10 +256,12 @@ function ServiceEditModal({
           <Form.Item
             name="effectiveFrom"
             label="Ngày hiệu lực giá"
+            validateTrigger={['onBlur', 'onChange']}
             rules={[{ required: true, message: 'Vui lòng chọn ngày hiệu lực' }]}
           >
             <div>
               <DatePicker
+                id="effectiveFrom"
                 size="large"
                 format="DD/MM/YYYY"
                 style={{ width: '100%' }}

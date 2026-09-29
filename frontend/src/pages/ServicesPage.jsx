@@ -31,16 +31,18 @@ import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import systemApi from '../api/systemApi'
 import { useAuthContext } from '../context/AuthContext'
+import { showNotice } from '../components/common/notice/index.js'
 import {
   categorizePriceHistory,
   extractServiceFormErrors,
   fixMojibake,
+  focusFirstErrorField,
   formatDateDisplay,
   formatServiceCurrency,
+  isDuplicateServiceName,
   isEffectiveDateConflicted,
   prepareCreateServicePayload,
   prepareUpdateServicePayload,
-  suggestNextEffectiveDate,
   translateServiceErrorMessage,
 } from '../utils/serviceCatalogValidation'
 import ServiceCreateModal from '../components/services/ServiceCreateModal'
@@ -97,7 +99,7 @@ function ServicesPage() {
     )
   }, [user])
 
-  const canReadService = userPermissions.includes('SERVICE_CATALOG_READ') || userRoles.includes('admin') || userRoles.includes('manager') || userRoles.includes('clinic_manager')
+  const _canReadService = userPermissions.includes('SERVICE_CATALOG_READ') || userRoles.includes('admin') || userRoles.includes('manager') || userRoles.includes('clinic_manager')
   const canCreateService = userPermissions.includes('SERVICE_CATALOG_CREATE') || userRoles.includes('admin') || userRoles.includes('manager') || userRoles.includes('clinic_manager')
   const canUpdateService = userPermissions.includes('SERVICE_CATALOG_UPDATE') || userRoles.includes('admin') || userRoles.includes('manager') || userRoles.includes('clinic_manager')
   const canManagePrice = userPermissions.includes('SERVICE_PRICE_MANAGE') || userRoles.includes('admin') || userRoles.includes('manager') || userRoles.includes('clinic_manager')
@@ -195,10 +197,31 @@ function ServicesPage() {
     setSavingService(true)
     setCreateFormError(null)
     setCreateFormErrorDescription(null)
+
+    // 1. Kiểm tra trùng tên dịch vụ phía hệ thống tại thời điểm bấm "Lưu"
+    if (isDuplicateServiceName(values?.name, services)) {
+      const duplicateMsg = 'Tên dịch vụ này đã tồn tại, vui lòng chọn tên khác.'
+      createForm.setFields([
+        {
+          name: 'name',
+          errors: [duplicateMsg],
+        },
+      ])
+      if (createForm.scrollToField) {
+        createForm.scrollToField('name', { behavior: 'smooth', block: 'center' })
+      }
+      setTimeout(() => {
+        focusFirstErrorField('name')
+      }, 100)
+      showNotice.validationSummary({ errorCount: 1 })
+      setSavingService(false)
+      return
+    }
+
     try {
       const payload = prepareCreateServicePayload(values)
       await systemApi.createService(payload)
-      message.success(`Đã thêm mới dịch vụ "${values.name}" thành công!`)
+      showNotice.success('Thành công', `Đã thêm mới dịch vụ "${values.name}" thành công!`)
       setCreateModalOpen(false)
       setCreateFormError(null)
       setCreateFormErrorDescription(null)
@@ -210,12 +233,27 @@ function ServicesPage() {
       setCreateFormError(errorMessage)
       setCreateFormErrorDescription(description)
       if (fieldErrors && fieldErrors.length > 0) {
-        createForm.setFields(fieldErrors)
-        if (createForm.scrollToField && fieldErrors[0]?.name) {
-          createForm.scrollToField(fieldErrors[0].name)
+        const formattedFieldErrors = fieldErrors.map((fe) => {
+          if (fe.name === 'name' && (fe.errors[0]?.includes('tồn tại') || fe.errors[0]?.toLowerCase().includes('exists'))) {
+            return { ...fe, errors: ['Tên dịch vụ này đã tồn tại, vui lòng chọn tên khác'] }
+          }
+          if (fe.name === 'price' && (fe.errors[0]?.toLowerCase().includes('lớn hơn hoặc bằng 0') || fe.errors[0]?.toLowerCase().includes('số âm'))) {
+            return { ...fe, errors: ['Giá dịch vụ không được là số âm'] }
+          }
+          return fe
+        })
+        createForm.setFields(formattedFieldErrors)
+        const firstError = formattedFieldErrors[0]
+        if (createForm.scrollToField && firstError?.name) {
+          createForm.scrollToField(firstError.name, { behavior: 'smooth', block: 'center' })
         }
+        setTimeout(() => {
+          focusFirstErrorField(firstError.name)
+        }, 100)
+        showNotice.validationSummary({ errorCount: formattedFieldErrors.length })
+      } else {
+        showNotice.apiError(err, 'Lưu dịch vụ thất bại', errorMessage)
       }
-      message.error(errorMessage)
     } finally {
       setSavingService(false)
     }
@@ -255,16 +293,33 @@ function ServicesPage() {
     const serviceId = editingService?.id || editingService?.serviceCatalogId
     if (!serviceId) {
       const notFoundMsg = 'Không tìm thấy thông tin dịch vụ trong hệ thống.'
-      const notFoundDesc = 'Mã định danh dịch vụ bị thiếu hoặc không tồn tại (Lỗi 404). Vui lòng đóng cửa sổ và tải lại trang.'
-      setEditFormError(notFoundMsg)
-      setEditFormErrorDescription(notFoundDesc)
-      message.error(notFoundMsg)
+      showNotice.error('Lỗi dữ liệu', notFoundMsg)
       return
     }
 
     setSavingService(true)
     setEditFormError(null)
     setEditFormErrorDescription(null)
+
+    // 1. Kiểm tra trùng tên dịch vụ phía hệ thống tại thời điểm bấm "Lưu" (loại trừ dịch vụ đang sửa)
+    if (isDuplicateServiceName(values?.name, services, serviceId)) {
+      const duplicateMsg = 'Tên dịch vụ này đã tồn tại, vui lòng chọn tên khác.'
+      editForm.setFields([
+        {
+          name: 'name',
+          errors: [duplicateMsg],
+        },
+      ])
+      if (editForm.scrollToField) {
+        editForm.scrollToField('name', { behavior: 'smooth', block: 'center' })
+      }
+      setTimeout(() => {
+        focusFirstErrorField('name')
+      }, 100)
+      showNotice.validationSummary({ errorCount: 1 })
+      setSavingService(false)
+      return
+    }
 
     const conflict = isEffectiveDateConflicted(
       values.effectiveFrom,
@@ -274,7 +329,7 @@ function ServicesPage() {
     )
     if (conflict.conflicted) {
       setEditFormError(conflict.message)
-      setEditFormErrorDescription('Vui lòng chọn ngày bắt đầu áp dụng khác hoặc nhấn nút Áp dụng ngày gợi ý bên dưới.')
+      setEditFormErrorDescription('Vui lòng chọn ngày bắt đầu áp dụng khác hoặc nhấn nút Gợi ý ngày hợp lệ bên dưới.')
       editForm.setFields([
         {
           name: 'effectiveFrom',
@@ -282,8 +337,12 @@ function ServicesPage() {
         },
       ])
       if (editForm.scrollToField) {
-        editForm.scrollToField('effectiveFrom')
+        editForm.scrollToField('effectiveFrom', { behavior: 'smooth', block: 'center' })
       }
+      setTimeout(() => {
+        focusFirstErrorField('effectiveFrom')
+      }, 100)
+      showNotice.validationSummary({ errorCount: 1 })
       setSavingService(false)
       return
     }
@@ -291,12 +350,13 @@ function ServicesPage() {
     try {
       const payload = prepareUpdateServicePayload(values, editingService)
       await systemApi.updateService(serviceId, payload)
-      message.success(`Đã cập nhật dịch vụ "${values.name}" thành công!`)
+      showNotice.success('Thành công', `Đã cập nhật dịch vụ "${values.name}" thành công!`)
       setEditModalOpen(false)
       setEditFormError(null)
       setEditFormErrorDescription(null)
       setEditingService(null)
       setEditPriceHistory([])
+      editForm.resetFields()
       loadServices()
     } catch (err) {
       console.error('[ServicesPage] Lỗi cập nhật dịch vụ:', err)
@@ -304,12 +364,27 @@ function ServicesPage() {
       setEditFormError(errorMessage)
       setEditFormErrorDescription(description)
       if (fieldErrors && fieldErrors.length > 0) {
-        editForm.setFields(fieldErrors)
-        if (editForm.scrollToField && fieldErrors[0]?.name) {
-          editForm.scrollToField(fieldErrors[0].name)
+        const formattedFieldErrors = fieldErrors.map((fe) => {
+          if (fe.name === 'name' && (fe.errors[0]?.includes('tồn tại') || fe.errors[0]?.toLowerCase().includes('exists'))) {
+            return { ...fe, errors: ['Tên dịch vụ này đã tồn tại, vui lòng chọn tên khác'] }
+          }
+          if (fe.name === 'price' && (fe.errors[0]?.toLowerCase().includes('lớn hơn hoặc bằng 0') || fe.errors[0]?.toLowerCase().includes('số âm'))) {
+            return { ...fe, errors: ['Giá dịch vụ không được là số âm'] }
+          }
+          return fe
+        })
+        editForm.setFields(formattedFieldErrors)
+        const firstError = formattedFieldErrors[0]
+        if (editForm.scrollToField && firstError?.name) {
+          editForm.scrollToField(firstError.name, { behavior: 'smooth', block: 'center' })
         }
+        setTimeout(() => {
+          focusFirstErrorField(firstError.name)
+        }, 100)
+        showNotice.validationSummary({ errorCount: formattedFieldErrors.length })
+      } else {
+        showNotice.apiError(err, 'Cập nhật dịch vụ thất bại', errorMessage)
       }
-      message.error(errorMessage)
     } finally {
       setSavingService(false)
     }
