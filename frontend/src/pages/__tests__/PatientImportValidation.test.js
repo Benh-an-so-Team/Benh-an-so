@@ -153,32 +153,37 @@ test('Patient Import - getSampleImportResult generator', () => {
   assert.ok(result.createdPatientCodes[0].startsWith('BN-'))
 })
 
-test('Patient Import - Navigation permissions for Receptionist & Admin', () => {
-  // 1. Receptionist with PATIENT_IMPORT sees /patients/import
+test('Patient Import - Navigation: /patients/import được tích hợp vào Quản lý hồ sơ bệnh nhân, không hiển thị riêng lẻ trên sidebar', () => {
+  // 1. Lễ tân thấy /patients ("Quản lý hồ sơ bệnh nhân") trên sidebar
   const recepWithPerm = getNavigationItems(['ROLE_RECEPTIONIST'], ['PATIENT_IMPORT', 'PATIENT_READ'])
   assert.equal(
-    recepWithPerm.some((item) => item.key === '/patients/import'),
+    recepWithPerm.some((item) => item.key === '/patients'),
     true,
-    'Receptionist with PATIENT_IMPORT must see /patients/import menu'
+    'Receptionist must see /patients menu item on sidebar'
   )
 
-  // 2. Admin sees /patients/import
+  // 2. /patients/import KHÔNG còn là mục menu cấp 1 riêng lẻ trên sidebar của Lễ tân
+  assert.equal(
+    recepWithPerm.some((item) => item.key === '/patients/import'),
+    false,
+    '/patients/import must NOT be a separate standalone menu item on sidebar'
+  )
+
+  // 3. Admin cũng không có mục riêng lẻ /patients/import trên sidebar
   const adminNav = getNavigationItems(['ROLE_ADMIN'], [])
   assert.equal(
     adminNav.some((item) => item.key === '/patients/import'),
-    true,
-    'Admin must see /patients/import menu'
+    false,
+    '/patients/import must NOT be a separate standalone menu item on sidebar for Admin'
   )
 
-  // 3. Doctor does not see /patients/import
+  // 4. Bác sĩ và Dược sĩ cũng không thấy /patients/import trên sidebar
   const docNav = getNavigationItems(['ROLE_DOCTOR'], ['MEDICAL_RECORD_READ'])
   assert.equal(
     docNav.some((item) => item.key === '/patients/import'),
     false,
     'Doctor must NOT see /patients/import menu'
   )
-
-  // 4. Pharmacist does not see /patients/import
   const pharmNav = getNavigationItems(['ROLE_PHARMACIST'], ['PHARMACY_READ'])
   assert.equal(
     pharmNav.some((item) => item.key === '/patients/import'),

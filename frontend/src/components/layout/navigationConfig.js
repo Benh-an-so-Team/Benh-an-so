@@ -23,7 +23,6 @@ import {
   BarChartOutlined,
   DollarCircleOutlined,
   PrinterOutlined,
-  FileExcelOutlined,
   PercentageOutlined,
   SafetyCertificateOutlined,
   ShoppingCartOutlined,
@@ -41,12 +40,12 @@ export const roleNames = {
 
 export const navigationSections = [
   { key: 'overview', paths: ['/', '/doctor/dashboard'] },
-  { key: 'reception', label: 'Tiếp nhận & Chăm sóc', paths: ['/patients', '/patients/import', '/appointments', '/appointments/weekly-schedule', '/after-care', '/visit-summaries', '/doctor-schedules'] },
+  { key: 'reception', label: 'Tiếp nhận & Chăm sóc', paths: ['/patients', '/appointments', '/appointments/weekly-schedule', '/after-care', '/visit-summaries', '/doctor-schedules'] },
   { key: 'examination', label: 'Khám bệnh', paths: ['/medical-records', '/medical-records/overdue-signing', '/medical-records/version-history', '/medical-records/copy-issuance', '/medical-records/visit-summaries', '/medical-records/archive', '/prescriptions', '/clinical-orders', '/clinical-results', '/results'] },
   { key: 'pharmacy', label: 'Nhà thuốc', paths: ['/pharmacy', '/medicines', '/pharmacy/receipts', '/inventory/stock-report', '/pharmacy/special-control-register', '/pharmacy/procurement-plans', '/prescription-reconciliation'] },
   { key: 'finance', label: 'Tài chính', paths: ['/billing', '/invoices/lookup', '/cashier-shifts/close', '/cashier-shifts/history', '/invoices/discount-requests'] },
   { key: 'reports', label: 'Báo cáo', paths: ['/reports', '/reports/disease-patterns', '/reports/revenue-breakdown', '/reports/appointment-effectiveness'] },
-  { key: 'system', label: 'Hệ thống & Bảng giá', paths: ['/users', '/services', '/system/specialties', '/system/clinical-services', '/system/diagnosis-catalog', '/system/medical-record-templates', '/system-management', '/admin/operation-logs', '/prescription-interconnections', '/system/anonymization', '/contraindication-rules', '/admin/sessions', '/system/scheduled-backup'] },
+  { key: 'system', label: 'Hệ thống & Bảng giá', paths: ['/users', '/services', '/system/specialties', '/system/clinical-services', '/system/diagnosis-catalog', '/system/medical-record-templates', '/system/print-templates', '/system-management', '/admin/operation-logs', '/prescription-interconnections', '/system/anonymization', '/contraindication-rules', '/admin/sessions', '/system/scheduled-backup'] },
 ]
 
 export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
@@ -77,7 +76,6 @@ export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
     { key: '/doctor/dashboard', label: 'Bảng điều khiển Bác sĩ', icon: DashboardOutlined, check: () => isDoctor },
     { key: '/', label: 'Tổng quan', icon: DashboardOutlined, check: () => !isDoctor && (hasPerm('DASHBOARD_OPERATIONAL_READ') || isAdmin || isManager) },
     { key: '/patients', label: 'Quản lý hồ sơ bệnh nhân', icon: UserOutlined, check: () => !isAdmin && (hasPerm('PATIENT_READ') || hasPerm('PATIENT_CREATE') || isDoctor || isReceptionist || isManager) },
-    { key: '/patients/import', label: 'Nhập hồ sơ Excel', icon: FileExcelOutlined, check: () => (hasPerm('PATIENT_IMPORT') || isAdmin || isReceptionist) && !isDoctor && !isPharmacist },
     { key: '/appointments', label: 'Lịch hẹn và hàng đợi khám', icon: CalendarOutlined, check: () => !isAdmin && !isManager && (hasPerm('APPOINTMENT_READ') || hasPerm('APPOINTMENT_CREATE') || isDoctor || isReceptionist) },
     { key: '/appointments/weekly-schedule', label: 'Lịch tuần theo bác sĩ', icon: TableOutlined, check: () => !isAdmin && !isDoctor && (isReceptionist || isManager || hasPerm('APPOINTMENT_READ')) },
     { key: '/after-care', label: 'Chăm sóc sau khám', icon: HeartOutlined, check: () => !isAdmin && !isDoctor && !isManager && (hasPerm('FOLLOW_UP_REMINDER_READ') || hasPerm('CARE_LOG_READ') || isReceptionist) },
@@ -111,6 +109,7 @@ export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
     { key: '/system/diagnosis-catalog', label: 'Mã bệnh (ICD-10)', icon: ExperimentOutlined, check: () => hasPerm('DIAGNOSIS_CATALOG_MANAGE') || isAdmin },
     { key: '/system/medical-record-templates', label: 'Mẫu bệnh án chuyên khoa', icon: FileTextOutlined, check: () => hasPerm('MEDICAL_RECORD_TEMPLATE_MANAGE') || isAdmin },
     { key: '/system/specialties', label: 'Chuyên khoa & Phòng khám', icon: MedicineBoxOutlined, check: () => hasPerm('SPECIALTY_MANAGE') || isAdmin },
+    { key: '/system/print-templates', label: 'Cấu hình mẫu in chứng từ', icon: PrinterOutlined, check: () => isAdmin },
     { key: '/system-management', label: 'Quản trị hệ thống', icon: SettingOutlined, check: () => isAdmin },
     { key: '/admin/operation-logs', label: 'Nhật ký thao tác', icon: AuditOutlined, check: () => !isDoctor && !isReceptionist && !isPharmacist && (isAdmin || isManager || hasPerm('ADMIN_OPERATION_LOG_READ')) },
     { key: '/admin/sessions', label: 'Quản lý phiên làm việc', icon: SafetyCertificateOutlined, check: () => hasPerm('SESSION_READ') || isAdmin },

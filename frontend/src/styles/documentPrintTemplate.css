@@ -1,0 +1,523 @@
+/* ==============================================================================
+   Document Print Template Configuration Styling (NCL-09-CN-008)
+   Cấu hình mẫu in chứng từ - Giao diện 2 cột với Live Preview
+   ============================================================================== */
+
+.print-template-page {
+  --pt-navy: #123b6d;
+  --pt-blue: #0284c7;
+  --pt-blue-light: #f0f9ff;
+  --pt-border: #e2e8f0;
+  --pt-bg-muted: #f8fafc;
+  --pt-text: #0f172a;
+  --pt-muted: #64748b;
+  --pt-rose: #e11d48;
+  --pt-amber: #d97706;
+
+  width: 100%;
+  color: var(--pt-text);
+}
+
+/* Page Header */
+.print-template-header {
+  margin-bottom: 20px;
+}
+
+.print-template-header h1 {
+  margin: 0;
+  color: #0f1f38;
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.print-template-header p {
+  margin: 5px 0 0;
+  color: var(--pt-muted);
+  font-size: 13.5px;
+}
+
+/* Main Split Layout: Form (Left) & Preview (Right) */
+.print-template-split {
+  display: grid;
+  grid-template-columns: minmax(420px, 1.15fr) minmax(460px, 1.25fr);
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* Left Column: Form Panel */
+.print-template-form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.print-form-card {
+  background: #ffffff;
+  border: 1px solid var(--pt-border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.035);
+}
+
+.print-card-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.print-card-title .anticon {
+  font-size: 17px;
+  color: var(--pt-blue);
+}
+
+.print-card-title h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 720;
+  color: #1e293b;
+}
+
+/* Logo Uploader Area */
+.print-logo-uploader {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.print-logo-preview-box {
+  width: 140px;
+  height: 90px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.print-logo-img {
+  max-width: 90%;
+  max-height: 85%;
+  object-fit: contain;
+}
+
+.print-logo-placeholder {
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
+  padding: 8px;
+}
+
+.print-logo-actions {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.print-logo-actions .ant-upload {
+  width: 100%;
+}
+
+.print-logo-tip {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.print-logo-error {
+  color: var(--pt-rose);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Checklist / Fields Switch Grid */
+.print-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.print-field-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid #edf2f7;
+  border-radius: 9px;
+  background: #ffffff;
+  transition: all 150ms ease;
+}
+
+.print-field-item:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.print-field-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-right: 10px;
+}
+
+.print-field-label {
+  font-size: 13px;
+  font-weight: 650;
+  color: #1e293b;
+}
+
+.print-field-desc {
+  font-size: 11px;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Actions Footer Bar */
+.print-actions-card {
+  background: #ffffff;
+  border: 1px solid var(--pt-border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.print-notice-text {
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.print-notice-text .anticon {
+  color: var(--pt-amber);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.print-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Right Column: Sticky Live Preview */
+.print-template-preview-col {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.print-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.print-sample-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Simulated Printed Paper Sheet */
+.print-paper-sheet {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 28px 32px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #1e293b;
+  position: relative;
+  min-height: 580px;
+}
+
+/* Watermark */
+.print-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 34px;
+  font-weight: 900;
+  color: rgba(239, 68, 68, 0.08);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Document Top Header in Paper */
+.paper-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  gap: 16px;
+}
+
+.paper-logo-brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+}
+
+.paper-logo {
+  max-width: 90px;
+  max-height: 60px;
+  object-fit: contain;
+}
+
+.paper-clinic-info h4 {
+  margin: 0 0 3px 0;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+}
+
+.paper-clinic-info p {
+  margin: 1px 0;
+  font-size: 11px;
+  color: #475569;
+  white-space: pre-line;
+}
+
+.paper-barcode-box {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.paper-barcode {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 12px;
+  color: #0284c7;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border: 1px solid #bae6fd;
+  background: #f0f9ff;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.paper-qr-box {
+  margin-top: 6px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.paper-qr-mini {
+  width: 52px;
+  height: 52px;
+  border: 1px dashed #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: #64748b;
+  text-align: center;
+}
+
+/* Document Title */
+.paper-title {
+  text-align: center;
+  margin: 16px 0 14px;
+}
+
+.paper-title h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 850;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.paper-title span {
+  font-size: 11px;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Patient / General Meta Info */
+.paper-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 16px;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 11.5px;
+}
+
+.paper-meta-item strong {
+  color: #334155;
+}
+
+/* Tables inside Document */
+.paper-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 14px;
+  font-size: 11.5px;
+}
+
+.paper-table th {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 6px 8px;
+  font-weight: 750;
+  color: #1e293b;
+  text-align: left;
+}
+
+.paper-table td {
+  border: 1px solid #e2e8f0;
+  padding: 6px 8px;
+  color: #334155;
+  vertical-align: top;
+}
+
+.paper-table tr:nth-child(even) td {
+  background: #fafbfc;
+}
+
+/* Footer & Signatures */
+.paper-footer-content {
+  margin-top: 16px;
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 10px;
+  font-size: 11px;
+  color: #64748b;
+  font-style: italic;
+  white-space: pre-line;
+}
+
+.paper-signatures {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding-top: 6px;
+}
+
+.paper-sign-box {
+  width: 45%;
+  text-align: center;
+  font-size: 11.5px;
+}
+
+.paper-sign-box strong {
+  display: block;
+  text-transform: uppercase;
+  color: #1e293b;
+}
+
+.paper-sign-space {
+  height: 52px;
+}
+
+.paper-sign-name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Diff Modal Styling */
+.print-diff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin-top: 10px;
+}
+
+.print-diff-table th {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 8px 10px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.print-diff-table td {
+  border: 1px solid #e2e8f0;
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.diff-before {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.diff-after {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+/* Fullscreen Modal View */
+.print-fullscreen-sheet {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1024px) {
+  .print-template-split {
+    grid-template-columns: 1fr;
+  }
+
+  .print-template-preview-col {
+    position: static;
+    max-height: none;
+  }
+
+  .print-fields-grid {
+    grid-template-columns: 1fr;
+  }
+}

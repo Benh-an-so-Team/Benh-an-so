@@ -46,6 +46,7 @@ import {
   UploadOutlined,
   UsergroupDeleteOutlined,
   UserOutlined,
+  TeamOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
 
@@ -919,6 +920,36 @@ function PatientImportPage() {
 
   return (
     <div className="patient-import-container">
+      {/* Top Module Navigation Tabs */}
+      <Tabs
+        activeKey="import"
+        onChange={(key) => {
+          if (key === 'list') {
+            navigate('/patients')
+          }
+        }}
+        type="card"
+        style={{ marginBottom: 16 }}
+        items={[
+          {
+            key: 'list',
+            label: (
+              <span style={{ fontWeight: 600, fontSize: 14 }}>
+                <TeamOutlined /> Danh sách hồ sơ bệnh nhân
+              </span>
+            ),
+          },
+          {
+            key: 'import',
+            label: (
+              <span style={{ fontWeight: 600, fontSize: 14, color: '#16a34a' }}>
+                <FileExcelOutlined /> Nhập hồ sơ từ Excel
+              </span>
+            ),
+          },
+        ]}
+      />
+
       {/* Top Header */}
       <div className="patient-import-header">
         <div className="patient-import-title-group">

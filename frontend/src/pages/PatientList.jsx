@@ -13,6 +13,7 @@ import {
   Select,
   Space,
   Table,
+  Tabs,
   Tag,
 } from 'antd'
 import {
@@ -34,6 +35,7 @@ import {
   UsergroupDeleteOutlined,
   MergeCellsOutlined,
   UploadOutlined,
+  FileExcelOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import patientApi from '../api/patientApi'
@@ -518,6 +520,40 @@ ${rowsXml}
 
   return (
     <div className="patient-management-page">
+      {/* Top Module Navigation Tabs */}
+      <Tabs
+        activeKey="list"
+        onChange={(key) => {
+          if (key === 'import') {
+            navigate('/patients/import')
+          }
+        }}
+        type="card"
+        style={{ marginBottom: 16 }}
+        items={[
+          {
+            key: 'list',
+            label: (
+              <span style={{ fontWeight: 600, fontSize: 14 }}>
+                <TeamOutlined /> Danh sách hồ sơ bệnh nhân
+              </span>
+            ),
+          },
+          ...(canImportPatient
+            ? [
+                {
+                  key: 'import',
+                  label: (
+                    <span style={{ fontWeight: 600, fontSize: 14, color: '#16a34a' }}>
+                      <FileExcelOutlined /> Nhập hồ sơ từ Excel
+                    </span>
+                  ),
+                },
+              ]
+            : []),
+        ]}
+      />
+
       <section className="patient-stat-grid" aria-label="Thống kê bệnh nhân">
         {patientStats.map((stat) => {
           const Icon = stat.icon
@@ -548,8 +584,12 @@ ${rowsXml}
             )}
             <Button icon={<DownloadOutlined />} onClick={exportPatients}>Xuất Excel</Button>
             {canImportPatient && (
-              <Button icon={<UploadOutlined />} onClick={() => navigate('/patients/import')}>
-                Nhập từ Excel
+              <Button
+                icon={<FileExcelOutlined style={{ color: '#16a34a' }} />}
+                onClick={() => navigate('/patients/import')}
+                style={{ borderColor: '#86efac', background: '#f0fdf4', color: '#166534', fontWeight: 500 }}
+              >
+                Nhập hồ sơ Excel
               </Button>
             )}
             {canCreatePatient && <Button type="primary" icon={<PlusOutlined />} onClick={() => setRegisterOpen(true)}>Thêm bệnh nhân</Button>}
