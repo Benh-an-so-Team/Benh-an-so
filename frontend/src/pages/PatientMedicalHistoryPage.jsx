@@ -31,10 +31,16 @@ import {
   SearchOutlined,
   UserOutlined,
   ExperimentOutlined,
+  StarFilled,
+  StarOutlined,
+  EditOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 
 import patientPortalMedicalHistoryApi from '../api/patientPortalMedicalHistoryApi'
+import satisfactionSurveyApi from '../api/satisfactionSurveyApi.js'
+import SatisfactionSurveyModal from '../components/portal/SatisfactionSurveyModal.jsx'
+import { SCORE_LABELS } from '../utils/satisfactionSurveyHelpers.js'
 import MedicalHistoryDetailModal from '../components/portal/MedicalHistoryDetailModal'
 import PatientNotificationBell from '../components/portal/PatientNotificationBell.jsx'
 import { getApiErrorMessage } from '../utils/apiError'
@@ -52,6 +58,12 @@ function PatientMedicalHistoryPage() {
   const [selectedVisitId, setSelectedVisitId] = useState(null)
   const [selectedSummary, setSelectedSummary] = useState(null)
 
+  // Khảo sát hài lòng sau khám (NCL-10-CN-005)
+  const [surveyMap, setSurveyMap] = useState({})
+  const [surveyModalOpen, setSurveyModalOpen] = useState(false)
+  const [surveyTargetVisit, setSurveyTargetVisit] = useState(null)
+  const [surveyTargetExisting, setSurveyTargetExisting] = useState(null)
+
   const fetchHistory = useCallback(async () => {
     setLoading(true)
     setErrorMessage('')
@@ -60,6 +72,32 @@ function PatientMedicalHistoryPage() {
       const data = res.data
       const list = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : []
       setHistoryList(list)
+
+      // Tải trạng thái khảo sát đã gửi của từng lượt khám
+      if (list.length > 0) {
+        Promise.allSettled(
+          list.map(async (item) => {
+            if (!item.visitId) return null
+            try {
+              const sRes = await satisfactionSurveyApi.getByVisitId(item.visitId)
+              if (sRes.data) {
+                return { visitId: item.visitId, survey: sRes.data }
+              }
+            } catch {
+              // Bỏ qua nếu chưa đánh giá
+            }
+            return null
+          })
+        ).then((results) => {
+          const map = {}
+          results.forEach((r) => {
+            if (r.status === 'fulfilled' && r.value) {
+              map[r.value.visitId] = r.value.survey
+            }
+          })
+          setSurveyMap(map)
+        })
+      }
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Không thể tải lịch sử khám bệnh. Vui lòng thử lại sau.')
       setErrorMessage(msg)
@@ -88,6 +126,21 @@ function PatientMedicalHistoryPage() {
     setSelectedVisitId(item.visitId)
     setSelectedSummary(item)
     setDetailModalOpen(true)
+  }
+
+  const handleOpenSurvey = (item, existing = null) => {
+    setSurveyTargetVisit(item)
+    setSurveyTargetExisting(existing)
+    setSurveyModalOpen(true)
+  }
+
+  const handleSurveySuccess = (savedSurvey) => {
+    if (savedSurvey && surveyTargetVisit?.visitId) {
+      setSurveyMap((prev) => ({
+        ...prev,
+        [surveyTargetVisit.visitId]: savedSurvey,
+      }))
+    }
   }
 
   return (
@@ -356,6 +409,89 @@ function PatientMedicalHistoryPage() {
                         </Space>
                       </Col>
                     </Row>
+
+                    {/* Banner nhắc đánh giá gắn với lượt khám tương ứng (NCL-10-CN-005) */}
+                    <div className="survey-banner-container" style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed #e2e8f0' }}>
+                      {surveyMap[item.visitId] ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 8,
+                            background: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: 8,
+                            padding: '8px 14px',
+                          }}
+                        >
+                          <Space wrap align="center">
+                            <CheckCircleOutlined style={{ color: '#16a34a', fontSize: 16 }} />
+                            <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>
+                              Đã đánh giá: {surveyMap[item.visitId].score} ⭐ ({SCORE_LABELS[surveyMap[item.visitId].score] || 'Hài lòng'})
+                            </span>
+                            {surveyMap[item.visitId].comment && (
+                              <span style={{ fontSize: 12.5, color: '#475569', fontStyle: 'italic' }}>
+                                "{surveyMap[item.visitId].comment.length > 50
+                                  ? `${surveyMap[item.visitId].comment.substring(0, 50)}...`
+                                  : surveyMap[item.visitId].comment}"
+                              </span>
+                            )}
+                          </Space>
+
+                          <Button
+                            size="small"
+                            icon={<EditOutlined />}
+                            style={{ color: '#15803d', borderColor: '#86efac', fontWeight: 600 }}
+                            onClick={() => handleOpenSurvey(item, surveyMap[item.visitId])}
+                            id={`btn-edit-survey-${item.visitId}`}
+                          >
+                            Đã đánh giá — Sửa
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 8,
+                            background: '#fffbeb',
+                            border: '1px solid #fde68a',
+                            borderRadius: 8,
+                            padding: '8px 14px',
+                          }}
+                        >
+                          <Space wrap align="center">
+                            <StarFilled style={{ color: '#f59e0b', fontSize: 16 }} />
+                            <span style={{ fontSize: 13, fontWeight: 600, color: '#b45309' }}>
+                              Khảo sát chất lượng phục vụ lượt khám này
+                            </span>
+                            <span style={{ fontSize: 12, color: '#78350f' }}>
+                              (Ý kiến của bạn giúp phòng khám phục vụ tốt hơn)
+                            </span>
+                          </Space>
+
+                          <Button
+                            size="small"
+                            type="primary"
+                            icon={<StarOutlined />}
+                            style={{
+                              background: '#f59e0b',
+                              borderColor: '#f59e0b',
+                              fontWeight: 600,
+                              borderRadius: 6,
+                            }}
+                            onClick={() => handleOpenSurvey(item, null)}
+                            id={`btn-survey-${item.visitId}`}
+                          >
+                            Đánh giá lượt khám này
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </Card>
                 )
               })}
@@ -373,6 +509,18 @@ function PatientMedicalHistoryPage() {
         }}
         visitId={selectedVisitId}
         initialSummary={selectedSummary}
+      />
+
+      <SatisfactionSurveyModal
+        open={surveyModalOpen}
+        onClose={() => {
+          setSurveyModalOpen(false)
+          setSurveyTargetVisit(null)
+          setSurveyTargetExisting(null)
+        }}
+        visit={surveyTargetVisit}
+        existingSurvey={surveyTargetExisting}
+        onSuccess={handleSurveySuccess}
       />
     </div>
   )
