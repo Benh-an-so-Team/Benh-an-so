@@ -9,6 +9,7 @@ import {
   Descriptions,
   Divider,
   Drawer,
+  Dropdown,
   Empty,
   Form,
   Input,
@@ -35,6 +36,7 @@ import {
   HistoryOutlined,
   MailOutlined,
   MessageOutlined,
+  MoreOutlined,
   ReloadOutlined,
   SearchOutlined,
   SendOutlined,
@@ -472,58 +474,89 @@ export default function OverdueMedicalRecordSigningPage() {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 220,
-      render: (_, record) => (
-        <Space size="small" wrap>
-          {isDoctor && (
-            <Button
-              type="primary"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/medical-records/visits/${record.visitId}`)}
-              id={`btn-sign-${record.medicalRecordId}`}
-              style={{ borderRadius: 6 }}
-            >
-              Ký ngay
-            </Button>
-          )}
+      width: 75,
+      align: 'center',
+      fixed: 'right',
+      render: (_, record) => {
+        const menuItems = []
 
-          {canSend && (
-            <Button
-              type="primary"
-              size="small"
-              icon={<BellOutlined />}
-              onClick={() => handleOpenReminderModal(record)}
-              id={`btn-remind-${record.medicalRecordId}`}
-              style={{ borderRadius: 6 }}
-            >
-              Nhắc ký
-            </Button>
-          )}
+        if (isDoctor) {
+          menuItems.push({
+            key: 'sign',
+            icon: <EditOutlined style={{ color: '#16a34a' }} />,
+            label: (
+              <span id={`btn-sign-${record.medicalRecordId}`} style={{ fontWeight: 600, color: '#16a34a' }}>
+                Ký ngay
+              </span>
+            ),
+            onClick: () => navigate(`/medical-records/visits/${record.visitId}`),
+          })
+        }
 
-          <Button
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => handleOpenHistoryDrawer(record)}
-            id={`btn-history-${record.medicalRecordId}`}
-            style={{ borderRadius: 6 }}
+        if (canSend) {
+          menuItems.push({
+            key: 'remind',
+            icon: <BellOutlined style={{ color: '#0284c7' }} />,
+            label: (
+              <span id={`btn-remind-${record.medicalRecordId}`} style={{ fontWeight: 600, color: '#0284c7' }}>
+                Nhắc ký
+              </span>
+            ),
+            onClick: () => handleOpenReminderModal(record),
+          })
+        }
+
+        if (menuItems.length > 0) {
+          menuItems.push({ type: 'divider' })
+        }
+
+        menuItems.push({
+          key: 'history',
+          icon: <HistoryOutlined style={{ color: '#64748b' }} />,
+          label: (
+            <span id={`btn-history-${record.medicalRecordId}`}>
+              Lịch sử nhắc ký
+            </span>
+          ),
+          onClick: () => handleOpenHistoryDrawer(record),
+        })
+
+        menuItems.push({
+          key: 'view',
+          icon: <EyeOutlined style={{ color: '#64748b' }} />,
+          label: (
+            <span id={`btn-view-${record.medicalRecordId}`}>
+              Xem bệnh án
+            </span>
+          ),
+          onClick: () => navigate(`/medical-records/visits/${record.visitId}`),
+        })
+
+        return (
+          <Dropdown
+            menu={{ items: menuItems }}
+            trigger={['click']}
+            placement="bottomRight"
           >
-            Lịch sử
-          </Button>
-
-          {!isDoctor && (
             <Button
+              type="text"
               size="small"
-              icon={<EyeOutlined />}
-              onClick={() => navigate(`/medical-records/visits/${record.visitId}`)}
-              id={`btn-view-${record.medicalRecordId}`}
-              style={{ borderRadius: 6 }}
-            >
-              Bệnh án
-            </Button>
-          )}
-        </Space>
-      ),
+              icon={<MoreOutlined style={{ fontSize: 18, color: '#475569' }} />}
+              id={`btn-action-${record.medicalRecordId}`}
+              aria-label="Thao tác"
+              title="Thao tác"
+              style={{
+                width: 32,
+                height: 32,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 6,
+              }}
+            />
+          </Dropdown>
+        )
+      },
     },
   ]
 
