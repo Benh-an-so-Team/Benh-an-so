@@ -596,6 +596,9 @@ export default function PrescriptionReconciliationPage() {
                 <Option value={RECONCILIATION_OUTCOMES.CANCELLED}>
                   Đơn thuốc đã hủy
                 </Option>
+                <Option value={RECONCILIATION_OUTCOMES.REPLACED}>
+                  Đơn thuốc đã bị thay thế
+                </Option>
               </Select>
             </Col>
 

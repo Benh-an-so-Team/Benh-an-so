@@ -101,6 +101,7 @@ app:
   sms:
     gateway:
       provider: ${SMS_GATEWAY_PROVIDER:android}
+      allow-unregistered-phone: ${SMS_ALLOW_UNREGISTERED_PHONE:true}
       android:
         url: ${SMS_GATEWAY_ANDROID_URL:https://api.sms-gate.app/3rdparty/v1/message}
         username: ${SMS_GATEWAY_ANDROID_USERNAME:LRIMS3}

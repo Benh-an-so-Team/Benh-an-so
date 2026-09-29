@@ -25,7 +25,7 @@ import './styles/login.css'
 // ============================================================================
 // TODO [PRODUCTION CHECKLIST]: Đổi thành false hoặc xóa khối Banner tương ứng
 // trước khi bàn giao hệ thống cho người dùng thật.
-const SHOW_DEV_HINT = true
+const SHOW_DEV_HINT = false
 
 function TwoFactorVerifyPage() {
   const location = useLocation()
@@ -239,8 +239,8 @@ function TwoFactorVerifyPage() {
           )}
         </div>
 
-        {/* Cảnh báo chế độ phát triển (DEV MODE) */}
-        {SHOW_DEV_HINT && (
+        {/* Thông báo gửi mã xác thực */}
+        {SHOW_DEV_HINT ? (
           <Alert
             type="warning"
             showIcon
@@ -248,6 +248,14 @@ function TwoFactorVerifyPage() {
             message="🔧 Chế độ phát triển (DEV MODE)"
             description="Hệ thống SMS/Email thật chưa được tích hợp. Vui lòng mở cửa sổ terminal đang chạy Backend để xem mã xác thực vừa được sinh ra (tìm dòng '[MOCK 2FA]')."
             style={{ marginBottom: 16, border: '2px dashed #faad14', borderRadius: 8, textAlign: 'left' }}
+          />
+        ) : (
+          <Alert
+            type="info"
+            showIcon
+            message="Mã xác thực 2FA đã được gửi qua SMS"
+            description="Vui lòng kiểm tra tin nhắn trên số điện thoại liên kết với tài khoản của bạn để lấy mã OTP gồm 6 chữ số."
+            style={{ marginBottom: 16, textAlign: 'left', borderRadius: 8 }}
           />
         )}
 
