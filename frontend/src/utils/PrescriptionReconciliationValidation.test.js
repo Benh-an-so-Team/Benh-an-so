@@ -115,3 +115,17 @@ test('4. validateNote validates required presence and 500-char limit', () => {
   assert.equal(res.valid, true)
   assert.equal(res.trimmed, 'Đã liên hệ với cơ sở bảo hiểm và nhà thuốc xác nhận xuất bù vào ca chiều.')
 })
+
+test('5. REPLACED outcome and status are recognized as non-discrepancy and block notes', () => {
+  const replacedTag = getOutcomeTag(RECONCILIATION_OUTCOMES.REPLACED)
+  assert.ok(replacedTag)
+  assert.equal(replacedTag.isDiscrepancy, false)
+  assert.equal(replacedTag.antdColor, 'purple')
+
+  assert.equal(
+    canAddNote({ discrepancy: true, prescriptionStatus: 'REPLACED' }),
+    false,
+    'Đơn REPLACED không được thêm ghi chú giải trình xử lý lệch',
+  )
+})
+
