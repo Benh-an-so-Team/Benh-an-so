@@ -16,13 +16,16 @@ import {
   UserOutlined,
   IdcardOutlined,
   MailOutlined,
+  SafetyCertificateFilled,
   SafetyCertificateOutlined,
   SearchOutlined,
+  ReadOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { useAuthContext } from '../context/AuthContext'
 import PortalCyberBackground from '../components/portal/PortalCyberBackground'
 import PortalCyberHeader from '../components/portal/PortalCyberHeader'
+import PersonalDataConsentModal from '../components/patient/PersonalDataConsentModal'
 import './styles/portalLogin.css'
 import './styles/portalRegister.css'
 
@@ -31,6 +34,7 @@ function PortalRegister() {
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState('')
   const [phoneConflict, setPhoneConflict] = useState(false)
+  const [consentModalOpen, setConsentModalOpen] = useState(false)
 
   const navigate = useNavigate()
   const { patientRegister, isAuthenticated, user } = useAuthContext()
@@ -358,32 +362,63 @@ function PortalRegister() {
               </Form.Item>
 
               <div className="portal-register-consent-box">
-                <Form.Item
-                  name="consentAgreed"
-                  valuePropName="checked"
-                  initialValue={true}
-                  style={{ marginBottom: 0 }}
-                  rules={[
-                    {
-                      validator: (_, value) =>
-                        value
-                          ? Promise.resolve()
-                          : Promise.reject(new Error('Vui lòng đồng ý với điều khoản sử dụng và xử lý dữ liệu cá nhân.')),
-                    },
-                  ]}
-                >
-                  <Checkbox disabled={loading}>
-                    <div className="portal-consent-content">
-                      <div className="portal-consent-title">
-                        <SafetyCertificateOutlined style={{ color: '#0284c7' }} />
-                        Cam kết & Điều khoản bảo mật y tế
-                      </div>
-                      <div className="portal-consent-desc">
-                        Tôi đồng ý với <span className="portal-consent-link">Quy định và Phiếu đồng ý xử lý dữ liệu cá nhân</span> (theo Nghị định 13/2023/NĐ-CP).
-                      </div>
-                    </div>
-                  </Checkbox>
-                </Form.Item>
+                <div className="portal-consent-header">
+                  <div className="portal-consent-title">
+                    <SafetyCertificateFilled className="portal-consent-shield-icon" />
+                    <span>Cam kết & Điều khoản bảo mật y tế</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="portal-consent-modal-btn"
+                    onClick={() => setConsentModalOpen(true)}
+                  >
+                    <ReadOutlined />
+                    Xem chi tiết
+                  </button>
+                </div>
+
+                <div className="portal-consent-body">
+                  <Form.Item
+                    name="consentAgreed"
+                    valuePropName="checked"
+                    initialValue={true}
+                    style={{ marginBottom: 0 }}
+                    rules={[
+                      {
+                        validator: (_, value) =>
+                          value
+                            ? Promise.resolve()
+                            : Promise.reject(new Error('Vui lòng đồng ý với điều khoản sử dụng và xử lý dữ liệu cá nhân.')),
+                      },
+                    ]}
+                  >
+                    <Checkbox disabled={loading} className="portal-consent-checkbox">
+                      <span className="portal-consent-label-text">
+                        Tôi đồng ý với{' '}
+                        <a
+                          role="button"
+                          tabIndex={0}
+                          className="portal-consent-link"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setConsentModalOpen(true)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setConsentModalOpen(true)
+                            }
+                          }}
+                        >
+                          Quy định và Phiếu đồng ý xử lý dữ liệu cá nhân
+                        </a>{' '}
+                        (theo Nghị định 13/2023/NĐ-CP). <span className="portal-consent-star">*</span>
+                      </span>
+                    </Checkbox>
+                  </Form.Item>
+                </div>
               </div>
 
               <Form.Item style={{ marginBottom: 8, marginTop: 12 }}>
@@ -414,6 +449,13 @@ function PortalRegister() {
           </div>
         </div>
       </main>
+
+      <PersonalDataConsentModal
+        open={consentModalOpen}
+        onClose={() => setConsentModalOpen(false)}
+        patientName={form.getFieldValue('fullName') || ''}
+        version="v1.0"
+      />
     </div>
   )
 }
