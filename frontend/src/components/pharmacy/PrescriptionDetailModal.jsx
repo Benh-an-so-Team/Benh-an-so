@@ -49,7 +49,6 @@ import { fixMojibake } from '../../utils/serviceCatalogValidation'
 import {
   formatPrescriptionCode,
   getInterconnectionStatusInfo,
-  isStandardRxCode,
 } from '../../utils/electronicPrescriptionValidation'
 import SpecialControlBadge from './SpecialControlBadge.jsx'
 import { useAuthContext } from '../../context/AuthContext'
@@ -346,6 +345,11 @@ function PrescriptionDetailModal({
   }
   const canReplace = canReplacePrescription(enrichedForReplace, user)
   const linkInfo = getReplacementLinkInfo(prescription)
+  const isReplaced = Boolean(
+    linkInfo?.isReplaced ||
+    prescription?.replacedByPrescriptionId ||
+    prescription?.replacedByPrescriptionCode
+  )
 
   const isPrintable = Boolean(
     prescription?.id &&
