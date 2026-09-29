@@ -6,9 +6,11 @@ import {
   Card,
   DatePicker,
   Empty,
+  Input,
   Radio,
   Select,
   Space,
+  Switch,
   Tabs,
   Tag,
   Tooltip,
@@ -39,6 +41,10 @@ import {
   getExportErrorMessage,
   getExportFilename,
   validateExportParams,
+  isIdentifyingReportType,
+  canUserExportUnmasked,
+  validateUnmaskReason,
+  buildExportQueryParams,
 } from '../utils/reportExportHelpers'
 import ReportStatCards from '../components/reporting/ReportStatCards'
 import ReportPrintTemplateModal from '../components/reporting/ReportPrintTemplateModal'
@@ -84,6 +90,7 @@ function ReportsPage() {
   const canViewReports = userPermissions.includes('REPORT_VIEW') || isAdmin || isManager
   const canExportReports = userPermissions.includes('REPORT_EXPORT') || isAdmin || isManager
   const canExportAccessLog = isAdmin || userPermissions.includes('ACCESS_LOG_REPORT_EXPORT')
+  const canExportUnmasked = canUserExportUnmasked(user?.permissions) || isAdmin || isManager
 
   // URL parameters parsing
   const urlTab = searchParams.get('tab')
@@ -312,22 +319,37 @@ function ReportsPage() {
   }, [loadData])
 
   const [selectedReportType, setSelectedReportType] = useState('VISIT_REPORT')
+  const [unmask, setUnmask] = useState(false)
+  const [unmaskReason, setUnmaskReason] = useState('')
+  const [reasonError, setReasonError] = useState('')
+
+  const hasIdentifyingData = useMemo(
+    () => isIdentifyingReportType(selectedReportType),
+    [selectedReportType],
+  )
 
   const handleTabChange = (key) => {
     setActiveTab(key)
     updateUrlParams(key, range)
+    let nextReportType = 'VISIT_REPORT'
     if (key === 'visits') {
-      setSelectedReportType('VISIT_REPORT')
+      nextReportType = 'VISIT_REPORT'
     } else if (key === 'revenue') {
-      setSelectedReportType('REVENUE_REPORT')
+      nextReportType = 'REVENUE_REPORT'
     } else if (key === 'overview') {
-      setSelectedReportType('OPERATIONAL_REPORT')
+      nextReportType = 'OPERATIONAL_REPORT'
     } else if (key === 'doctor-visits') {
-      setSelectedReportType('DOCTOR_VISITS_REPORT')
+      nextReportType = 'DOCTOR_VISITS_REPORT'
     } else if (key === 'medicines') {
-      setSelectedReportType('TOP_MEDICINES_REPORT')
+      nextReportType = 'TOP_MEDICINES_REPORT'
     } else if (key === 'audit') {
-      setSelectedReportType('ACCESS_LOG_REPORT')
+      nextReportType = 'ACCESS_LOG_REPORT'
+    }
+    setSelectedReportType(nextReportType)
+    if (!isIdentifyingReportType(nextReportType)) {
+      setUnmask(false)
+      setUnmaskReason('')
+      setReasonError('')
     }
   }
 
@@ -337,7 +359,7 @@ function ReportsPage() {
     const params = getParams()
     const validation = validateExportParams(params)
     if (!validation.isValid) {
-      message.error(validation.errorMessage)
+      message.error(validation.errorMessage || validation.message)
       return
     }
 
@@ -346,20 +368,36 @@ function ReportsPage() {
       return
     }
 
+    if (hasIdentifyingData && unmask) {
+      const reasonVal = validateUnmaskReason(unmaskReason)
+      if (!reasonVal.isValid) {
+        setReasonError(reasonVal.error)
+        return
+      }
+      setReasonError('')
+    }
+
     isExportingRef.current = true
     setExporting(true)
     try {
+      const exportParams = buildExportQueryParams({
+        ...params,
+        reportType: selectedReportType,
+        unmask,
+        reason: unmaskReason,
+      })
+
       let response
       if (selectedReportType === 'OPERATIONAL_REPORT') {
-        response = await reportApi.exportOperational(params)
+        response = await reportApi.exportOperational(exportParams)
       } else if (selectedReportType === 'VISIT_REPORT' || selectedReportType === 'DOCTOR_VISITS_REPORT') {
-        response = await reportApi.exportVisits(params)
+        response = await reportApi.exportVisits(exportParams)
       } else if (selectedReportType === 'REVENUE_REPORT') {
         response = await reportApi.exportRevenue(params)
       } else if (selectedReportType === 'ACCESS_LOG_REPORT') {
         response = await reportApi.exportAccessLog(params)
       } else {
-        response = await reportApi.exportVisits(params)
+        response = await reportApi.exportVisits(exportParams)
       }
 
       const disposition = response.headers?.['content-disposition']
@@ -368,8 +406,35 @@ function ReportsPage() {
       message.success(`Đã xuất báo cáo ${filename} thành công!`)
     } catch (err) {
       console.error('Lỗi xuất báo cáo CSV:', err)
-      const errorMsg = await getExportErrorMessage(err)
-      message.error(errorMsg)
+      let errorData = null
+      if (err?.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text()
+          errorData = JSON.parse(text)
+        } catch {
+          // ignore
+        }
+      } else if (err?.response?.data) {
+        errorData = err.response.data
+      }
+
+      const status = err?.response?.status
+      const serverMsg = errorData?.message || errorData?.errorMessage || ''
+
+      if (status === 403 && unmask) {
+        message.error('Bạn không có quyền xuất dữ liệu đầy đủ')
+        setUnmask(false)
+        setReasonError('')
+      } else if (
+        status === 400 &&
+        unmask &&
+        (serverMsg.toLowerCase().includes('reason') || serverMsg.toLowerCase().includes('lý do'))
+      ) {
+        setReasonError(serverMsg || 'Lý do xuất bản dữ liệu đầy đủ không hợp lệ.')
+      } else {
+        const errorMsg = await getExportErrorMessage(err)
+        message.error(errorMsg)
+      }
     } finally {
       isExportingRef.current = false
       setExporting(false)
@@ -417,6 +482,11 @@ function ReportsPage() {
             value={selectedReportType}
             onChange={(val) => {
               setSelectedReportType(val)
+              if (!isIdentifyingReportType(val)) {
+                setUnmask(false)
+                setUnmaskReason('')
+                setReasonError('')
+              }
               const matchedType = REPORT_TYPES.find((t) => t.value === val)
               if (matchedType) {
                 setActiveTab(matchedType.tabKey)
@@ -486,6 +556,79 @@ function ReportsPage() {
           </div>
         </div>
       </Card>
+
+      {/* Cấu hình che/xuất bản đầy đủ dữ liệu định danh (NCL-15-CN-007 / QTN-43 / QTN-03 / QTN-25) */}
+      {hasIdentifyingData && canExportUnmasked && (
+        <Card
+          size="small"
+          style={{
+            marginBottom: 16,
+            borderRadius: 10,
+            border: unmask ? '1px solid #f59e0b' : '1px solid #e2e8f0',
+            backgroundColor: unmask ? '#fffbeb' : '#f8fafc',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <Space align="center">
+              <Switch
+                id="unmask-export-switch"
+                checked={unmask}
+                onChange={(checked) => {
+                  setUnmask(checked)
+                  if (!checked) {
+                    setReasonError('')
+                  }
+                }}
+              />
+              <Text strong style={{ fontSize: 13.5, color: unmask ? '#b45309' : '#334155' }}>
+                Xuất bản đầy đủ (không che thông tin)
+              </Text>
+              <Tag color={unmask ? 'warning' : 'default'} style={{ marginLeft: 4 }}>
+                {unmask ? 'Bản đầy đủ (Nhạy cảm)' : 'Mặc định (Đã che)'}
+              </Tag>
+            </Space>
+          </div>
+
+          {unmask && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed #fde68a' }}>
+              <Alert
+                type="warning"
+                showIcon
+                message="Cảnh báo an toàn dữ liệu cá nhân"
+                description="Dữ liệu xuất ra sẽ chứa đầy đủ họ tên, số điện thoại, địa chỉ bệnh nhân. Hành động này được ghi nhật ký kiểm toán."
+                style={{ marginBottom: 12 }}
+              />
+              <div>
+                <label
+                  htmlFor="unmask-export-reason"
+                  style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#334155' }}
+                >
+                  Lý do xuất bản dữ liệu đầy đủ <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <Input.TextArea
+                  id="unmask-export-reason"
+                  rows={3}
+                  value={unmaskReason}
+                  maxLength={500}
+                  showCount
+                  status={reasonError ? 'error' : ''}
+                  placeholder="Nhập lý do xuất bản dữ liệu đầy đủ (tối thiểu 5 ký tự, tối đa 500 ký tự)..."
+                  onChange={(e) => {
+                    setUnmaskReason(e.target.value)
+                    if (reasonError) setReasonError('')
+                  }}
+                />
+                {reasonError && (
+                  <div id="unmask-reason-error" style={{ color: '#ef4444', fontSize: 12.5, marginTop: 4 }}>
+                    {reasonError}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {loadError ? (
         <Alert
