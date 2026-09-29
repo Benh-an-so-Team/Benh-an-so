@@ -55,6 +55,7 @@ const MedicalRecordCopyPage = React.lazy(() => import('../pages/MedicalRecordCop
 const MedicalRecordVersionHistoryPage = React.lazy(() => import('../pages/MedicalRecordVersionHistoryPage'))
 const OverdueMedicalRecordSigningPage = React.lazy(() => import('../pages/OverdueMedicalRecordSigningPage'))
 const VisitSummaryManagementPage = React.lazy(() => import('../pages/VisitSummaryManagementPage.jsx'))
+const MedicalRecordListPage = React.lazy(() => import('../pages/MedicalRecordList.jsx'))
 const PrescriptionInterconnectionPage = React.lazy(() => import('../pages/PrescriptionInterconnectionPage'))
 const DoctorScheduleManagementPage = React.lazy(() => import('../pages/DoctorScheduleManagementPage'))
 const DoctorWeeklySchedulePage = React.lazy(() => import('../pages/DoctorWeeklySchedulePage'))
@@ -187,6 +188,7 @@ function AppRoutes() {
         <Route path="overdue-signing" element={<Navigate to="/medical-records/overdue-signing" replace />} />
         <Route path="medical-records/archive" element={<PrivateRoute allowedPermissions={['MEDICAL_RECORD_ARCHIVE_READ', 'MEDICAL_RECORD_ARCHIVE_MANAGE']} allowedRoles={['admin', 'manager', 'clinic_manager', 'doctor']}><LazyPage><MedicalRecordArchivePage /></LazyPage></PrivateRoute>} />
         <Route path="archive" element={<Navigate to="/medical-records/archive" replace />} />
+        <Route path="medical-records/export" element={<PrivateRoute allowedPermissions={['MEDICAL_RECORD_EXPORT']} allowedRoles={['admin', 'manager', 'clinic_manager']}><LazyPage><MedicalRecordListPage /></LazyPage></PrivateRoute>} />
         <Route path="prescriptions" element={<PrivateRoute allowedPermissions={['PRESCRIPTION_READ', 'PRESCRIPTION_CREATE', 'PRESCRIPTION_UPDATE', 'PRESCRIPTION_PRINT']} allowedRoles={['admin', 'doctor']}><LazyPage><PrescriptionPage /></LazyPage></PrivateRoute>} />
         <Route path="prescriptions/:medicalRecordId" element={<PrivateRoute allowedPermissions={['PRESCRIPTION_READ', 'PRESCRIPTION_CREATE', 'PRESCRIPTION_UPDATE', 'PRESCRIPTION_PRINT']} allowedRoles={['admin', 'doctor']}><LazyPage><PrescriptionPage /></LazyPage></PrivateRoute>} />
         <Route path="clinical-orders" element={<PrivateRoute allowedPermissions={['CLINICAL_ORDER_READ', 'CLINICAL_ORDER_CANCEL']} allowedRoles={['admin', 'doctor']}><LazyPage><PendingClinicalOrdersPage /></LazyPage></PrivateRoute>} />

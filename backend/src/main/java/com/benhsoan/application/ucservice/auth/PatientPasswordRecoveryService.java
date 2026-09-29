@@ -83,6 +83,9 @@ public class PatientPasswordRecoveryService
     private final com.benhsoan.port.outbound.authSecurity.PatientRecoveryCooldownPort cooldownPort;
     private final PatientRecoverySecurityAuditWriter auditWriter;
 
+    @org.springframework.beans.factory.annotation.Value("${app.sms.gateway.allow-unregistered-phone:false}")
+    private boolean allowUnregisteredPhone;
+
     @Override
     public PatientForgotPasswordResult forgotPassword(PatientForgotPasswordCommand command) {
         String phone = normalizePhone(command.phone());
@@ -91,6 +94,7 @@ public class PatientPasswordRecoveryService
         // Cooldown check independent of phone existence (Finding 4 / TC-03)
         if (cooldownPort.isInCooldown(phone, now)) {
             long remainingSeconds = cooldownPort.getRemainingCooldownSeconds(phone, now);
+            log.warn("[FORGOT PASSWORD] SĐT '{}' đang trong thời gian chờ gửi lại mã (cooldown). Còn lại: {} giây.", phone, remainingSeconds);
             throw new VerificationCodeCooldownException(remainingSeconds);
         }
 
@@ -98,26 +102,67 @@ public class PatientPasswordRecoveryService
         cooldownPort.recordRequest(phone, now, COOLDOWN_SECONDS);
 
         Optional<User> userOpt = userRepository.findByPhone(phone);
-        if (userOpt.isEmpty()) {
-            // Anti-enumeration protection (TC-03): balance timing with dummy password hash
-            passwordEncoderPort.encode("DUMMY_CODE_" + phone);
-            log.info("Password recovery requested for non-existent phone: {}", phone);
-            return new PatientForgotPasswordResult(GENERIC_SUCCESS_MESSAGE, TTL_SECONDS);
-        }
+        User user;
 
-        User user = userOpt.get();
+        if (userOpt.isEmpty()) {
+            java.util.List<Patient> candidates = patientRepository.findAllByPhone(phone);
+            Role patientRole = roleRepository.findByName(PATIENT_ROLE).orElse(null);
+
+            if (candidates != null && !candidates.isEmpty() && patientRole != null) {
+                Patient candidate = candidates.stream()
+                        .filter(p -> p.getUserId() == null)
+                        .findFirst()
+                        .orElse(candidates.get(0));
+
+                User newUser = User.create(
+                        phone,
+                        passwordEncoderPort.encode(UUID.randomUUID().toString()),
+                        candidate.getFullName() != null && !candidate.getFullName().isBlank() ? candidate.getFullName() : "Bệnh nhân",
+                        candidate.getEmail() != null && !candidate.getEmail().isBlank() ? candidate.getEmail() : phone + "@benhsoan.vn",
+                        phone,
+                        patientRole.getId()
+                );
+                user = userRepository.save(newUser);
+                if (candidate.getUserId() == null) {
+                    candidate.linkUser(user.getId());
+                    patientRepository.save(candidate);
+                }
+                log.info("[FORGOT PASSWORD] SĐT '{}' đã có hồ sơ y tế (Mã BN: {}). Tự động kích hoạt tài khoản cổng bệnh nhân và gửi mã OTP...",
+                        phone, candidate.getPatientCode());
+            } else if (allowUnregisteredPhone && patientRole != null) {
+                User newUser = User.create(
+                        phone,
+                        passwordEncoderPort.encode(UUID.randomUUID().toString()),
+                        "Bệnh nhân " + phone,
+                        phone + "@benhsoan.vn",
+                        phone,
+                        patientRole.getId()
+                );
+                user = userRepository.save(newUser);
+                log.info("[FORGOT PASSWORD] [TEST MODE] SĐT '{}' chưa đăng ký nhưng allowUnregisteredPhone=true. Tự động tạo tài khoản test và gửi mã OTP...", phone);
+            } else {
+                // Anti-enumeration protection (TC-03): balance timing with dummy password hash
+                passwordEncoderPort.encode("DUMMY_CODE_" + phone);
+                log.warn("[FORGOT PASSWORD] SĐT '{}' KHÔNG TỒN TẠI trong bảng tài khoản (users) -> Bỏ qua gửi SMS OTP (Chính sách Anti-enumeration).", phone);
+                return new PatientForgotPasswordResult(GENERIC_SUCCESS_MESSAGE, TTL_SECONDS);
+            }
+        } else {
+            user = userOpt.get();
+        }
 
         // Enforce patient-only recovery: staff accounts cannot be reset via patient portal endpoint
         Role role = roleRepository.findById(user.getRoleId()).orElse(null);
         if (role == null || !PATIENT_ROLE.equalsIgnoreCase(role.getName())) {
             passwordEncoderPort.encode("DUMMY_CODE_" + phone);
-            log.warn("Password recovery requested via patient portal for non-patient role user: {}", user.getId());
+            log.warn("[FORGOT PASSWORD] SĐT '{}' thuộc tài khoản (id={}, username={}) có vai trò '{}' (KHÔNG PHẢI PATIENT) -> Bỏ qua gửi SMS OTP.",
+                    phone, user.getId(), user.getUsername(), role != null ? role.getName() : "NULL");
             return new PatientForgotPasswordResult(GENERIC_SUCCESS_MESSAGE, TTL_SECONDS);
         }
 
         if (!user.isActive()) {
             passwordEncoderPort.encode("DUMMY_CODE_" + phone);
-            log.warn("Password recovery requested for disabled user: {}", user.getId());
+            log.warn("[FORGOT PASSWORD] SĐT '{}' thuộc tài khoản bệnh nhân (id={}, username={}) đang BỊ VÔ HIỆU HÓA (active=false) -> Bỏ qua gửi SMS OTP.",
+                    phone, user.getId(), user.getUsername());
             return new PatientForgotPasswordResult(GENERIC_SUCCESS_MESSAGE, TTL_SECONDS);
         }
 
@@ -136,6 +181,9 @@ public class PatientPasswordRecoveryService
                 now
         );
         tokenRepository.save(token);
+
+        log.info("[FORGOT PASSWORD] Xác thực tài khoản bệnh nhân hợp lệ (id={}, username={}, phone={}). Đã tạo mã OTP (hiệu lực đến {}). Đang chuyển tới SMS Gateway để gửi tin nhắn...",
+                user.getId(), user.getUsername(), phone, expiresAt);
 
         verificationCodePort.sendVerificationCode(phone, plainCode, TTL_SECONDS);
 

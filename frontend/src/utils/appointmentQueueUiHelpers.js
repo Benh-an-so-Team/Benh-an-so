@@ -28,8 +28,8 @@ export const DEFAULT_DOCTORS = [
     department: 'Ngoại khoa',
   },
   {
-    id: 'u3',
-    username: 'doctor1',
+    id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4',
+    username: 'doctor3',
     fullName: 'BS. Phạm Hồng Anh',
     department: 'Nội tổng hợp',
   },

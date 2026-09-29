@@ -11,6 +11,7 @@ export const RECONCILIATION_OUTCOMES = {
   DISPENSED_NOT_TRANSMITTED: 'DISPENSED_NOT_TRANSMITTED',
   NOT_TRANSMITTED_NOT_DISPENSED: 'NOT_TRANSMITTED_NOT_DISPENSED',
   CANCELLED: 'CANCELLED',
+  REPLACED: 'REPLACED',
 }
 
 export const OUTCOME_CONFIG = {
@@ -62,6 +63,16 @@ export const OUTCOME_CONFIG = {
     bg: '#f1f5f9',
     border: '#e2e8f0',
     description: 'Đơn thuốc đã bị hủy, không thuộc phạm vi xử lý lệch',
+    isDiscrepancy: false,
+  },
+  REPLACED: {
+    key: 'REPLACED',
+    label: 'Đơn thuốc đã bị thay thế',
+    color: '#7c3aed',
+    antdColor: 'purple',
+    bg: '#f5f3ff',
+    border: '#ddd6fe',
+    description: 'Đơn thuốc đã được thay thế bằng đơn thuốc mới, không thuộc phạm vi xử lý lệch',
     isDiscrepancy: false,
   },
 }
@@ -122,7 +133,7 @@ export function validateNote(note) {
  */
 export function canAddNote(item) {
   if (!item || typeof item !== 'object') return false
-  if (item.prescriptionStatus === 'CANCELLED') return false
+  if (item.prescriptionStatus === 'CANCELLED' || item.prescriptionStatus === 'REPLACED') return false
   return Boolean(item.discrepancy === true)
 }
 
@@ -170,6 +181,7 @@ export const PRESCRIPTION_STATUS_CONFIG = {
   PARTIALLY_DISPENSED: { label: 'Cấp phát một phần', color: 'blue', text: '#2563eb' },
   DISPENSED: { label: 'Đã cấp phát', color: 'green', text: '#16a34a' },
   CANCELLED: { label: 'Đã hủy', color: 'default', text: '#64748b' },
+  REPLACED: { label: 'Đã bị thay thế', color: 'purple', text: '#7c3aed' },
 }
 
 export function getPrescriptionStatusTag(status) {

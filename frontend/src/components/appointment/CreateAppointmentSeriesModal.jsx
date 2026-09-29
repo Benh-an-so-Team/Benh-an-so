@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Alert,
   Badge,
@@ -28,6 +28,7 @@ import {
   ExclamationCircleOutlined,
   EyeOutlined,
   InfoCircleOutlined,
+  LoadingOutlined,
   RedoOutlined,
   UserAddOutlined,
 } from '@ant-design/icons'
@@ -60,26 +61,20 @@ export default function CreateAppointmentSeriesModal({
   const [submitting, setSubmitting] = useState(false)
   const [previewResult, setPreviewResult] = useState(null)
   const [formErrors, setFormErrors] = useState({})
+  const [isScheduleDirty, setIsScheduleDirty] = useState(false)
 
-  // Reset or pre-fill form when opened
+  const previewDebounceRef = useRef(null)
+  const previewReqIdRef = useRef(0)
+  const lastPreviewParamsRef = useRef(null)
+
+  // Cleanup debounce timer on unmount
   useEffect(() => {
-    if (open) {
-      setPreviewResult(null)
-      setFormErrors({})
-      form.setFieldsValue({
-        patientId: initialPatientId || undefined,
-        doctorId: initialDoctorId || undefined,
-        medicalRecordId: initialMedicalRecordId || undefined,
-        startDate: dayjs().add(1, 'day'),
-        startTime: dayjs().hour(9).minute(0).second(0),
-        sessionDurationMinutes: 30,
-        totalSessions: 3,
-        intervalDays: 7,
-        title: '',
-        notes: '',
-      })
+    return () => {
+      if (previewDebounceRef.current) {
+        clearTimeout(previewDebounceRef.current)
+      }
     }
-  }, [open, initialPatientId, initialDoctorId, initialMedicalRecordId, form])
+  }, [])
 
   const getFormPayloadValues = useCallback(() => {
     const rawValues = form.getFieldsValue()
@@ -102,62 +97,199 @@ export default function CreateAppointmentSeriesModal({
     }
   }, [form])
 
-  const handlePreview = async () => {
-    const values = getFormPayloadValues()
-    const validation = validateSeriesForm(values)
+  const executePreview = useCallback(
+    async (isManual = false) => {
+      const values = getFormPayloadValues()
+      const validation = validateSeriesForm(values)
 
-    if (!validation.isValid) {
-      setFormErrors(validation.errors)
-      const firstError = Object.values(validation.errors)[0]
-      message.warning(firstError || 'Vui lòng kiểm tra lại thông tin trên form.')
-      return
-    }
-
-    setFormErrors({})
-    setPreviewing(true)
-    try {
-      const payload = {
-        patientId: values.patientId,
-        doctorId: values.doctorId,
-        firstSessionStartTime: values.firstSessionStartTime,
-        sessionDurationMinutes: Number(values.sessionDurationMinutes || 30),
-        totalSessions: Number(values.totalSessions),
-        intervalDays: Number(values.intervalDays),
+      if (!validation.isValid) {
+        setIsScheduleDirty(false)
+        if (isManual) {
+          setFormErrors(validation.errors)
+          const firstError = Object.values(validation.errors)[0]
+          message.warning(firstError || 'Vui lòng kiểm tra lại thông tin trên form.')
+        }
+        return
       }
 
-      const res = await appointmentApi.previewSeries(payload)
-      const data = res.data || res
-      setPreviewResult(data)
-
-      if (data.allAvailable || data.conflictCount === 0) {
-        message.success(`Đã xem trước ${data.totalSessions} buổi. Tất cả các buổi đều khả dụng trong ca trực!`)
-      } else {
-        message.warning(`Có ${data.conflictCount} buổi bị xung đột hoặc ngoài ca làm việc. Vui lòng chọn lại ngày/giờ hoặc khoảng cách.`)
+      if (isManual) {
+        setFormErrors({})
       }
-    } catch (err) {
-      const errorMsg = mapSeriesErrorMessage(err)
-      message.error(errorMsg)
-      setPreviewResult(null)
-    } finally {
-      setPreviewing(false)
-    }
-  }
 
-  const handleValuesChange = () => {
-    if (previewResult) {
+      const currentReqId = ++previewReqIdRef.current
+      setPreviewing(true)
+      setIsScheduleDirty(false)
+
+      try {
+        const payload = {
+          patientId: values.patientId,
+          doctorId: values.doctorId,
+          firstSessionStartTime: values.firstSessionStartTime,
+          sessionDurationMinutes: Number(values.sessionDurationMinutes || 30),
+          totalSessions: Number(values.totalSessions),
+          intervalDays: Number(values.intervalDays),
+        }
+
+        const res = await appointmentApi.previewSeries(payload)
+        if (currentReqId !== previewReqIdRef.current) {
+          return
+        }
+
+        const data = res.data || res
+        setPreviewResult(data)
+        lastPreviewParamsRef.current = {
+          patientId: values.patientId,
+          doctorId: values.doctorId,
+          firstSessionStartTime: values.firstSessionStartTime,
+          sessionDurationMinutes: Number(values.sessionDurationMinutes || 30),
+          totalSessions: Number(values.totalSessions),
+          intervalDays: Number(values.intervalDays),
+        }
+
+        if (isManual) {
+          if (data.allAvailable || data.conflictCount === 0) {
+            message.success(
+              `Đã xem trước ${data.totalSessions} buổi. Đã tự động bỏ qua ngày nghỉ và tất cả buổi đều khả dụng!`
+            )
+          } else {
+            message.warning(
+              `Có ${data.conflictCount} buổi bị trùng lịch hẹn với bệnh nhân khác. Vui lòng kiểm tra lại khung giờ.`
+            )
+          }
+        }
+      } catch (err) {
+        if (currentReqId !== previewReqIdRef.current) {
+          return
+        }
+        const errorMsg = mapSeriesErrorMessage(err)
+        if (isManual) {
+          message.error(errorMsg)
+        } else {
+          console.warn('Auto preview error:', errorMsg)
+        }
+        // Giữ nguyên previewResult hiện tại, không xóa mất bảng khi gặp lỗi chỉnh sửa
+      } finally {
+        if (currentReqId === previewReqIdRef.current) {
+          setPreviewing(false)
+        }
+      }
+    },
+    [getFormPayloadValues]
+  )
+
+  // Reset or pre-fill form when opened, and trigger auto preview if patient and doctor are set
+  useEffect(() => {
+    if (open) {
       setPreviewResult(null)
-    }
-    if (Object.keys(formErrors).length > 0) {
       setFormErrors({})
+      setIsScheduleDirty(false)
+      lastPreviewParamsRef.current = null
+
+      form.setFieldsValue({
+        patientId: initialPatientId || undefined,
+        doctorId: initialDoctorId || undefined,
+        medicalRecordId: initialMedicalRecordId || undefined,
+        startDate: dayjs().add(1, 'day'),
+        startTime: dayjs().hour(9).minute(0).second(0),
+        sessionDurationMinutes: 30,
+        totalSessions: 3,
+        intervalDays: 7,
+        title: '',
+        notes: '',
+      })
+
+      if (initialPatientId && initialDoctorId) {
+        if (previewDebounceRef.current) {
+          clearTimeout(previewDebounceRef.current)
+        }
+        previewDebounceRef.current = setTimeout(() => {
+          executePreview(false)
+        }, 150)
+      }
+    } else {
+      if (previewDebounceRef.current) {
+        clearTimeout(previewDebounceRef.current)
+      }
+      setPreviewResult(null)
+      setFormErrors({})
+      setIsScheduleDirty(false)
+      lastPreviewParamsRef.current = null
+    }
+  }, [open, initialPatientId, initialDoctorId, initialMedicalRecordId, form, executePreview])
+
+  const handlePreview = () => {
+    executePreview(true)
+  }
+
+  const handleValuesChange = (changedValues) => {
+    if (Object.keys(formErrors).length > 0) {
+      const updatedErrors = { ...formErrors }
+      let hasErrorChanges = false
+      Object.keys(changedValues).forEach((key) => {
+        if (updatedErrors[key]) {
+          delete updatedErrors[key]
+          hasErrorChanges = true
+        }
+        if ((key === 'startDate' || key === 'startTime') && updatedErrors.firstSessionStartTime) {
+          delete updatedErrors.firstSessionStartTime
+          hasErrorChanges = true
+        }
+      })
+      if (hasErrorChanges) {
+        setFormErrors(updatedErrors)
+      }
+    }
+
+    const scheduleFields = [
+      'patientId',
+      'doctorId',
+      'startDate',
+      'startTime',
+      'sessionDurationMinutes',
+      'totalSessions',
+      'intervalDays',
+    ]
+    const hasScheduleFieldChanged = Object.keys(changedValues).some((key) =>
+      scheduleFields.includes(key)
+    )
+
+    if (hasScheduleFieldChanged) {
+      // Không xóa previewResult để UI không bị giật hoặc biến mất bảng xem trước
+      setIsScheduleDirty(true)
+      if (previewDebounceRef.current) {
+        clearTimeout(previewDebounceRef.current)
+      }
+      previewDebounceRef.current = setTimeout(() => {
+        executePreview(false)
+      }, 350)
     }
   }
 
-  const handleConfirmAndSubmit = () => {
+  const isFormInSync = useCallback(() => {
+    if (!previewResult || !lastPreviewParamsRef.current) return false
+    const values = getFormPayloadValues()
+    return (
+      String(values.patientId || '') === String(lastPreviewParamsRef.current.patientId || '') &&
+      String(values.doctorId || '') === String(lastPreviewParamsRef.current.doctorId || '') &&
+      values.firstSessionStartTime === lastPreviewParamsRef.current.firstSessionStartTime &&
+      Number(values.sessionDurationMinutes || 30) === Number(lastPreviewParamsRef.current.sessionDurationMinutes) &&
+      Number(values.totalSessions) === Number(lastPreviewParamsRef.current.totalSessions) &&
+      Number(values.intervalDays) === Number(lastPreviewParamsRef.current.intervalDays)
+    )
+  }, [getFormPayloadValues, previewResult])
+
+  const handleConfirmAndSubmit = async () => {
     const values = getFormPayloadValues()
     const validation = validateSeriesForm(values)
     if (!validation.isValid) {
       setFormErrors(validation.errors)
       message.error('Vui lòng kiểm tra lại các trường thông tin.')
+      return
+    }
+
+    if (!isFormInSync()) {
+      message.warning('Dữ liệu lịch khám đã thay đổi, hệ thống đang cập nhật xem trước...')
+      await executePreview(true)
       return
     }
 
@@ -219,7 +351,12 @@ export default function CreateAppointmentSeriesModal({
     })
   }
 
-  const isCreateEnabled = canSubmitSeries(previewResult) && !submitting && !previewing
+  const isCreateEnabled =
+    canSubmitSeries(previewResult) &&
+    isFormInSync() &&
+    !isScheduleDirty &&
+    !submitting &&
+    !previewing
 
   const previewColumns = [
     {
@@ -310,25 +447,30 @@ export default function CreateAppointmentSeriesModal({
       footer={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', gap: 12 }}>
           <div style={{ minWidth: 0, flexShrink: 1 }}>
-            {!previewResult ? (
+            {previewing || isScheduleDirty ? (
+              <div className="series-footer-status info">
+                <LoadingOutlined spin style={{ color: '#7c3aed', fontSize: 14 }} />
+                <span>Đang tự động cập nhật lịch xem trước...</span>
+              </div>
+            ) : !previewResult ? (
               <div className="series-footer-status info">
                 <InfoCircleOutlined style={{ color: '#7c3aed', fontSize: 14 }} />
                 <span>
-                  Bấm <strong>"Xem trước các buổi"</strong> để kiểm tra ca trực
+                  Chọn thông tin hoặc bấm <strong>"Xem trước các buổi"</strong> để kiểm tra ca trực
                 </span>
               </div>
             ) : previewResult.conflictCount === 0 ? (
               <div className="series-footer-status success">
                 <CheckCircleOutlined style={{ color: '#16a34a', fontSize: 14 }} />
                 <span>
-                  Sẵn sàng tạo <strong>{previewResult.totalSessions} buổi khám</strong> (Không xung đột)
+                  Sẵn sàng tạo <strong>{previewResult.totalSessions} buổi khám</strong> (Đã tự động tránh ngày nghỉ)
                 </span>
               </div>
             ) : (
               <div className="series-footer-status error">
                 <ExclamationCircleOutlined style={{ color: '#dc2626', fontSize: 14 }} />
                 <span>
-                  Còn <strong>{previewResult.conflictCount} buổi</strong> trùng lịch / ngoài ca trực
+                  Còn <strong>{previewResult.conflictCount} buổi</strong> trùng lịch hẹn khác
                 </span>
               </div>
             )}
@@ -346,7 +488,17 @@ export default function CreateAppointmentSeriesModal({
             >
               Xem trước các buổi
             </Button>
-            <Tooltip title={!isCreateEnabled && previewResult ? 'Vui lòng chọn lại ngày/giờ để không còn buổi xung đột' : ''}>
+            <Tooltip
+              title={
+                !isCreateEnabled && previewResult
+                  ? isScheduleDirty || previewing
+                    ? 'Đang tự động cập nhật lịch xem trước...'
+                    : !isFormInSync()
+                    ? 'Dữ liệu form đã thay đổi, vui lòng đợi cập nhật'
+                    : 'Vui lòng chọn lại ngày/giờ để không còn buổi xung đột'
+                  : ''
+              }
+            >
               <Button
                 type="primary"
                 icon={<CheckCircleOutlined />}
@@ -503,6 +655,10 @@ export default function CreateAppointmentSeriesModal({
               </Form.Item>
             </Col>
           </Row>
+          <div style={{ marginTop: 4, marginBottom: 4, fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <InfoCircleOutlined style={{ color: '#7c3aed' }} />
+            <span>Hệ thống tự động bỏ qua các ngày nghỉ và ngày nghỉ phép của bác sĩ để đảm bảo xếp đủ số buổi đã chọn.</span>
+          </div>
         </div>
 
         {/* Phần 3: Tiêu đề & Ghi chú */}
@@ -541,7 +697,11 @@ export default function CreateAppointmentSeriesModal({
             <Title level={5} style={{ margin: 0, color: '#0f172a' }}>
               Danh sách các buổi dự kiến ({previewResult?.totalSessions || 0} buổi)
             </Title>
-            {!previewResult ? (
+            {previewing || isScheduleDirty ? (
+              <Tag color="processing" icon={<LoadingOutlined spin />}>
+                Đang cập nhật lịch...
+              </Tag>
+            ) : !previewResult ? (
               <Tag color="default">Chưa tạo bản xem trước</Tag>
             ) : previewResult.conflictCount === 0 ? (
               <Tag color="success" icon={<CheckCircleOutlined />}>
@@ -549,7 +709,7 @@ export default function CreateAppointmentSeriesModal({
               </Tag>
             ) : (
               <Tag color="error" icon={<ExclamationCircleOutlined />}>
-                {previewResult.conflictCount} buổi bị xung đột / ngoài ca
+                {previewResult.conflictCount} buổi bị xung đột lịch hẹn
               </Tag>
             )}
           </Space>
@@ -570,8 +730,8 @@ export default function CreateAppointmentSeriesModal({
             type="warning"
             showIcon
             style={{ marginBottom: 12, borderRadius: 8 }}
-            message="Phát hiện buổi khám bị trùng lịch hoặc rơi vào ngày nghỉ của bác sĩ"
-            description="Bác sĩ không có ca làm việc, đã đăng ký nghỉ phép hoặc đã có lịch hẹn trùng vào khung giờ này. Vui lòng điều chỉnh Ngày/Giờ buổi đầu tiên hoặc Khoảng cách giữa các buổi ở bảng thông số phía trên, sau đó bấm 'Xem trước lại' để kiểm tra lại."
+            message="Phát hiện buổi khám bị trùng lịch hẹn với bệnh nhân khác"
+            description="Bác sĩ đã có lịch hẹn trùng vào khung giờ này. Vui lòng điều chỉnh Giờ buổi đầu tiên hoặc các thông số phía trên để kiểm tra lại."
           />
         )}
 
@@ -606,8 +766,8 @@ export default function CreateAppointmentSeriesModal({
                     Chưa có dữ liệu xem trước các buổi khám
                   </Text>
                   <Text type="secondary" style={{ fontSize: 13, maxWidth: 520, display: 'inline-block', lineHeight: 1.5 }}>
-                    Điền các thông tin trên và bấm nút{' '}
-                    <strong style={{ color: '#7c3aed' }}>"Xem trước các buổi"</strong> để hệ thống kiểm tra lịch trực và tính khả dụng của bác sĩ.
+                    Điền thông tin bệnh nhân, bác sĩ và thời gian. Hệ thống sẽ{' '}
+                    <strong style={{ color: '#7c3aed' }}>tự động hiển thị lịch xem trước</strong> và tự động tránh ngày nghỉ của bác sĩ.
                   </Text>
                 </div>
               ),
