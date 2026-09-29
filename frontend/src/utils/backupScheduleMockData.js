@@ -40,6 +40,7 @@ export const SAMPLE_BACKUP_HISTORY = [
     fileName: 'backup_clinic_20260926_230001.json',
     fileSize: 18454937, // ~17.60 MB
     status: 'SUCCESS',
+    executionType: 'SCHEDULED',
     backupType: 'FULL',
     description: 'Sao lưu tự động theo lịch hệ thống hàng ngày lúc 23:00',
     createdBy: null, // Hệ thống tự động
@@ -53,6 +54,7 @@ export const SAMPLE_BACKUP_HISTORY = [
     fileName: 'backup_clinic_20260925_230001.json',
     fileSize: 0,
     status: 'FAILED',
+    executionType: 'SCHEDULED',
     backupType: 'FULL',
     description: 'Sao lưu tự động theo lịch hệ thống hàng ngày lúc 23:00',
     createdBy: null,
@@ -62,10 +64,25 @@ export const SAMPLE_BACKUP_HISTORY = [
   },
   {
     id: 'b3333333-3333-3333-3333-333333333333',
+    backupCode: 'BKP-20260925-143000',
+    fileName: 'backup_clinic_20260925_143000.json',
+    fileSize: 18290176, // ~17.44 MB
+    status: 'SUCCESS',
+    executionType: 'MANUAL',
+    backupType: 'FULL',
+    description: 'Sao lưu thủ công do Quản trị viên kích hoạt trước khi nâng cấp',
+    createdBy: 'u0000000-0000-0000-0000-000000000001',
+    createdAt: '2026-09-25T14:30:00Z',
+    completedAt: '2026-09-25T14:31:55Z',
+    failureReason: null,
+  },
+  {
+    id: 'b4444444-4444-4444-4444-444444444444',
     backupCode: 'BKP-20260924-230001',
     fileName: 'backup_clinic_20260924_230001.json',
     fileSize: 18129408, // ~17.29 MB
     status: 'SUCCESS',
+    executionType: 'SCHEDULED',
     backupType: 'FULL',
     description: 'Sao lưu tự động theo lịch hệ thống hàng ngày lúc 23:00',
     createdBy: null,
@@ -74,11 +91,12 @@ export const SAMPLE_BACKUP_HISTORY = [
     failureReason: null,
   },
   {
-    id: 'b4444444-4444-4444-4444-444444444444',
+    id: 'b5555555-5555-5555-5555-555555555555',
     backupCode: 'BKP-20260923-230001',
     fileName: 'backup_clinic_20260923_230001.json',
     fileSize: 17825792, // ~17.00 MB
     status: 'SUCCESS',
+    executionType: 'SCHEDULED',
     backupType: 'FULL',
     description: 'Sao lưu tự động theo lịch hệ thống hàng ngày lúc 23:00',
     createdBy: null,
@@ -87,11 +105,12 @@ export const SAMPLE_BACKUP_HISTORY = [
     failureReason: null,
   },
   {
-    id: 'b5555555-5555-5555-5555-555555555555',
+    id: 'b6666666-6666-6666-6666-666666666666',
     backupCode: 'BKP-20260922-230001',
     fileName: 'backup_clinic_20260922_230001.json',
     fileSize: 0,
     status: 'FAILED',
+    executionType: 'SCHEDULED',
     backupType: 'FULL',
     description: 'Sao lưu tự động theo lịch hệ thống hàng ngày lúc 23:00',
     createdBy: null,
@@ -100,6 +119,7 @@ export const SAMPLE_BACKUP_HISTORY = [
     failureReason: 'Hết dung lượng lưu trữ trên thư mục đệm /tmp/backup_spool.',
   },
 ]
+
 
 export const SAMPLE_VERIFICATION_SUCCESS = {
   backupId: 'b1111111-1111-1111-1111-111111111111',
