@@ -322,14 +322,14 @@ class AppointmentSeriesAcceptanceIntegrationTest {
         }
 
         @Test
-        void tc03PreviewsSeriesAccuratelyIdentifyingAvailableAndConflictedSlots() {
+        void tc03PreviewsSeriesAccuratelySkippingDoctorTimeOffAndEnsuringTotalSessions() {
                 mockWorkingHours(LocalTime.of(7, 0), LocalTime.of(18, 0));
 
                 Instant firstSession = Instant.parse("2026-09-02T02:00:00Z");
                 Instant secondSessionStart = firstSession.plus(Duration.ofDays(7));
                 Instant secondSessionEnd = secondSessionStart.plus(Duration.ofMinutes(30));
 
-                // Doctor is on leave during session 2
+                // Doctor is on leave during session 2's nominal date
                 when(doctorTimeOffRepository.existsActiveOverlapping(DOCTOR_ID, secondSessionStart, secondSessionEnd))
                                 .thenReturn(true);
 
@@ -347,19 +347,73 @@ class AppointmentSeriesAcceptanceIntegrationTest {
                 assertNotNull(preview);
                 assertEquals(3, preview.totalSessions());
                 assertEquals(7, preview.intervalDays());
-                assertFalse(preview.allAvailable());
-                assertEquals(1, preview.conflictCount());
+                assertTrue(preview.allAvailable());
+                assertEquals(0, preview.conflictCount());
                 assertEquals(3, preview.sessions().size());
 
                 assertEquals(1, preview.sessions().get(0).sequenceNumber());
                 assertEquals("AVAILABLE", preview.sessions().get(0).status());
+                assertEquals(firstSession, preview.sessions().get(0).startTime());
 
+                // Session 2 automatically skipped the leave day and moved to next working day (2026-09-10)
                 assertEquals(2, preview.sessions().get(1).sequenceNumber());
-                assertEquals("DOCTOR_TIME_OFF", preview.sessions().get(1).status());
-                assertNotNull(preview.sessions().get(1).conflictReason());
+                assertEquals("AVAILABLE", preview.sessions().get(1).status());
+                assertEquals(Instant.parse("2026-09-10T02:00:00Z"), preview.sessions().get(1).startTime());
 
+                // Session 3 scheduled 7 days after session 2
                 assertEquals(3, preview.sessions().get(2).sequenceNumber());
                 assertEquals("AVAILABLE", preview.sessions().get(2).status());
+                assertEquals(Instant.parse("2026-09-17T02:00:00Z"), preview.sessions().get(2).startTime());
+        }
+
+        @Test
+        void tc04PreviewsSeriesFlagsAppointmentConflictWhenSlotAlreadyBooked() {
+                mockWorkingHours(LocalTime.of(7, 0), LocalTime.of(18, 0));
+
+                Instant firstSession = Instant.parse("2026-09-02T02:00:00Z");
+                Instant secondSessionStart = firstSession.plus(Duration.ofDays(7));
+                Instant secondSessionEnd = secondSessionStart.plus(Duration.ofMinutes(30));
+
+                var existingAppointment = Appointment.restore(
+                                UUID.randomUUID(),
+                                "APT999999",
+                                UUID.randomUUID(),
+                                DOCTOR_ID,
+                                secondSessionStart,
+                                secondSessionEnd,
+                                AppointmentStatus.SCHEDULED,
+                                "Khám trước đó",
+                                null,
+                                null,
+                                null,
+                                ACTOR_ID,
+                                NOW,
+                                "COUNTER",
+                                null,
+                                null,
+                                null,
+                                null);
+                new AppointmentRepositoryAdapter(appointmentJpaRepository, new AppointmentPersistenceMapper())
+                                .save(existingAppointment);
+
+                PreviewAppointmentSeriesCommand command = PreviewAppointmentSeriesCommand.builder()
+                                .patientId(PATIENT_ID)
+                                .doctorId(DOCTOR_ID)
+                                .firstSessionStartTime(firstSession)
+                                .sessionDurationMinutes(30)
+                                .totalSessions(3)
+                                .intervalDays(7)
+                                .build();
+
+                AppointmentSeriesPreviewResult preview = previewService.preview(command);
+
+                assertNotNull(preview);
+                assertEquals(3, preview.totalSessions());
+                assertFalse(preview.allAvailable());
+                assertEquals(1, preview.conflictCount());
+
+                assertEquals(2, preview.sessions().get(1).sequenceNumber());
+                assertEquals("APPOINTMENT_CONFLICT", preview.sessions().get(1).status());
         }
 
         @Test

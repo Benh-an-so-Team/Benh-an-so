@@ -112,6 +112,8 @@ export const getElectronicPrescriptionBadgeProps = (code, status) => {
     badgeColor = '#d97706'
   } else if (status === 'CANCELLED') {
     badgeColor = 'default'
+  } else if (status === 'REPLACED') {
+    badgeColor = 'purple'
   }
 
   return {
