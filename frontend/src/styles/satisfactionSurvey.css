@@ -1,0 +1,377 @@
+/**
+ * Styles for Post-Visit Satisfaction Survey (NCL-10-CN-005)
+ * Cổng bệnh nhân & Báo cáo quản lý phòng khám
+ */
+
+/* ========================================================================= */
+/* PHẦN 1: BỆNH NHÂN - SURVEY MODAL & PORTAL CARDS                           */
+/* ========================================================================= */
+
+.portal-survey-trigger-box {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.portal-survey-trigger-box.already-reviewed {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.portal-survey-trigger-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #166534;
+}
+
+.portal-survey-trigger-box.already-reviewed .portal-survey-trigger-left {
+  color: #475569;
+}
+
+.portal-survey-trigger-btn {
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border-radius: 6px;
+  height: 32px;
+  padding: 0 14px;
+}
+
+.portal-survey-trigger-btn:hover {
+  background: #15803d !important;
+  border-color: #15803d !important;
+}
+
+.portal-survey-modal .ant-modal-content {
+  border-radius: 14px;
+  padding: 24px;
+}
+
+.survey-visit-info-banner {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.survey-visit-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.survey-visit-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.survey-rating-container {
+  text-align: center;
+  padding: 16px 0 20px;
+}
+
+.survey-stars-large .ant-rate {
+  font-size: 38px;
+}
+
+.survey-stars-large .ant-rate-star {
+  margin-right: 12px !important;
+}
+
+.survey-score-label {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  min-height: 24px;
+}
+
+.survey-quick-numbers {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.survey-num-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease-in-out;
+}
+
+.survey-num-btn:hover {
+  border-color: #0284c7;
+  color: #0284c7;
+  background: #f0f9ff;
+}
+
+.survey-num-btn.active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+  transform: scale(1.08);
+}
+
+.survey-comment-area {
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* ========================================================================= */
+/* PHẦN 2: QUẢN LÝ PHÒNG KHÁM - BÁO CÁO TỔNG HỢP                              */
+/* ========================================================================= */
+
+.satisfaction-report-page {
+  padding: 0 4px 32px;
+}
+
+.satisfaction-report-header {
+  margin-bottom: 20px;
+}
+
+.satisfaction-report-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #123b6d;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.satisfaction-report-header p {
+  color: #64748b;
+  font-size: 14px;
+  margin: 0;
+}
+
+.satisfaction-filter-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.satisfaction-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.satisfaction-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.satisfaction-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.satisfaction-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.satisfaction-kpi-card.highlight-warning {
+  border-color: #fde68a;
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+}
+
+.satisfaction-kpi-card.highlight-success {
+  border-color: #bbf7d0;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.satisfaction-kpi-title {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.satisfaction-kpi-value {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.satisfaction-kpi-desc {
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.satisfaction-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.satisfaction-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Distribution Bars */
+.score-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.score-bar-row:last-child {
+  margin-bottom: 0;
+}
+
+.score-bar-label {
+  width: 90px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.score-bar-progress {
+  flex: 1;
+}
+
+.score-bar-count {
+  width: 65px;
+  text-align: right;
+  font-weight: 700;
+  color: #0f172a;
+  flex-shrink: 0;
+}
+
+/* Feedback Comments List */
+.feedback-comment-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+
+.feedback-comment-card:hover {
+  border-color: #cbd5e1;
+}
+
+.feedback-comment-card.negative-border {
+  border-left: 4px solid #ef4444;
+}
+
+.feedback-comment-card.positive-border {
+  border-left: 4px solid #22c55e;
+}
+
+.feedback-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feedback-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: #64748b;
+  flex-wrap: wrap;
+}
+
+.feedback-anonymous-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.feedback-content {
+  font-size: 14px;
+  color: #1e293b;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.feedback-no-comment {
+  font-style: italic;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .satisfaction-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .survey-stars-large .ant-rate {
+    font-size: 30px;
+  }
+  .survey-stars-large .ant-rate-star {
+    margin-right: 6px !important;
+  }
+}

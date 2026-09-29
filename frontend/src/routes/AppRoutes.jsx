@@ -65,6 +65,7 @@ const AdminOperationLogPage = React.lazy(() => import('../pages/AdminOperationLo
 const DiseasePatternReportPage = React.lazy(() => import('../pages/DiseasePatternReportPage'))
 const RevenueBreakdownReportPage = React.lazy(() => import('../pages/RevenueBreakdownReportPage'))
 const AppointmentEffectivenessReportPage = React.lazy(() => import('../pages/AppointmentEffectivenessReportPage.jsx'))
+const SatisfactionReportPage = React.lazy(() => import('../pages/SatisfactionReportPage.jsx'))
 const InventoryStockReportPage = React.lazy(() => import('../pages/InventoryStockReportPage.jsx'))
 const ContraindicationRuleManagementPage = React.lazy(() => import('../pages/ContraindicationRuleManagementPage'))
 const CashierShiftClosingPage = React.lazy(() => import('../pages/CashierShiftClosingPage.jsx'))
@@ -214,6 +215,8 @@ function AppRoutes() {
         <Route path="reports/disease-patterns" element={<PrivateRoute allowedPermissions={['REPORT_VIEW']} allowedRoles={['manager', 'clinic_manager']} disallowAdmin={true}><LazyPage><DiseasePatternReportPage /></LazyPage></PrivateRoute>} />
         <Route path="reports/revenue-breakdown" element={<PrivateRoute allowedPermissions={['REPORT_VIEW']} allowedRoles={['manager', 'clinic_manager']} disallowAdmin={true}><LazyPage><RevenueBreakdownReportPage /></LazyPage></PrivateRoute>} />
         <Route path="reports/appointment-effectiveness" element={<PrivateRoute allowedPermissions={['REPORT_VIEW']} allowedRoles={['manager', 'clinic_manager']} disallowAdmin={true}><LazyPage><AppointmentEffectivenessReportPage /></LazyPage></PrivateRoute>} />
+        <Route path="reports/satisfaction" element={<PrivateRoute allowedPermissions={['REPORT_VIEW']} allowedRoles={['admin', 'manager', 'clinic_manager']}><LazyPage><SatisfactionReportPage /></LazyPage></PrivateRoute>} />
+        <Route path="satisfaction-reports" element={<Navigate to="/reports/satisfaction" replace />} />
         <Route path="inventory/stock-report" element={<PrivateRoute allowedPermissions={['INVENTORY_REPORT_VIEW']} allowedRoles={['admin', 'manager', 'clinic_manager', 'pharmacist']}><LazyPage><InventoryStockReportPage /></LazyPage></PrivateRoute>} />
         <Route path="pharmacy/stock-report" element={<Navigate to="/inventory/stock-report" replace />} />
         <Route path="system-management" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><SystemManagementPage /></LazyPage></PrivateRoute>} />

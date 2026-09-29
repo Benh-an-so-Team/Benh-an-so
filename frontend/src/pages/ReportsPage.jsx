@@ -29,6 +29,7 @@ import {
   ReloadOutlined,
   UserOutlined,
   BarChartOutlined,
+  StarOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import reportApi from '../api/reportApi'
@@ -67,11 +68,12 @@ import DiseasePatternReportPage from './DiseasePatternReportPage.jsx'
 import RevenueBreakdownReportPage from './RevenueBreakdownReportPage.jsx'
 import AppointmentEffectivenessReportPage from './AppointmentEffectivenessReportPage.jsx'
 import InventoryStockReportPage from './InventoryStockReportPage.jsx'
+import SatisfactionReportPage from './SatisfactionReportPage.jsx'
 
 const { RangePicker } = DatePicker
 const { Title, Text } = Typography
 
-const VALID_TABS = ['overview', 'visits', 'doctor-visits', 'revenue', 'medicines', 'audit', 'disease-patterns', 'revenue-breakdown', 'appointment-effectiveness', 'inventory-stock']
+const VALID_TABS = ['overview', 'visits', 'doctor-visits', 'revenue', 'medicines', 'audit', 'disease-patterns', 'revenue-breakdown', 'appointment-effectiveness', 'inventory-stock', 'satisfaction']
 
 function ReportsPage() {
   const { user } = useAuthContext()
@@ -749,6 +751,14 @@ function ReportsPage() {
                       </span>
                     ),
                   },
+                  {
+                    key: 'satisfaction',
+                    label: (
+                      <span style={{ fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                        <StarOutlined /> Khảo sát hài lòng sau khám
+                      </span>
+                    ),
+                  },
                 ]
               : []),
           ]}
@@ -814,6 +824,10 @@ function ReportsPage() {
 
         {activeTab === 'inventory-stock' && (isManager || isAdmin) && (
           <InventoryStockReportPage />
+        )}
+
+        {activeTab === 'satisfaction' && (isManager || isAdmin) && (
+          <SatisfactionReportPage />
         )}
       </div>
 

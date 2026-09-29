@@ -10,7 +10,9 @@ import {
   Col,
   Empty,
   Input,
+  Rate,
   Row,
+  Segmented,
   Skeleton,
   Space,
   Tag,
@@ -31,13 +33,18 @@ import {
   SearchOutlined,
   UserOutlined,
   ExperimentOutlined,
+  StarFilled,
+  StarOutlined,
+  EditOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 
 import patientPortalMedicalHistoryApi from '../api/patientPortalMedicalHistoryApi'
+import satisfactionSurveyApi from '../api/satisfactionSurveyApi.js'
+import SatisfactionSurveyModal from '../components/portal/SatisfactionSurveyModal.jsx'
+import { SCORE_LABELS } from '../utils/satisfactionSurveyHelpers.js'
 import MedicalHistoryDetailModal from '../components/portal/MedicalHistoryDetailModal'
 import PatientNotificationBell from '../components/portal/PatientNotificationBell.jsx'
-import { getApiErrorMessage } from '../utils/apiError'
 import './styles/patientMedicalHistory.css'
 
 const { Title, Text } = Typography
@@ -47,23 +54,60 @@ function PatientMedicalHistoryPage() {
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
+  const [surveyFilter, setSurveyFilter] = useState('ALL') // 'ALL' | 'UNREVIEWED' | 'REVIEWED'
 
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedVisitId, setSelectedVisitId] = useState(null)
   const [selectedSummary, setSelectedSummary] = useState(null)
 
+  // Khảo sát hài lòng sau khám (NCL-10-CN-005)
+  const [surveyMap, setSurveyMap] = useState({})
+  const [surveyModalOpen, setSurveyModalOpen] = useState(false)
+  const [surveyTargetVisit, setSurveyTargetVisit] = useState(null)
+  const [surveyTargetExisting, setSurveyTargetExisting] = useState(null)
+
   const fetchHistory = useCallback(async () => {
     setLoading(true)
     setErrorMessage('')
+
     try {
       const res = await patientPortalMedicalHistoryApi.getMedicalHistory()
       const data = res.data
-      const list = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : []
+      let list = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : []
+
       setHistoryList(list)
+
+      if (list.length > 0) {
+        // Tải trạng thái khảo sát đã gửi của từng lượt khám từ CSDL
+        const results = await Promise.allSettled(
+          list.map(async (item) => {
+            if (!item.visitId) return null
+            try {
+              const sRes = await satisfactionSurveyApi.getByVisitId(item.visitId)
+              if (sRes.data) {
+                return { visitId: item.visitId, survey: sRes.data }
+              }
+            } catch {
+              // Bỏ qua nếu chưa đánh giá
+            }
+            return null
+          })
+        )
+        const map = {}
+        results.forEach((r) => {
+          if (r.status === 'fulfilled' && r.value) {
+            map[r.value.visitId] = r.value.survey
+          }
+        })
+        setSurveyMap(map)
+      } else {
+        setSurveyMap({})
+      }
     } catch (err) {
-      const msg = getApiErrorMessage(err, 'Không thể tải lịch sử khám bệnh. Vui lòng thử lại sau.')
+      const msg = err.response?.data?.message || err.message || 'Không thể tải lịch sử khám bệnh. Vui lòng thử lại sau.'
       setErrorMessage(msg)
       setHistoryList([])
+      setSurveyMap({})
     } finally {
       setLoading(false)
     }
@@ -73,21 +117,52 @@ function PatientMedicalHistoryPage() {
     fetchHistory()
   }, [fetchHistory])
 
+  const unreviewedCount = useMemo(() => {
+    return historyList.filter((item) => !surveyMap[item.visitId]).length
+  }, [historyList, surveyMap])
+
+  const reviewedCount = useMemo(() => {
+    return historyList.filter((item) => !!surveyMap[item.visitId]).length
+  }, [historyList, surveyMap])
+
   const filteredHistory = useMemo(() => {
-    if (!searchKeyword.trim()) return historyList
+    let list = historyList
+    if (surveyFilter === 'UNREVIEWED') {
+      list = list.filter((item) => !surveyMap[item.visitId])
+    } else if (surveyFilter === 'REVIEWED') {
+      list = list.filter((item) => !!surveyMap[item.visitId])
+    }
+
+    if (!searchKeyword.trim()) return list
     const kw = searchKeyword.trim().toLowerCase()
-    return historyList.filter((item) => {
+    return list.filter((item) => {
       const doc = item.doctorName?.toLowerCase() || ''
       const spec = item.specialtyName?.toLowerCase() || ''
       const diag = item.diagnosisSummary?.toLowerCase() || ''
       return doc.includes(kw) || spec.includes(kw) || diag.includes(kw)
     })
-  }, [historyList, searchKeyword])
+  }, [historyList, searchKeyword, surveyFilter, surveyMap])
 
   const handleOpenDetail = (item) => {
     setSelectedVisitId(item.visitId)
     setSelectedSummary(item)
     setDetailModalOpen(true)
+  }
+
+  const handleOpenSurvey = (item, existing = null) => {
+    setSurveyTargetVisit(item)
+    setSurveyTargetExisting(existing)
+    setSurveyModalOpen(true)
+  }
+
+  const handleSurveySuccess = (savedSurvey) => {
+    if (savedSurvey && (savedSurvey.visitId || surveyTargetVisit?.visitId)) {
+      const vid = savedSurvey.visitId || surveyTargetVisit.visitId
+      setSurveyMap((prev) => ({
+        ...prev,
+        [vid]: savedSurvey,
+      }))
+    }
   }
 
   return (
@@ -184,6 +259,45 @@ function PatientMedicalHistoryPage() {
             </Space>
           </div>
 
+          {/* Bộ lọc theo trạng thái Đánh giá chất lượng sau khám */}
+          {!loading && historyList.length > 0 && (
+            <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>Lọc theo đánh giá:</span>
+              <Segmented
+                value={surveyFilter}
+                onChange={setSurveyFilter}
+                options={[
+                  {
+                    label: (
+                      <span style={{ padding: '0 4px' }}>
+                        Tất cả lượt khám <b>({historyList.length})</b>
+                      </span>
+                    ),
+                    value: 'ALL',
+                  },
+                  {
+                    label: (
+                      <span style={{ padding: '0 4px', color: unreviewedCount > 0 ? '#b45309' : undefined }}>
+                        <StarOutlined style={{ marginRight: 4, color: '#f59e0b' }} />
+                        Chờ đánh giá <b>({unreviewedCount})</b>
+                      </span>
+                    ),
+                    value: 'UNREVIEWED',
+                  },
+                  {
+                    label: (
+                      <span style={{ padding: '0 4px', color: '#15803d' }}>
+                        <CheckCircleOutlined style={{ marginRight: 4, color: '#16a34a' }} />
+                        Đã gửi đánh giá <b>({reviewedCount})</b>
+                      </span>
+                    ),
+                    value: 'REVIEWED',
+                  },
+                ]}
+              />
+            </div>
+          )}
+
           {loading ? (
             <div style={{ padding: '24px 0' }}>
               {[1, 2, 3].map((k) => (
@@ -217,20 +331,30 @@ function PatientMedicalHistoryPage() {
                 description={
                   <div>
                     <strong style={{ fontSize: 15, color: '#334155', display: 'block', marginBottom: 4 }}>
-                      Chưa có lịch sử khám nào được ghi nhận.
+                      {surveyFilter !== 'ALL'
+                        ? 'Không tìm thấy lượt khám nào phù hợp bộ lọc đánh giá đã chọn.'
+                        : 'Chưa có lịch sử khám nào được ghi nhận.'}
                     </strong>
                     <Text type="secondary" style={{ fontSize: 13 }}>
-                      Hồ sơ các ca khám sau khi hoàn tất và được bác sĩ ký duyệt sẽ hiển thị tại đây.
+                      {surveyFilter !== 'ALL'
+                        ? 'Bạn có thể chọn lại "Tất cả lượt khám" để xem danh sách đầy đủ.'
+                        : 'Hồ sơ các ca khám sau khi hoàn tất và được bác sĩ ký duyệt sẽ hiển thị tại đây.'}
                     </Text>
                   </div>
                 }
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
               >
-                <Link to="/portal/book-appointment">
-                  <Button type="primary" icon={<PlusOutlined />} style={{ background: '#2563eb', marginTop: 8 }}>
-                    Đặt lịch khám ngay
+                {surveyFilter !== 'ALL' ? (
+                  <Button type="default" onClick={() => setSurveyFilter('ALL')} style={{ marginTop: 8 }}>
+                    Xem tất cả lượt khám
                   </Button>
-                </Link>
+                ) : (
+                  <Link to="/portal/book-appointment">
+                    <Button type="primary" icon={<PlusOutlined />} style={{ background: '#2563eb', marginTop: 8 }}>
+                      Đặt lịch khám ngay
+                    </Button>
+                  </Link>
+                )}
               </Empty>
             </div>
           ) : (
@@ -356,6 +480,105 @@ function PatientMedicalHistoryPage() {
                         </Space>
                       </Col>
                     </Row>
+
+                    {/* Banner nhắc đánh giá gắn với lượt khám tương ứng (NCL-10-CN-005) */}
+                    <div className="survey-banner-container" style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed #e2e8f0' }}>
+                      {surveyMap[item.visitId] ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 12,
+                            background: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: 10,
+                            padding: '10px 16px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <Tag color="green" icon={<CheckCircleOutlined />} style={{ fontWeight: 600, margin: 0 }}>
+                              Đã đánh giá
+                            </Tag>
+                            <Rate disabled value={surveyMap[item.visitId].score} style={{ fontSize: 15, color: '#f59e0b' }} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>
+                              {surveyMap[item.visitId].score}/5 sao ({SCORE_LABELS[surveyMap[item.visitId].score] || 'Hài lòng'})
+                            </span>
+                            {surveyMap[item.visitId].comment && (
+                              <span
+                                style={{
+                                  fontSize: 13,
+                                  color: '#334155',
+                                  fontStyle: 'italic',
+                                  background: '#ffffff',
+                                  padding: '2px 10px',
+                                  borderRadius: 6,
+                                  border: '1px solid #e2e8f0',
+                                }}
+                              >
+                                &ldquo;{surveyMap[item.visitId].comment.length > 60
+                                  ? `${surveyMap[item.visitId].comment.substring(0, 60)}...`
+                                  : surveyMap[item.visitId].comment}&rdquo;
+                              </span>
+                            )}
+                          </div>
+
+                          <Button
+                            size="small"
+                            icon={<EditOutlined />}
+                            style={{ color: '#15803d', borderColor: '#86efac', fontWeight: 600, background: '#ffffff', borderRadius: 6 }}
+                            onClick={() => handleOpenSurvey(item, surveyMap[item.visitId])}
+                            id={`btn-edit-survey-${item.visitId}`}
+                          >
+                            Đã đánh giá — Sửa
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 12,
+                            background: '#fffbeb',
+                            border: '1px solid #fde68a',
+                            borderRadius: 10,
+                            padding: '10px 16px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <StarFilled style={{ color: '#f59e0b', fontSize: 18 }} />
+                            <div>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: '#92400e', marginRight: 6 }}>
+                                Khảo sát chất lượng phục vụ ca khám này
+                              </span>
+                              <span style={{ fontSize: 12, color: '#78350f' }}>
+                                (Ý kiến của bạn giúp phòng khám không ngừng nâng cao chất lượng điều trị)
+                              </span>
+                            </div>
+                          </div>
+
+                          <Button
+                            size="small"
+                            type="primary"
+                            icon={<StarOutlined />}
+                            style={{
+                              background: '#f59e0b',
+                              borderColor: '#f59e0b',
+                              fontWeight: 600,
+                              borderRadius: 6,
+                              boxShadow: '0 2px 6px rgba(245, 158, 11, 0.25)',
+                            }}
+                            onClick={() => handleOpenSurvey(item, null)}
+                            id={`btn-survey-${item.visitId}`}
+                          >
+                            Đánh giá lượt khám này
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </Card>
                 )
               })}
@@ -373,6 +596,20 @@ function PatientMedicalHistoryPage() {
         }}
         visitId={selectedVisitId}
         initialSummary={selectedSummary}
+        survey={selectedVisitId ? surveyMap[selectedVisitId] : null}
+        onOpenSurvey={(visit, existing) => handleOpenSurvey(visit, existing)}
+      />
+
+      <SatisfactionSurveyModal
+        open={surveyModalOpen}
+        onClose={() => {
+          setSurveyModalOpen(false)
+          setSurveyTargetVisit(null)
+          setSurveyTargetExisting(null)
+        }}
+        visit={surveyTargetVisit}
+        existingSurvey={surveyTargetExisting}
+        onSuccess={handleSurveySuccess}
       />
     </div>
   )
