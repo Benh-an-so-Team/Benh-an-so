@@ -47,7 +47,7 @@ export const navigationSections = [
   { key: 'pharmacy', label: 'Nhà thuốc', paths: ['/pharmacy', '/medicines', '/pharmacy/receipts', '/inventory/stock-report', '/pharmacy/special-control-register', '/pharmacy/procurement-plans', '/prescription-reconciliation'] },
   { key: 'finance', label: 'Tài chính', paths: ['/billing', '/invoices/lookup', '/cashier-shifts/close', '/cashier-shifts/history', '/invoices/discount-requests'] },
   { key: 'reports', label: 'Báo cáo', paths: ['/reports', '/reports/disease-patterns', '/reports/revenue-breakdown', '/reports/appointment-effectiveness', '/reports/satisfaction'] },
-  { key: 'system', label: 'Hệ thống & Bảng giá', paths: ['/users', '/services', '/system/specialties', '/system/clinical-services', '/system/diagnosis-catalog', '/system/medical-record-templates', '/system/print-templates', '/system-management', '/admin/operation-logs', '/prescription-interconnections', '/system/anonymization', '/contraindication-rules', '/admin/sessions', '/system/scheduled-backup'] },
+  { key: 'system', label: 'Hệ thống & Bảng giá', paths: ['/users', '/services', '/system/specialties', '/system/clinical-services', '/system/diagnosis-catalog', '/system/medical-record-templates', '/system/print-templates', '/system-management', '/admin/operation-logs', '/prescription-interconnections', '/system/anonymization', '/contraindication-rules', '/admin/sessions', '/system/scheduled-backup', '/personal-data-requests'] },
 ]
 
 export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
@@ -123,6 +123,7 @@ export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
     { key: '/system/scheduled-backup', label: 'Lịch sao lưu tự động', icon: CloudServerOutlined, check: () => isAdmin || hasPerm('BACKUP_READ') },
     { key: '/cashier-shifts/close', label: 'Chốt ca thu ngân', icon: DollarCircleOutlined, check: () => hasPerm('CASHIER_SHIFT_CREATE') || isReceptionist || isAdmin },
     { key: '/cashier-shifts/history', label: 'Lịch sử chốt ca', icon: HistoryOutlined, check: () => hasPerm('CASHIER_SHIFT_READ') || isReceptionist || isManager || isAdmin },
+    { key: '/personal-data-requests', label: 'Yêu cầu dữ liệu cá nhân', icon: SafetyCertificateOutlined, check: () => isAdmin || hasPerm('PERSONAL_DATA_REQUEST_READ') },
   ]
 
   return items.filter((item) => item.check())
