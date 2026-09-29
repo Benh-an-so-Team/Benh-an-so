@@ -26,6 +26,7 @@ import {
   PercentageOutlined,
   SafetyCertificateOutlined,
   ShoppingCartOutlined,
+  StarOutlined,
   SyncOutlined,
   ExportOutlined,
 } from '@ant-design/icons'
@@ -45,7 +46,7 @@ export const navigationSections = [
   { key: 'examination', label: 'Khám bệnh', paths: ['/medical-records', '/medical-records/overdue-signing', '/medical-records/version-history', '/medical-records/copy-issuance', '/medical-records/visit-summaries', '/medical-records/archive', '/medical-records/export', '/prescriptions', '/clinical-orders', '/clinical-results', '/results'] },
   { key: 'pharmacy', label: 'Nhà thuốc', paths: ['/pharmacy', '/medicines', '/pharmacy/receipts', '/inventory/stock-report', '/pharmacy/special-control-register', '/pharmacy/procurement-plans', '/prescription-reconciliation'] },
   { key: 'finance', label: 'Tài chính', paths: ['/billing', '/invoices/lookup', '/cashier-shifts/close', '/cashier-shifts/history', '/invoices/discount-requests'] },
-  { key: 'reports', label: 'Báo cáo', paths: ['/reports', '/reports/disease-patterns', '/reports/revenue-breakdown', '/reports/appointment-effectiveness'] },
+  { key: 'reports', label: 'Báo cáo', paths: ['/reports', '/reports/disease-patterns', '/reports/revenue-breakdown', '/reports/appointment-effectiveness', '/reports/satisfaction'] },
   { key: 'system', label: 'Hệ thống & Bảng giá', paths: ['/users', '/services', '/system/specialties', '/system/clinical-services', '/system/diagnosis-catalog', '/system/medical-record-templates', '/system/print-templates', '/system-management', '/admin/operation-logs', '/prescription-interconnections', '/system/anonymization', '/contraindication-rules', '/admin/sessions', '/system/scheduled-backup'] },
 ]
 
@@ -105,6 +106,7 @@ export const getNavigationItems = (rolesOrUser = [], permissionsArg = []) => {
     { key: '/reports/disease-patterns', label: 'Mô hình bệnh tật', icon: BarChartOutlined, check: () => isManager && !isAdmin },
     { key: '/reports/revenue-breakdown', label: 'Doanh thu theo dịch vụ & bác sĩ', icon: DollarCircleOutlined, check: () => isManager && !isAdmin },
     { key: '/reports/appointment-effectiveness', label: 'Hiệu quả lịch hẹn', icon: CalendarOutlined, check: () => isManager && !isAdmin },
+    { key: '/reports/satisfaction', label: 'Khảo sát hài lòng sau khám', icon: StarOutlined, check: () => !isDoctor && !isReceptionist && !isPharmacist && (isManager || isAdmin || hasPerm('REPORT_VIEW')) },
     { key: '/users', label: 'Quản trị tài khoản', icon: TeamOutlined, check: () => isAdmin },
     { key: '/services', label: 'Dịch vụ & Bảng giá', icon: AppstoreOutlined, check: () => hasPerm('SERVICE_CATALOG_READ') || isAdmin || isManager },
     { key: '/system/clinical-services', label: 'Cận lâm sàng & Ngưỡng', icon: ExperimentOutlined, check: () => hasPerm('CLINICAL_SERVICE_MANAGE') || isAdmin },
