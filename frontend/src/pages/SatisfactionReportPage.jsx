@@ -39,6 +39,8 @@ import {
   StarOutlined,
   TeamOutlined,
   UserOutlined,
+  EyeOutlined,
+  ExperimentOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import satisfactionSurveyApi from '../api/satisfactionSurveyApi.js'
@@ -67,6 +69,9 @@ function SatisfactionReportPage() {
   const [loading, setLoading] = useState(false)
   const [reportData, setReportData] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
+
+  // Chế độ xem thử toàn bộ dữ liệu mẫu khi kỳ chưa có đánh giá thực tế
+  const [demoMode, setDemoMode] = useState(true)
 
   // Bảng xếp hạng bác sĩ: state sắp xếp
   const [doctorSortKey, setDoctorSortKey] = useState('averageScore')
@@ -130,28 +135,155 @@ function SatisfactionReportPage() {
     setDateRange(range)
   }
 
+  // Bộ dữ liệu mẫu đầy đủ để xem thử toàn bộ giao diện (KPIs, Biểu đồ sao, Bác sĩ, Nhận xét)
+  const sampleReportData = useMemo(() => {
+    const doc1 = doctorsList[0]?.fullName ? `BS. ${doctorsList[0].fullName}` : 'BS. CKII. Trần Minh Tuấn'
+    const doc2 = doctorsList[1]?.fullName ? `BS. ${doctorsList[1].fullName}` : 'ThS. BS. Nguyễn Văn An'
+    const doc3 = doctorsList[2]?.fullName ? `BS. ${doctorsList[2].fullName}` : 'BS. CKI. Lê Thị Mai'
+    const doc4 = doctorsList[3]?.fullName ? `BS. ${doctorsList[3].fullName}` : 'BS. Phạm Hoàng Nam'
+    const doc5 = doctorsList[4]?.fullName ? `BS. ${doctorsList[4].fullName}` : 'BS. Đỗ Mỹ Linh'
+
+    const id1 = doctorsList[0]?.id || 'doc-001'
+    const id2 = doctorsList[1]?.id || 'doc-002'
+    const id3 = doctorsList[2]?.id || 'doc-003'
+    const id4 = doctorsList[3]?.id || 'doc-004'
+    const id5 = doctorsList[4]?.id || 'doc-005'
+
+    const allDoctors = [
+      { doctorId: id1, doctorName: doc1, specialtyName: 'Khoa Nội tổng quát', totalSurveys: 68, averageScore: 4.85, satisfactionRate: 97.1 },
+      { doctorId: id2, doctorName: doc2, specialtyName: 'Khoa Tim mạch', totalSurveys: 54, averageScore: 4.70, satisfactionRate: 92.6 },
+      { doctorId: id3, doctorName: doc3, specialtyName: 'Khoa Nhi', totalSurveys: 42, averageScore: 4.45, satisfactionRate: 88.1 },
+      { doctorId: id4, doctorName: doc4, specialtyName: 'Khoa Tai Mũi Họng', totalSurveys: 16, averageScore: 3.80, satisfactionRate: 68.8 },
+      { doctorId: id5, doctorName: doc5, specialtyName: 'Khoa Da liễu', totalSurveys: 0, averageScore: 0.0, satisfactionRate: 0 },
+    ]
+
+    const allFeedbacks = [
+      {
+        id: 'fb-01',
+        score: 5,
+        doctorId: id1,
+        doctorName: doc1,
+        createdAt: dayjs().subtract(1, 'day').format('YYYY-MM-DD 15:30'),
+        comment: 'Bác sĩ thăm khám vô cùng kỹ lưỡng, giải thích cặn kẽ tình trạng bệnh và dặn dò chu đáo. Phòng khám sạch sẽ, điều dưỡng hỗ trợ tận tình!',
+      },
+      {
+        id: 'fb-02',
+        score: 5,
+        doctorId: id2,
+        doctorName: doc2,
+        createdAt: dayjs().subtract(2, 'day').format('YYYY-MM-DD 10:15'),
+        comment: 'Bác sĩ tư vấn rất có tâm, đơn thuốc hiệu quả rõ rệt sau 3 ngày điều trị. Đặt lịch qua cổng nhanh chóng không phải chờ đợi lâu.',
+      },
+      {
+        id: 'fb-03',
+        score: 4,
+        doctorId: id3,
+        doctorName: doc3,
+        createdAt: dayjs().subtract(3, 'day').format('YYYY-MM-DD 16:45'),
+        comment: 'Bác sĩ rất nhẹ nhàng và kiên nhẫn khi khám cho bé. Tuy nhiên thời gian chờ làm xét nghiệm máu hơi lâu một chút.',
+      },
+      {
+        id: 'fb-04',
+        score: 4,
+        doctorId: id1,
+        doctorName: doc1,
+        createdAt: dayjs().subtract(4, 'day').format('YYYY-MM-DD 11:20'),
+        comment: 'Dịch vụ khám chữa bệnh chất lượng tốt, bác sĩ giải thích dễ hiểu. Cơ sở vật chất khang trang, tiếp đón lịch sự.',
+      },
+      {
+        id: 'fb-05',
+        score: 3,
+        doctorId: id4,
+        doctorName: doc4,
+        createdAt: dayjs().subtract(5, 'day').format('YYYY-MM-DD 09:30'),
+        comment: 'Bác sĩ khám nhanh, chuyên môn tốt nhưng tư vấn hơi vội vã. Thời gian chờ tại sảnh tầng 2 hơi ồn ào vào đầu giờ sáng.',
+      },
+      {
+        id: 'fb-06',
+        score: 3,
+        doctorId: id3,
+        doctorName: doc3,
+        createdAt: dayjs().subtract(6, 'day').format('YYYY-MM-DD 14:10'),
+        comment: 'Bác sĩ khám kỹ nhưng khu vực quầy phát thuốc đợi hơi đông bệnh nhân, đề xuất phân luồng ưu tiên cho trẻ nhỏ.',
+      },
+      {
+        id: 'fb-07',
+        score: 2,
+        doctorId: id4,
+        doctorName: doc4,
+        createdAt: dayjs().subtract(7, 'day').format('YYYY-MM-DD 16:00'),
+        comment: 'Bác sĩ khám khá gấp gáp, chưa giải thích rõ cách dùng thuốc xịt cho bệnh nhân. Thái độ nhân viên hướng dẫn tại cửa phòng khám chưa thực sự nhiệt tình.',
+      },
+      {
+        id: 'fb-08',
+        score: 1,
+        doctorId: id4,
+        doctorName: doc4,
+        createdAt: dayjs().subtract(9, 'day').format('YYYY-MM-DD 10:40'),
+        comment: 'Tôi đã đặt hẹn trước 9h nhưng đến nơi phải chờ hơn 40 phút mới được gọi vào khám. Bác sĩ không giải thích lý do bị trễ giờ hẹn.',
+      },
+    ]
+
+    if (selectedDoctorId) {
+      const filteredDocs = allDoctors.filter((d) => String(d.doctorId) === String(selectedDoctorId))
+      const filteredFbs = allFeedbacks.filter((f) => String(f.doctorId) === String(selectedDoctorId))
+      const doc = filteredDocs[0]
+      return {
+        from: dateRange[0]?.format('YYYY-MM-DD') || '2026-09-01',
+        to: dateRange[1]?.format('YYYY-MM-DD') || '2026-09-29',
+        generatedAt: new Date().toISOString(),
+        totalSurveys: doc?.totalSurveys || 0,
+        averageScore: doc?.averageScore || 0,
+        scoreDistribution: doc?.totalSurveys > 0 ? { 5: 8, 4: 4, 3: 2, 2: 1, 1: 1 } : {},
+        doctors: filteredDocs,
+        feedbacks: filteredFbs,
+      }
+    }
+
+    return {
+      from: dateRange[0]?.format('YYYY-MM-DD') || '2026-09-01',
+      to: dateRange[1]?.format('YYYY-MM-DD') || '2026-09-29',
+      generatedAt: new Date().toISOString(),
+      totalSurveys: 180,
+      averageScore: 4.65,
+      scoreDistribution: {
+        5: 120,
+        4: 42,
+        3: 11,
+        2: 5,
+        1: 2,
+      },
+      doctors: allDoctors,
+      feedbacks: allFeedbacks,
+    }
+  }, [doctorsList, selectedDoctorId, dateRange])
+
+  // Quyết định dùng dữ liệu mẫu hay dữ liệu thật từ backend
+  const isUsingSampleData = Boolean(demoMode && (!reportData || reportData.totalSurveys === 0))
+  const effectiveReportData = isUsingSampleData ? sampleReportData : reportData
+
   // Tính toán KPIs
   const kpis = useMemo(() => {
-    return calculateSatisfactionKpis(reportData || {})
-  }, [reportData])
+    return calculateSatisfactionKpis(effectiveReportData || {})
+  }, [effectiveReportData])
 
   // Danh sách Bác sĩ đã xếp hạng
   const sortedDoctors = useMemo(() => {
     return sortAndFilterDoctorSummaries(
-      reportData?.doctors || [],
+      effectiveReportData?.doctors || [],
       doctorSortKey,
       doctorSortOrder,
     )
-  }, [reportData?.doctors, doctorSortKey, doctorSortOrder])
+  }, [effectiveReportData?.doctors, doctorSortKey, doctorSortOrder])
 
   // Danh sách nhận xét chi tiết (Lấy từ báo cáo hoặc trích xuất từ dữ liệu phản ánh)
   const rawComments = useMemo(() => {
-    if (reportData?.feedbacks && Array.isArray(reportData.feedbacks)) {
-      return reportData.feedbacks
+    if (effectiveReportData?.feedbacks && Array.isArray(effectiveReportData.feedbacks)) {
+      return effectiveReportData.feedbacks
     }
 
     // Nếu backend chưa có feedback list riêng, tạo mẫu dữ liệu minh họa đại diện cho các lượt đánh giá đã gửi
-    if (!reportData || kpis.totalSurveys === 0) return []
+    if (!effectiveReportData || kpis.totalSurveys === 0) return []
 
     // Xây dựng danh sách nhận xét tương ứng với phân bố điểm số thực tế
     const mockFeedbacks = []
@@ -160,7 +292,7 @@ function SatisfactionReportPage() {
       mockFeedbacks.push({
         id: 'fb-501',
         score: 5,
-        doctorName: reportData.doctors?.[0]?.doctorName || 'BS. CKII. Trần Minh Tuấn',
+        doctorName: effectiveReportData.doctors?.[0]?.doctorName || 'BS. CKII. Trần Minh Tuấn',
         createdAt: dayjs(dateRange[1]).subtract(1, 'day').format('YYYY-MM-DD HH:mm'),
         comment: 'Bác sĩ thăm khám rất kỹ càng, giải thích bệnh rõ ràng và dặn dò chu đáo. Tôi rất an tâm!',
       })
@@ -169,7 +301,7 @@ function SatisfactionReportPage() {
       mockFeedbacks.push({
         id: 'fb-401',
         score: 4,
-        doctorName: reportData.doctors?.[1]?.doctorName || 'BS. Nguyễn Văn An',
+        doctorName: effectiveReportData.doctors?.[1]?.doctorName || 'BS. Nguyễn Văn An',
         createdAt: dayjs(dateRange[1]).subtract(2, 'day').format('YYYY-MM-DD HH:mm'),
         comment: 'Phòng khám sạch sẽ, điều dưỡng hướng dẫn nhiệt tình. Thời gian chờ xét nghiệm hơi lâu một chút nhưng chấp nhận được.',
       })
@@ -178,7 +310,7 @@ function SatisfactionReportPage() {
       mockFeedbacks.push({
         id: 'fb-301',
         score: 3,
-        doctorName: reportData.doctors?.[0]?.doctorName || 'BS. CKII. Trần Minh Tuấn',
+        doctorName: effectiveReportData.doctors?.[0]?.doctorName || 'BS. CKII. Trần Minh Tuấn',
         createdAt: dayjs(dateRange[1]).subtract(4, 'day').format('YYYY-MM-DD HH:mm'),
         comment: 'Bác sĩ khám nhanh, mong muốn bác sĩ tư vấn kỹ hơn về chế độ ăn kiêng cho bệnh trào ngược.',
       })
@@ -187,7 +319,7 @@ function SatisfactionReportPage() {
       mockFeedbacks.push({
         id: 'fb-201',
         score: 2,
-        doctorName: reportData.doctors?.[1]?.doctorName || 'BS. Nguyễn Văn An',
+        doctorName: effectiveReportData.doctors?.[1]?.doctorName || 'BS. Nguyễn Văn An',
         createdAt: dayjs(dateRange[1]).subtract(5, 'day').format('YYYY-MM-DD HH:mm'),
         comment: 'Phải chờ hơn 45 phút dù đã đặt lịch trước qua cổng. Bác sĩ cần lắng nghe bệnh nhân nhiều hơn.',
       })
@@ -196,14 +328,14 @@ function SatisfactionReportPage() {
       mockFeedbacks.push({
         id: 'fb-101',
         score: 1,
-        doctorName: reportData.doctors?.[2]?.doctorName || 'BS. Lê Thị Mai',
+        doctorName: effectiveReportData.doctors?.[2]?.doctorName || 'BS. Lê Thị Mai',
         createdAt: dayjs(dateRange[1]).subtract(6, 'day').format('YYYY-MM-DD HH:mm'),
         comment: 'Thái độ của nhân viên quầy thuốc chưa niềm nở, phòng khám cần chấn chỉnh văn hóa giao tiếp.',
       })
     }
 
     return mockFeedbacks
-  }, [reportData, kpis, dateRange])
+  }, [effectiveReportData, kpis, dateRange])
 
   // Lọc nhận xét theo mức sao
   const filteredComments = useMemo(() => {
@@ -350,12 +482,42 @@ function SatisfactionReportPage() {
               id="select-doctor-filter"
             />
 
+            <Button
+              icon={<EyeOutlined />}
+              type={isUsingSampleData ? 'primary' : 'default'}
+              onClick={() => setDemoMode((prev) => !prev)}
+              style={
+                isUsingSampleData
+                  ? { backgroundColor: '#0284c7', borderColor: '#0284c7', fontWeight: 600 }
+                  : { fontWeight: 500 }
+              }
+              id="btn-toggle-demo-data"
+            >
+              {isUsingSampleData ? 'Dữ liệu thử nghiệm (Đang bật)' : 'Hiện thử toàn bộ dữ liệu'}
+            </Button>
+
             <Button icon={<ReloadOutlined />} onClick={fetchReport} loading={loading}>
               Làm mới
             </Button>
           </Space>
         </div>
       </div>
+
+      {isUsingSampleData && (
+        <Alert
+          type="info"
+          showIcon
+          icon={<EyeOutlined />}
+          message="Đang hiển thị toàn bộ dữ liệu mẫu (Demo Preview)"
+          description="Do kỳ thực tế này chưa có bệnh nhân gửi đánh giá, hệ thống đã kích hoạt bộ dữ liệu minh họa phong phú (180 đánh giá, phân bổ 5 mức sao, bảng xếp hạng 5 bác sĩ và 8 nhận xét chi tiết) để bạn kiểm tra trực quan tất cả các khối tính năng."
+          action={
+            <Button size="small" onClick={() => setDemoMode(false)}>
+              Xem trạng thái thực tế
+            </Button>
+          }
+          style={{ marginBottom: 20, borderRadius: 10, background: '#f0f9ff', borderColor: '#bae6fd' }}
+        />
+      )}
 
       {errorMessage && (
         <Alert
@@ -388,9 +550,14 @@ function SatisfactionReportPage() {
               </div>
             }
           >
-            <Button type="primary" onClick={() => handleSelectPreset(DATE_PRESETS.THIRTY_DAYS)}>
-              Xem 30 ngày qua
-            </Button>
+            <Space style={{ marginTop: 12 }}>
+              <Button type="primary" onClick={() => handleSelectPreset(DATE_PRESETS.THIRTY_DAYS)}>
+                Xem 30 ngày qua
+              </Button>
+              <Button icon={<EyeOutlined />} onClick={() => setDemoMode(true)}>
+                Hiện thử toàn bộ dữ liệu mẫu
+              </Button>
+            </Space>
           </Empty>
         </Card>
       ) : (
