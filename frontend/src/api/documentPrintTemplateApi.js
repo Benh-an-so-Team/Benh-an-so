@@ -35,7 +35,7 @@ const documentPrintTemplateApi = {
   getAuditHistory: (params = {}) =>
     axiosClient.get('/admin-operation-logs', {
       params: {
-        resourceType: 'SYSTEM_CONFIG',
+        resourceType: 'CONFIGURATION',
         ...params,
       },
     }),

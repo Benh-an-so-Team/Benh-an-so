@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
+  App,
   Badge,
   Button,
   Form,
@@ -17,7 +18,6 @@ import {
   Tooltip,
   Typography,
   Upload,
-  message,
 } from 'antd'
 import {
   AuditOutlined,
@@ -59,6 +59,7 @@ const { TextArea } = Input
 
 export default function DocumentPrintTemplatePage() {
   const { user } = useAuthContext()
+  const { message, modal } = App.useApp()
 
   // User roles check - Admin only
   const isAdmin = useMemo(() => {
@@ -232,7 +233,7 @@ export default function DocumentPrintTemplatePage() {
   // Handle Tab Switch with Unsaved Confirmation
   const handleTabChange = (nextKey) => {
     if (isCurrentFormDirty) {
-      Modal.confirm({
+      modal.confirm({
         title: 'Bạn có thay đổi chưa áp dụng',
         icon: <ExclamationCircleOutlined />,
         content:
@@ -331,14 +332,41 @@ export default function DocumentPrintTemplatePage() {
       return
     }
 
+    if (current.logoUrl && current.logoUrl.startsWith('data:')) {
+      modal.error({
+        title: 'Định dạng logo chưa hợp lệ',
+        content:
+          'Ảnh logo đang ở dạng dữ liệu cục bộ (Base64) chưa được tải lên hệ thống. Vui lòng bấm "Tải ảnh logo lên" để tải ảnh lên máy chủ hoặc nhập liên kết ảnh hợp lệ trước khi áp dụng mẫu.',
+      })
+      return
+    }
+
+    if (current.logoUrl && current.logoUrl.length > 1000) {
+      modal.error({
+        title: 'Đường dẫn logo vượt quá giới hạn',
+        content: 'Đường dẫn ảnh logo không được vượt quá 1000 ký tự.',
+      })
+      return
+    }
+
+    if (current.legalInfo && current.legalInfo.length > 1000) {
+      message.error('Thông tin pháp lý không được vượt quá 1000 ký tự.')
+      return
+    }
+
+    if (current.footerText && current.footerText.length > 1000) {
+      message.error('Nội dung chân trang không được vượt quá 1000 ký tự.')
+      return
+    }
+
     setSaving(true)
     try {
       const payload = {
         templateName: current.templateName.trim(),
         title: current.title.trim(),
-        logoUrl: current.logoUrl || null,
-        legalInfo: current.legalInfo || null,
-        footerText: current.footerText || null,
+        logoUrl: current.logoUrl ? current.logoUrl.trim() : null,
+        legalInfo: current.legalInfo ? current.legalInfo.trim() : null,
+        footerText: current.footerText ? current.footerText.trim() : null,
         showLogo: Boolean(current.showLogo),
         fieldVisibility: serializeFieldVisibility(current.fieldVisibility),
       }
@@ -358,10 +386,13 @@ export default function DocumentPrintTemplatePage() {
         fetchAuditHistory()
       }
     } catch (err) {
+      const fieldErrors = err?.response?.data?.details?.fields || err?.response?.data?.fields
+      const fieldMsg = fieldErrors ? Object.values(fieldErrors).join(', ') : null
       const errMsg =
+        fieldMsg ||
         err?.response?.data?.message ||
         'Không thể áp dụng mẫu in hoặc lỗi ghi nhật ký thao tác. Hệ thống đã giữ nguyên mẫu in cũ.'
-      Modal.error({
+      modal.error({
         title: 'Áp dụng mẫu in thất bại',
         content: errMsg,
       })
@@ -843,6 +874,7 @@ export default function DocumentPrintTemplatePage() {
                       value={currentTemplate.logoUrl}
                       onChange={(e) => updateCurrentField('logoUrl', e.target.value)}
                       allowClear
+                      maxLength={1000}
                       id="input-logo-url"
                     />
                   </div>
