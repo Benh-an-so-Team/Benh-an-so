@@ -347,7 +347,7 @@ export default function SpecialControlledDrugRegisterPage() {
         }}
       >
         <Row gutter={[12, 12]} align="middle">
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={6} lg={5} xl={5}>
             <Input
               placeholder="Tìm theo mã sổ, tên bệnh nhân, tên thuốc..."
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
@@ -359,7 +359,7 @@ export default function SpecialControlledDrugRegisterPage() {
             />
           </Col>
 
-          <Col xs={24} sm={12} md={5}>
+          <Col xs={24} sm={12} md={5} lg={4} xl={4}>
             <Select
               style={{ width: '100%', height: 40 }}
               value={selectedGroup}
@@ -377,7 +377,7 @@ export default function SpecialControlledDrugRegisterPage() {
             />
           </Col>
 
-          <Col xs={24} sm={12} md={4}>
+          <Col xs={24} sm={12} md={4} lg={4} xl={4}>
             <Select
               style={{ width: '100%', height: 40 }}
               value={selectedActionType}
@@ -393,7 +393,7 @@ export default function SpecialControlledDrugRegisterPage() {
             />
           </Col>
 
-          <Col xs={24} sm={12} md={5}>
+          <Col xs={24} sm={12} md={5} lg={5} xl={5}>
             <RangePicker
               value={dateRange}
               onChange={(dates) => {
@@ -406,13 +406,20 @@ export default function SpecialControlledDrugRegisterPage() {
             />
           </Col>
 
-          <Col xs={24} sm={12} md={4} style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <Col xs={24} sm={12} md={4} lg={6} xl={6} style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', alignItems: 'center' }}>
             <Button
               icon={<ReloadOutlined />}
               onClick={handleResetFilters}
-              style={{ height: 40, minWidth: 40 }}
+              style={{
+                height: 40,
+                minWidth: 92,
+                borderRadius: 6,
+                marginLeft: 4,
+              }}
               title="Đặt lại bộ lọc"
-            />
+            >
+              Đặt lại
+            </Button>
             <Button
               type="primary"
               icon={<DownloadOutlined />}
@@ -423,6 +430,8 @@ export default function SpecialControlledDrugRegisterPage() {
                 fontWeight: 600,
                 backgroundColor: '#0284c7',
                 borderColor: '#0284c7',
+                borderRadius: 6,
+                whiteSpace: 'nowrap',
               }}
             >
               Xuất Excel / CSV

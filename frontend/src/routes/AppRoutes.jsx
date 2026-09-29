@@ -19,6 +19,7 @@ const PatientMedicalHistoryPage = React.lazy(() => import('../pages/PatientMedic
 const PatientMyInvoicesPage = React.lazy(() => import('../pages/PatientMyInvoicesPage'))
 const PatientMyClinicalResultsPage = React.lazy(() => import('../pages/PatientMyClinicalResultsPage'))
 const Dashboard = React.lazy(() => import('../pages/Dashboard'))
+const DoctorDashboardPage = React.lazy(() => import('../pages/DoctorDashboardPage'))
 const PatientList = React.lazy(() => import('../pages/PatientList'))
 const PatientImportPage = React.lazy(() => import('../pages/PatientImportPage'))
 const PatientDetail = React.lazy(() => import('../pages/PatientDetail'))
@@ -160,6 +161,8 @@ function AppRoutes() {
         }
       >
         <Route index element={<LazyPage><Dashboard /></LazyPage>} />
+        <Route path="doctor/dashboard" element={<PrivateRoute allowedRoles={['doctor', 'admin']}><LazyPage><DoctorDashboardPage /></LazyPage></PrivateRoute>} />
+        <Route path="doctor-dashboard" element={<Navigate to="/doctor/dashboard" replace />} />
         <Route path="patients" element={<PrivateRoute allowedPermissions={['PATIENT_READ', 'PATIENT_CREATE', 'PATIENT_UPDATE']} allowedRoles={['admin', 'doctor', 'receptionist']}><LazyPage><PatientList /></LazyPage></PrivateRoute>} />
         <Route path="patients/import" element={<PrivateRoute allowedPermissions={['PATIENT_IMPORT']} allowedRoles={['admin', 'receptionist']}><LazyPage><PatientImportPage /></LazyPage></PrivateRoute>} />
         <Route path="patients/:id" element={<PrivateRoute allowedPermissions={['PATIENT_READ', 'PATIENT_CREATE', 'PATIENT_UPDATE']} allowedRoles={['admin', 'doctor', 'receptionist']}><LazyPage><PatientDetail /></LazyPage></PrivateRoute>} />

@@ -323,14 +323,14 @@ export default function ContraindicationRuleManagementPage() {
     {
       title: 'Hoạt chất / Thuốc',
       key: 'target',
-      width: 220,
+      width: 170,
       render: (_, record) => (
         <div>
-          <Text strong style={{ color: '#1e293b', fontSize: 14 }}>
+          <div style={{ color: '#0f172a', fontWeight: 600, fontSize: 13, lineHeight: '18px' }}>
             {record.activeIngredient || record.medicineName || 'Toàn danh mục'}
-          </Text>
+          </div>
           {record.medicineName && (
-            <div style={{ fontSize: 12, color: '#64748b' }}>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, lineHeight: '16px' }}>
               Biệt dược: {record.medicineName}
             </div>
           )}
@@ -341,59 +341,59 @@ export default function ContraindicationRuleManagementPage() {
       title: 'Loại chống chỉ định',
       dataIndex: 'type',
       key: 'type',
-      width: 170,
+      width: 140,
       render: (type) => {
         const meta = CONTRAINDICATION_TYPE_META[type] || { label: type, tagColor: 'default' }
-        return <Tag color={meta.tagColor} style={{ fontWeight: 600 }}>{meta.label}</Tag>
+        return <Tag color={meta.tagColor} style={{ fontWeight: 600, fontSize: 12, margin: 0, whiteSpace: 'nowrap' }}>{meta.label}</Tag>
       },
     },
     {
       title: 'Điều kiện lâm sàng',
       key: 'condition',
-      width: 200,
+      width: 160,
       render: (_, record) => {
         if (record.type === 'AGE') {
           if (record.minAgeYears != null && record.maxAgeYears != null) {
-            return `Từ ${record.minAgeYears} đến ${record.maxAgeYears} tuổi`
+            return <span style={{ fontSize: 12, color: '#334155', whiteSpace: 'nowrap' }}>Từ {record.minAgeYears} đến {record.maxAgeYears} tuổi</span>
           }
-          if (record.minAgeYears != null) return `Dưới ${record.minAgeYears} tuổi`
-          if (record.maxAgeYears != null) return `Trên ${record.maxAgeYears} tuổi`
+          if (record.minAgeYears != null) return <span style={{ fontSize: 12, color: '#334155', whiteSpace: 'nowrap' }}>Dưới {record.minAgeYears} tuổi</span>
+          if (record.maxAgeYears != null) return <span style={{ fontSize: 12, color: '#334155', whiteSpace: 'nowrap' }}>Trên {record.maxAgeYears} tuổi</span>
         }
         if (record.type === 'PREGNANCY') {
-          return <Tag color="pink">Phụ nữ có thai</Tag>
+          return <Tag color="pink" style={{ margin: 0, fontSize: 12, whiteSpace: 'nowrap' }}>Phụ nữ có thai</Tag>
         }
         if (record.type === 'BREASTFEEDING') {
-          return <Tag color="purple">Phụ nữ cho con bú</Tag>
+          return <Tag color="purple" style={{ margin: 0, fontSize: 12, whiteSpace: 'nowrap' }}>Phụ nữ cho con bú</Tag>
         }
         if (record.type === 'DISEASE') {
           const diagInfo = getDiagnosisInfo(record, diagnosisMap)
           if (diagInfo.code && diagInfo.name) {
             return (
-              <Tag color="cyan" style={{ fontSize: 13, padding: '2px 8px' }}>
+              <Tag color="cyan" style={{ fontSize: 12, padding: '1px 7px', margin: 0, whiteSpace: 'nowrap' }}>
                 <strong style={{ color: '#0369a1' }}>{diagInfo.code}</strong> - {diagInfo.name}
               </Tag>
             )
           }
           if (diagInfo.displayText && diagInfo.displayText !== '—') {
             return (
-              <Tag color="cyan" style={{ fontSize: 13, padding: '2px 8px' }}>
+              <Tag color="cyan" style={{ fontSize: 12, padding: '1px 7px', margin: 0, whiteSpace: 'nowrap' }}>
                 {diagInfo.displayText}
               </Tag>
             )
           }
-          return <Tag color="cyan">Bệnh nền mạn tính</Tag>
+          return <Tag color="cyan" style={{ margin: 0, fontSize: 12, whiteSpace: 'nowrap' }}>Bệnh nền mạn tính</Tag>
         }
-        return '—'
+        return <span style={{ color: '#94a3b8' }}>—</span>
       },
     },
     {
       title: 'Mức độ',
       dataIndex: 'severity',
       key: 'severity',
-      width: 170,
+      width: 145,
       render: (sev) => {
         const meta = CONTRAINDICATION_SEVERITY_META[sev] || { label: sev, tagColor: 'red' }
-        return <Tag color={meta.tagColor} style={{ fontWeight: 700 }}>{meta.label}</Tag>
+        return <Tag color={meta.tagColor} style={{ fontWeight: 700, fontSize: 12, margin: 0, whiteSpace: 'nowrap' }}>{meta.label}</Tag>
       },
     },
     {
@@ -401,9 +401,9 @@ export default function ContraindicationRuleManagementPage() {
       key: 'message',
       render: (_, record) => (
         <div>
-          <div style={{ color: '#0f172a', fontWeight: 500 }}>{record.message}</div>
+          <div style={{ color: '#0f172a', fontWeight: 500, fontSize: 13, lineHeight: '19px' }}>{record.message}</div>
           {record.recommendation && (
-            <div style={{ fontSize: 12, color: '#0369a1', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: '#0369a1', marginTop: 3, lineHeight: '17px' }}>
               <strong>Khuyến cáo:</strong> {record.recommendation}
             </div>
           )}
@@ -414,7 +414,8 @@ export default function ContraindicationRuleManagementPage() {
       title: 'Trạng thái',
       dataIndex: 'active',
       key: 'active',
-      width: 140,
+      width: 105,
+      align: 'center',
       render: (active, record) => (
         <Popconfirm
           title={active ? 'Xác nhận vô hiệu hóa quy tắc?' : 'Xác nhận kích hoạt lại quy tắc?'}
@@ -432,6 +433,7 @@ export default function ContraindicationRuleManagementPage() {
             checked={active}
             checkedChildren="Áp dụng"
             unCheckedChildren="Tạm dừng"
+            style={{ minWidth: 68 }}
             disabled={!canManage}
           />
         </Popconfirm>
@@ -440,23 +442,26 @@ export default function ContraindicationRuleManagementPage() {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 120,
+      width: 85,
+      align: 'center',
       render: (_, record) => (
-        <Space size="small">
+        <Space size={6}>
           <Tooltip title="Chỉnh sửa quy tắc">
             <Button
+              size="small"
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
+                width: 32,
+                height: 32,
+                borderRadius: 6,
                 backgroundColor: '#fef3c7',
                 borderColor: '#fde68a',
                 color: '#d97706',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                padding: 0,
               }}
-              icon={<EditOutlined style={{ fontSize: 16 }} />}
+              icon={<EditOutlined style={{ fontSize: 15 }} />}
               onClick={() => handleOpenEditModal(record)}
               disabled={!canManage}
             />
@@ -475,22 +480,24 @@ export default function ContraindicationRuleManagementPage() {
           >
             <Tooltip title={record.active ? 'Tạm dừng quy tắc' : 'Kích hoạt lại'}>
               <Button
+                size="small"
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 6,
                   backgroundColor: record.active ? '#fee2e2' : '#dcfce7',
                   borderColor: record.active ? '#fecaca' : '#bbf7d0',
                   color: record.active ? '#dc2626' : '#16a34a',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  padding: 0,
                 }}
                 icon={
                   record.active ? (
-                    <StopOutlined style={{ fontSize: 16 }} />
+                    <StopOutlined style={{ fontSize: 15 }} />
                   ) : (
-                    <CheckCircleOutlined style={{ fontSize: 16 }} />
+                    <CheckCircleOutlined style={{ fontSize: 15 }} />
                   )
                 }
                 disabled={!canManage}
@@ -505,18 +512,18 @@ export default function ContraindicationRuleManagementPage() {
   const selectedTypeWatch = Form.useWatch('type', form)
 
   return (
-    <div style={{ padding: '24px', maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ padding: '16px 20px', maxWidth: '100%', margin: '0 auto' }}>
       {/* Header */}
       <Card style={{ marginBottom: 20, borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <Row justify="space-between" align="middle" gutter={[16, 16]}>
-          <Col xs={24} md={14}>
-            <Title level={3} style={{ margin: 0, color: '#0f172a' }}>
+          <Col flex="auto">
+            <Title level={3} style={{ margin: 0, color: '#0f172a', whiteSpace: 'nowrap' }}>
               <MedicineBoxOutlined style={{ color: '#0284c7', marginRight: 10 }} />
               Quản lý danh mục quy tắc chống chỉ định
             </Title>
           </Col>
-          <Col xs={24} md={10} style={{ textAlign: 'right' }}>
-            <Space wrap>
+          <Col style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+            <Space wrap={false} size="middle" style={{ flexWrap: 'nowrap' }}>
               <Button
                 icon={<ReloadOutlined />}
                 onClick={loadRules}
@@ -605,12 +612,32 @@ export default function ContraindicationRuleManagementPage() {
       </Card>
 
       {/* Bảng danh sách */}
-      <Card style={{ borderRadius: 8 }}>
+      <Card style={{ borderRadius: 8, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }} bodyStyle={{ padding: 0 }}>
+        <style>{`
+          .contraindication-table .ant-table-cell {
+            vertical-align: top !important;
+            padding: 12px 10px !important;
+          }
+          .contraindication-table .ant-table-thead > tr > th {
+            font-weight: 600 !important;
+            font-size: 13px !important;
+            background-color: #f8fafc !important;
+            color: #334155 !important;
+            white-space: nowrap !important;
+            padding: 12px 10px !important;
+          }
+          .contraindication-table .ant-table-pagination.ant-pagination {
+            margin: 16px !important;
+          }
+        `}</style>
         <Table
           rowKey="id"
           columns={columns}
           dataSource={rules}
           loading={loading}
+          size="middle"
+          scroll={{ x: 1050 }}
+          className="contraindication-table"
           pagination={{
             current: page,
             pageSize: pageSize,

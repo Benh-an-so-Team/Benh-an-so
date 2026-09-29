@@ -4,7 +4,7 @@ import { Alert, message } from 'antd'
 import { useAuthContext } from '../context/AuthContext.jsx'
 import { getDefaultHomePath } from '../components/layout/navigationConfig.js'
 import { popSessionExpiredNotice } from '../utils/sessionManagementHelpers.js'
-import './login.css'
+import './styles/login.css'
 
 const FLOATING_ICONS = [
   { id: 1, name: 'cross', left: '10%', top: '14%', size: 46, depth: 16, duration: '5.2s', delay: '-1.2s', rotate: '14deg', opacity: 0.75 },

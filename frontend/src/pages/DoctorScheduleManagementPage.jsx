@@ -59,7 +59,7 @@ import { getApiErrorMessage } from '../utils/apiError.js'
 import { useAuthContext } from '../context/AuthContext.jsx'
 import AffectedAppointmentsModal from '../components/doctor-schedule/AffectedAppointmentsModal.jsx'
 import RegisterTimeOffModal from '../components/doctor-schedule/RegisterTimeOffModal.jsx'
-import './doctorScheduleManagement.css'
+import './styles/doctorScheduleManagement.css'
 
 const { Title, Text } = Typography
 
