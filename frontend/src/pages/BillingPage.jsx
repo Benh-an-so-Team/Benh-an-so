@@ -1387,6 +1387,10 @@ function BillingPage() {
                                     ({selectedVisitData.prescriptionItems.length} loại thuốc)
                                   </Text>
                                 </Space>
+                              ) : selectedVisitData.prescriptionStatus === 'REPLACED' ? (
+                                <Tag color="purple" style={{ margin: 0, fontWeight: 600 }}>
+                                  Đã bị thay thế ({selectedVisitData.prescriptionCode || 'REPLACED'})
+                                </Tag>
                               ) : selectedVisitData.prescriptionStatus ? (
                                 <Tag color="volcano" style={{ margin: 0 }}>{selectedVisitData.prescriptionStatus}</Tag>
                               ) : (

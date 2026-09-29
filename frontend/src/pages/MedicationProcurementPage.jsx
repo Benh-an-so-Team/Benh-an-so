@@ -65,7 +65,7 @@ import {
   hasEnoughConsumptionHistory,
   validateProcurementPlanForm,
 } from '../utils/medicationProcurementHelpers.js'
-import './medicationProcurement.css'
+import './styles/medicationProcurement.css'
 
 const { Title, Text, Paragraph } = Typography
 const { RangePicker } = DatePicker

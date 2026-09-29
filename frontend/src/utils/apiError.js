@@ -156,6 +156,8 @@ export const DOMAIN_ERROR_MESSAGES = {
     'Đơn thuốc chưa đủ điều kiện pháp lý để in ấn (cần lưu và ký trước).',
   UNAUTHORIZED_PRESCRIPTION_AMENDMENT:
     'Chỉ Bác sĩ kê đơn hoặc Bác sĩ phụ trách mới có quyền điều chỉnh đơn thuốc.',
+  UNAUTHORIZED_PRESCRIPTION_REPLACEMENT:
+    'Chỉ Bác sĩ trực tiếp kê đơn gốc mới có quyền phát hành đơn thuốc thay thế.',
 
   CLINICAL_ORDER_ALREADY_CANCELLED:
     'Phiếu chỉ định cận lâm sàng này đã bị hủy trước đó.',

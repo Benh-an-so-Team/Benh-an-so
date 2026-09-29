@@ -61,6 +61,36 @@ public class DoctorScheduleValidator {
         return Optional.empty();
     }
 
+    public boolean isDoctorWorkingAndAvailable(UUID doctorId, Instant startTime, Instant endTime) {
+        ZonedDateTime startZoned = startTime.atZone(CLINIC_ZONE);
+        ZonedDateTime endZoned = endTime.atZone(CLINIC_ZONE);
+
+        LocalDate startDate = startZoned.toLocalDate();
+        LocalDate endDate = endZoned.toLocalDate();
+
+        if (!startDate.equals(endDate)) {
+            return false;
+        }
+
+        Optional<EffectiveWorkingHours> workingHoursOpt = resolveWorkingHours(doctorId, startDate);
+        if (workingHoursOpt.isEmpty()) {
+            return false;
+        }
+
+        LocalTime slotStartTime = startZoned.toLocalTime();
+        LocalTime slotEndTime = endZoned.toLocalTime();
+        EffectiveWorkingHours workingHours = workingHoursOpt.get();
+        if (slotStartTime.isBefore(workingHours.startTime()) || slotEndTime.isAfter(workingHours.endTime())) {
+            return false;
+        }
+
+        if (doctorTimeOffRepository.existsActiveOverlapping(doctorId, startTime, endTime)) {
+            return false;
+        }
+
+        return true;
+    }
+
     public void validateDoctorWorkingAndAvailable(UUID doctorId, Instant startTime, Instant endTime) {
         ZonedDateTime startZoned = startTime.atZone(CLINIC_ZONE);
         ZonedDateTime endZoned = endTime.atZone(CLINIC_ZONE);
@@ -90,3 +120,4 @@ public class DoctorScheduleValidator {
         }
     }
 }
+

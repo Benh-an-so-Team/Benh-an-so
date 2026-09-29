@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -97,6 +98,12 @@ class PreviewAppointmentSeriesServiceTest {
                 UUID.randomUUID(), true, null, NOW);
         when(userRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
 
+        when(appointmentSeriesValidator.generateSessionsSkippingDoctorOffDays(eq(doctorId), any(), anyInt(), anyInt(), anyInt()))
+                .thenReturn(List.of(
+                        new AppointmentSeriesValidator.SessionSlot(1, NOW.plusSeconds(86400), NOW.plusSeconds(86400 + 1800)),
+                        new AppointmentSeriesValidator.SessionSlot(2, NOW.plusSeconds(86400 * 8), NOW.plusSeconds(86400 * 8 + 1800)),
+                        new AppointmentSeriesValidator.SessionSlot(3, NOW.plusSeconds(86400 * 15), NOW.plusSeconds(86400 * 15 + 1800))
+                ));
         when(appointmentSeriesValidator.validateSessions(eq(doctorId), any())).thenReturn(List.of());
 
         PreviewAppointmentSeriesCommand command = PreviewAppointmentSeriesCommand.builder()

@@ -113,8 +113,8 @@ test('getDefaultHomePath directs each role to its primary allowed workspace with
   assert.equal(getDefaultHomePath(['clinic_manager']), '/')
   assert.equal(getDefaultHomePath([], ['DASHBOARD_OPERATIONAL_READ']), '/')
 
-  assert.equal(getDefaultHomePath(['doctor']), '/medical-records')
-  assert.equal(getDefaultHomePath(['ROLE_DOCTOR']), '/medical-records')
+  assert.equal(getDefaultHomePath(['doctor']), '/doctor/dashboard')
+  assert.equal(getDefaultHomePath(['ROLE_DOCTOR']), '/doctor/dashboard')
   assert.equal(getDefaultHomePath([], ['MEDICAL_RECORD_READ']), '/medical-records')
 
   assert.equal(getDefaultHomePath(['receptionist']), '/appointments')

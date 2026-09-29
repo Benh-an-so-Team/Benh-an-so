@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   Breadcrumb,
   Button,
@@ -26,20 +26,29 @@ import {
   FileDoneOutlined,
   FileProtectOutlined,
   HomeOutlined,
+  InfoCircleOutlined,
   MedicineBoxOutlined,
   PlusOutlined,
   ReloadOutlined,
   SwapOutlined,
   SyncOutlined,
+  TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 
 import patientPortalAppointmentApi from '../api/patientPortalAppointmentApi'
 import RescheduleAppointmentModal from '../components/portal/RescheduleAppointmentModal'
+import FamilyProfileSwitcher from '../components/portal/FamilyProfileSwitcher'
 import { useAuthContext } from '../context/AuthContext'
 import PatientNotificationBell from '../components/portal/PatientNotificationBell.jsx'
-import './patientMyAppointments.css'
+import {
+  createDefaultFallbackProfiles,
+  formatProfileRelationship,
+  validateAccessScope,
+} from '../utils/familyAppointmentHelpers.js'
+import { showNotice, NOTICE_LEVELS } from '../components/common/notice/index.js'
+import './styles/patientMyAppointments.css'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -54,6 +63,15 @@ const statusMeta = {
 
 function PatientMyAppointmentsPage() {
   const { user } = useAuthContext()
+  const [searchParams] = useSearchParams()
+  const initialProfileId = searchParams.get('profileId')
+
+  // Family profile states (NCL-14-CN-010)
+  const [profiles, setProfiles] = useState([])
+  const [selectedProfile, setSelectedProfile] = useState(null)
+  const [isViewAll, setIsViewAll] = useState(false)
+  const [profilesLoading, setProfilesLoading] = useState(false)
+
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('ALL')
@@ -67,7 +85,87 @@ function PatientMyAppointmentsPage() {
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false)
   const [rescheduleTargetAppointment, setRescheduleTargetAppointment] = useState(null)
 
-  const patientId = user?.patientId || user?.id
+  const selfId = String(user?.patientId || user?.id || 'self-patient-001')
+
+  // 0. Fetch Linked Profiles (NCL-14-CN-010)
+  useEffect(() => {
+    let isMounted = true
+    setProfilesLoading(true)
+
+    let unlinkedIds = []
+    try {
+      unlinkedIds = JSON.parse(localStorage.getItem('portal_unlinked_guardian_profiles') || '[]')
+    } catch {
+      unlinkedIds = []
+    }
+
+    patientPortalAppointmentApi
+      .getLinkedProfiles()
+      .then((res) => {
+        if (!isMounted) return
+        let list = Array.isArray(res.data) && res.data.length > 0 ? res.data : []
+        if (list.length === 0) {
+          list = createDefaultFallbackProfiles(user)
+        }
+        const filtered = list.filter((p) => !unlinkedIds.includes(String(p.patientId || p.id)))
+        setProfiles(filtered)
+
+        if (initialProfileId) {
+          const validation = validateAccessScope(initialProfileId, filtered)
+          if (validation.valid && validation.profile) {
+            setSelectedProfile(validation.profile)
+          } else {
+            showNotice({
+              level: NOTICE_LEVELS.WARNING,
+              title: 'Thông báo',
+              message: 'Không tìm thấy nội dung yêu cầu',
+            })
+            const selfProf = filtered.find((p) => p.self) || filtered[0]
+            setSelectedProfile(selfProf)
+          }
+        } else {
+          const selfProf = filtered.find((p) => p.self) || filtered[0]
+          setSelectedProfile(selfProf)
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return
+        const fallback = createDefaultFallbackProfiles(user).filter(
+          (p) => !unlinkedIds.includes(String(p.patientId || p.id))
+        )
+        setProfiles(fallback)
+        const selfProf = fallback.find((p) => p.self) || fallback[0]
+        setSelectedProfile(selfProf)
+      })
+      .finally(() => {
+        if (isMounted) setProfilesLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [user, initialProfileId])
+
+  const handleUnlinkProfile = async (profileToUnlink) => {
+    const pId = String(profileToUnlink.patientId || profileToUnlink.id)
+    try {
+      await patientPortalAppointmentApi.unlinkGuardianProfile(pId)
+    } catch {}
+
+    try {
+      const unlinkedIds = JSON.parse(localStorage.getItem('portal_unlinked_guardian_profiles') || '[]')
+      if (!unlinkedIds.includes(pId)) {
+        unlinkedIds.push(pId)
+        localStorage.setItem('portal_unlinked_guardian_profiles', JSON.stringify(unlinkedIds))
+      }
+    } catch {}
+
+    const updated = profiles.filter((p) => String(p.patientId || p.id) !== pId)
+    setProfiles(updated)
+    const selfProf = updated.find((p) => p.self) || updated[0] || null
+    setSelectedProfile(selfProf)
+    setIsViewAll(false)
+  }
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true)
@@ -78,24 +176,99 @@ function PatientMyAppointmentsPage() {
       cachedList = []
     }
 
+    const currentSelfId = String(user?.patientId || user?.id || 'self-patient-001')
+    const targetPatientId = (!isViewAll && selectedProfile && !selectedProfile.self)
+      ? selectedProfile.patientId
+      : null
+
     try {
-      const res = await patientPortalAppointmentApi.getMyAppointments(patientId)
-      const data = res.data
-      const apiList = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : []
-      const combined = [...apiList]
-      cachedList.forEach((cached) => {
-        if (!combined.some((item) => item.id === cached.id || (item.appointmentCode && item.appointmentCode === cached.appointmentCode))) {
-          combined.push(cached)
+      let combined = []
+
+      if (isViewAll) {
+        // Chế độ xem gộp tất cả người thân liên kết
+        const selfRes = await patientPortalAppointmentApi.getMyAppointments(null).catch(() => ({ data: [] }))
+        const selfData = selfRes.data
+        const selfList = Array.isArray(selfData?.content) ? selfData.content : Array.isArray(selfData) ? selfData : []
+        selfList.forEach((item) => {
+          combined.push({
+            ...item,
+            patientId: currentSelfId,
+            patientName: user?.fullName || 'Chính tôi',
+            patientRelationship: 'SELF',
+            isDependent: false,
+          })
+        })
+
+        // Tải lịch hẹn cho từng hồ sơ người thân phụ thuộc
+        const dependents = profiles.filter((p) => !p.self)
+        for (const dep of dependents) {
+          try {
+            const depRes = await patientPortalAppointmentApi.getMyAppointments(dep.patientId)
+            const depData = depRes.data
+            const depList = Array.isArray(depData?.content) ? depData.content : Array.isArray(depData) ? depData : []
+            depList.forEach((item) => {
+              combined.push({
+                ...item,
+                patientId: dep.patientId,
+                patientName: dep.fullName,
+                patientRelationship: dep.relationship,
+                isDependent: true,
+              })
+            })
+          } catch {}
         }
-      })
+
+        // Bổ sung các bản ghi đã lưu tạm trong local storage
+        cachedList.forEach((cached) => {
+          if (!combined.some((item) => item.id === cached.id || (item.appointmentCode && item.appointmentCode === cached.appointmentCode))) {
+            combined.push(cached)
+          }
+        })
+      } else {
+        // Chế độ xem theo từng hồ sơ đơn lẻ
+        const res = await patientPortalAppointmentApi.getMyAppointments(targetPatientId)
+        const data = res.data
+        const apiList = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : []
+        apiList.forEach((item) => {
+          combined.push({
+            ...item,
+            patientId: targetPatientId || currentSelfId,
+            patientName: selectedProfile?.fullName || user?.fullName || 'Bệnh nhân',
+            patientRelationship: selectedProfile?.relationship || 'SELF',
+            isDependent: Boolean(selectedProfile && !selectedProfile.self),
+          })
+        })
+
+        // Chỉ bổ sung các bản ghi cached thuộc đúng hồ sơ đang chọn
+        cachedList.forEach((cached) => {
+          const matchProfile = targetPatientId
+            ? (String(cached.patientId) === String(targetPatientId) || cached.patientName === selectedProfile?.fullName)
+            : (!cached.isDependent || String(cached.patientId) === currentSelfId)
+
+          if (matchProfile && !combined.some((item) => item.id === cached.id || (item.appointmentCode && item.appointmentCode === cached.appointmentCode))) {
+            combined.push(cached)
+          }
+        })
+      }
+
       const sorted = combined.sort((a, b) => new Date(b.startTime || b.createdAt) - new Date(a.startTime || a.createdAt))
       setAppointments(sorted)
     } catch {
-      setAppointments(cachedList)
+      // Fallback từ cache
+      if (isViewAll) {
+        setAppointments(cachedList)
+      } else {
+        const filteredCached = cachedList.filter((cached) => {
+          return targetPatientId
+            ? (String(cached.patientId) === String(targetPatientId) || cached.patientName === selectedProfile?.fullName)
+            : (!cached.isDependent || String(cached.patientId) === currentSelfId)
+        })
+        setAppointments(filteredCached)
+      }
     } finally {
       setLoading(false)
     }
-  }, [patientId])
+  }, [user, selectedProfile, isViewAll, profiles])
 
   useEffect(() => {
     fetchAppointments()
@@ -127,6 +300,10 @@ function PatientMyAppointmentsPage() {
 
   const canModifyAppointment = (apt) => {
     if (!apt) return false
+    // NCL-14-CN-010 §6: Lịch hẹn của người thân phụ thuộc KHÔNG cho phép đổi/hủy/xác nhận qua cổng
+    if (apt.isDependent || (selectedProfile && !selectedProfile.self)) return false
+    if (apt.patientId && String(apt.patientId) !== selfId) return false
+
     const validStatus = apt.status === 'SCHEDULED' || apt.status === 'CONFIRMED'
     const isFuture = apt.startTime ? dayjs(apt.startTime).isAfter(dayjs()) : true
     return validStatus && isFuture
@@ -370,6 +547,24 @@ function PatientMyAppointmentsPage() {
           />
         </div>
 
+        {/* Family Profile Switcher (NCL-14-CN-010) */}
+        <FamilyProfileSwitcher
+          profiles={profiles}
+          selectedProfileId={selectedProfile?.patientId || selectedProfile?.id}
+          onSelectProfile={(profile) => {
+            setSelectedProfile(profile)
+            setIsViewAll(false)
+          }}
+          mode="APPOINTMENTS"
+          allowViewAll={true}
+          isViewAll={isViewAll}
+          onToggleViewAll={(val) => {
+            setIsViewAll(val)
+          }}
+          onUnlinkProfile={handleUnlinkProfile}
+          loading={profilesLoading}
+        />
+
         <div className="portal-appointments-card-wrapper">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <div>
@@ -418,12 +613,24 @@ function PatientMyAppointmentsPage() {
           ) : filteredAppointments.length === 0 ? (
             <div style={{ padding: '48px 0', textAlign: 'center' }}>
               <Empty
-                description="Bạn chưa có lịch hẹn nào trong danh mục này."
+                description={
+                  isViewAll
+                    ? 'Chưa có lịch hẹn nào của các hồ sơ trong tài khoản.'
+                    : `Hồ sơ "${selectedProfile?.fullName || 'này'}" chưa có lịch hẹn nào trong danh mục này.`
+                }
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
               >
-                <Link to="/portal/book-appointment">
+                <Link
+                  to={
+                    selectedProfile && !selectedProfile.self
+                      ? `/portal/book-appointment?profileId=${selectedProfile.patientId}`
+                      : '/portal/book-appointment'
+                  }
+                >
                   <Button type="primary" icon={<PlusOutlined />} style={{ background: '#2563eb' }}>
-                    Đặt lịch khám ngay bây giờ
+                    {selectedProfile && !selectedProfile.self
+                      ? `Đặt lịch khám cho ${selectedProfile.fullName}`
+                      : 'Đặt lịch khám ngay bây giờ'}
                   </Button>
                 </Link>
               </Empty>
@@ -436,7 +643,6 @@ function PatientMyAppointmentsPage() {
                   color: 'default',
                   icon: null,
                 }
-                const canCancel = apt.status === 'SCHEDULED' || apt.status === 'CONFIRMED'
                 const startDayjs = apt.startTime ? dayjs(apt.startTime) : null
                 const endDayjs = apt.endTime ? dayjs(apt.endTime) : null
                 const doctorName = apt.doctor?.fullName || apt.doctor?.username || apt.doctorName || 'Bác sĩ phụ trách'
@@ -449,6 +655,17 @@ function PatientMyAppointmentsPage() {
                           <strong style={{ fontSize: 16, color: '#1e293b' }}>
                             Mã lịch hẹn: {apt.appointmentCode || apt.id?.substring(0, 8)}
                           </strong>
+                          {/* Tag gắn nhãn hồ sơ người khám */}
+                          <Tag
+                            color={apt.isDependent ? 'green' : 'blue'}
+                            icon={<UserOutlined />}
+                            style={{ fontWeight: 600, fontSize: 12 }}
+                          >
+                            Hồ sơ: {apt.patientName || (apt.isDependent ? 'Người thân' : (user?.fullName || 'Chính tôi'))}
+                            {apt.patientRelationship && apt.patientRelationship !== 'SELF'
+                              ? ` (${formatProfileRelationship(apt.patientRelationship)})`
+                              : ''}
+                          </Tag>
                           {apt.status === 'CONFIRMED' ? (
                             <Tag color="green" icon={<CheckCircleOutlined />} style={{ fontWeight: 600, fontSize: 12 }}>
                               Đã xác nhận sẽ đến
@@ -521,6 +738,11 @@ function PatientMyAppointmentsPage() {
                               Hủy lịch
                             </Button>
                           </Space>
+                        ) : (apt.isDependent || (selectedProfile && !selectedProfile.self)) ? (
+                          <div className="dependent-appointment-readonly-tip">
+                            <InfoCircleOutlined style={{ color: '#0284c7' }} />
+                            <span>Lịch hẹn của người thân (Chế độ theo dõi)</span>
+                          </div>
                         ) : (
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {apt.status === 'COMPLETED'

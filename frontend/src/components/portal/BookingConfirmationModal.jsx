@@ -18,9 +18,15 @@ import {
   ExclamationCircleOutlined,
   IdcardOutlined,
   MedicineBoxOutlined,
+  TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import {
+  formatProfileAge,
+  formatProfileRelationship,
+} from '../../utils/familyAppointmentHelpers.js'
+import { showNotice, NOTICE_LEVELS } from '../common/notice/index.js'
 
 const { Text, Paragraph } = Typography
 
@@ -32,6 +38,7 @@ function BookingConfirmationModal({
   selectedDate,
   selectedSlot,
   patient,
+  targetProfile,
   onSubmit,
   loading = false,
   onSuccessNavigate,
@@ -54,15 +61,26 @@ function BookingConfirmationModal({
         reason: values.reason?.trim() || 'Đặt lịch hẹn khám trực tuyến',
       }
 
+      // NCL-14-CN-010: Chỉ gửi patientId khi đặt cho người thân phụ thuộc (self = false)
+      if (targetProfile && !targetProfile.self && targetProfile.patientId) {
+        payload.patientId = targetProfile.patientId
+      }
+
       const result = await onSubmit(payload)
       if (result) {
         try {
           const cached = JSON.parse(localStorage.getItem('portal_booked_appointments') || '[]')
+          const effectivePatientId = targetProfile?.patientId || result.patientId || patient?.patientId || patient?.id
+          const effectivePatientName = targetProfile?.fullName || patient?.fullName || 'Bệnh nhân'
           const item = {
             id: result.id || String(Date.now()),
             appointmentCode: result.appointmentCode || result.id || `AP-${dayjs().format('YYYYMMDD')}-${Math.floor(100 + Math.random() * 900)}`,
             status: result.status || 'SCHEDULED',
             bookingChannel: 'ONLINE_PORTAL',
+            patientId: effectivePatientId,
+            patientName: effectivePatientName,
+            patientRelationship: targetProfile?.relationship || 'SELF',
+            isDependent: Boolean(targetProfile && !targetProfile.self),
             doctor: doctor || { fullName: 'Bác sĩ phụ trách' },
             doctorName: doctor?.fullName || doctor?.username,
             specialtyName: specialty?.name,
@@ -76,6 +94,11 @@ function BookingConfirmationModal({
           // ignore storage error
         }
         setBookingSuccess(result)
+        showNotice({
+          level: NOTICE_LEVELS.SUCCESS,
+          title: 'Đặt lịch thành công',
+          message: 'Đã đặt lịch cho hồ sơ đang chọn',
+        })
       }
     } catch (err) {
       if (err.errorFields) return
@@ -87,11 +110,22 @@ function BookingConfirmationModal({
         'Có lỗi xảy ra khi đặt lịch hẹn.'
 
       if (status === 409 || msg.toLowerCase().includes('already') || msg.toLowerCase().includes('đã có người đặt') || msg.toLowerCase().includes('trùng')) {
+        const errorText = 'Khung giờ này vừa có người đặt. Vui lòng chọn khung giờ khác.'
         setConflictError(
-          'Khung giờ này vừa có bệnh nhân khác đặt trước. Hệ thống đã cập nhật lại danh sách giờ, vui lòng đóng hộp thoại và chọn khung giờ khác.'
+          'Khung giờ này vừa có người đặt trước. Bác sĩ và hồ sơ đã chọn được giữ nguyên, vui lòng đóng hộp thoại để chọn khung giờ khác.'
         )
+        showNotice({
+          level: NOTICE_LEVELS.ERROR,
+          title: 'Khung giờ không khả dụng',
+          message: errorText,
+        })
       } else {
         setConflictError(msg)
+        showNotice({
+          level: NOTICE_LEVELS.ERROR,
+          title: 'Không thể đặt lịch',
+          message: msg,
+        })
       }
     }
   }
@@ -162,6 +196,12 @@ function BookingConfirmationModal({
             }}
           >
             <Paragraph style={{ margin: 0 }}>
+              ● <strong>Hồ sơ người khám:</strong> {targetProfile?.fullName || patient?.fullName || patient?.username}{' '}
+              <Tag color={targetProfile?.self ? 'blue' : 'green'} style={{ marginLeft: 6 }}>
+                {formatProfileRelationship(targetProfile?.relationship, targetProfile?.self)}
+              </Tag>
+            </Paragraph>
+            <Paragraph style={{ margin: '4px 0 0' }}>
               ● <strong>Bác sĩ khám:</strong> BS. {doctor?.fullName || doctor?.username} ({specialty?.name})
             </Paragraph>
             <Paragraph style={{ margin: '4px 0 0' }}>
@@ -217,6 +257,26 @@ function BookingConfirmationModal({
         bodyStyle={{ padding: '14px 18px' }}
       >
         <Descriptions column={1} size="small">
+          <Descriptions.Item label={<span style={{ color: '#166534', fontWeight: 600 }}><TeamOutlined /> Hồ sơ khám</span>}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <strong style={{ color: '#14532d', fontSize: 14 }}>
+                {targetProfile?.fullName || patient?.fullName || patient?.username}
+              </strong>
+              <Tag color={targetProfile?.self ? 'blue' : 'green'} style={{ fontWeight: 600 }}>
+                {formatProfileRelationship(targetProfile?.relationship, targetProfile?.self)}
+              </Tag>
+              {targetProfile?.age != null && (
+                <span style={{ fontSize: 12, color: '#475569' }}>
+                  ({formatProfileAge(targetProfile?.age, targetProfile?.dateOfBirth)})
+                </span>
+              )}
+              {targetProfile?.patientCode && (
+                <span style={{ fontSize: 12, color: '#64748b' }}>
+                  - Mã HS: {targetProfile.patientCode}
+                </span>
+              )}
+            </div>
+          </Descriptions.Item>
           <Descriptions.Item label={<span style={{ color: '#166534', fontWeight: 600 }}><MedicineBoxOutlined /> Chuyên khoa</span>}>
             <strong style={{ color: '#14532d' }}>{specialty?.name}</strong>
           </Descriptions.Item>
@@ -233,8 +293,8 @@ function BookingConfirmationModal({
               {selectedSlot?.label}
             </Tag>
           </Descriptions.Item>
-          {patient && (
-            <Descriptions.Item label={<span style={{ color: '#166534', fontWeight: 600 }}><IdcardOutlined /> Người đặt lịch</span>}>
+          {patient && targetProfile && !targetProfile.self && (
+            <Descriptions.Item label={<span style={{ color: '#166534', fontWeight: 600 }}><IdcardOutlined /> Người giám hộ đặt</span>}>
               <span>{patient.fullName || patient.username} {patient.phoneNumber ? `(${patient.phoneNumber})` : ''}</span>
             </Descriptions.Item>
           )}
