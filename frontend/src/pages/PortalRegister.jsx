@@ -23,7 +23,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { useAuthContext } from '../context/AuthContext'
-import './portalRegister.css'
+import './styles/portalRegister.css'
 
 function PortalRegister() {
   const [form] = Form.useForm()

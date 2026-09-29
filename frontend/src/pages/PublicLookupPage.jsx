@@ -34,7 +34,7 @@ import {
 import dayjs from 'dayjs'
 
 import portalApi from '../api/portalApi.js'
-import './publicLookup.css'
+import './styles/publicLookup.css'
 
 const { Text, Title, Paragraph } = Typography
 

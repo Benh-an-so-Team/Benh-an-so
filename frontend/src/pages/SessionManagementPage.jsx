@@ -41,7 +41,7 @@ import {
   DEFAULT_IDLE_TIMEOUT_MINUTES,
   SESSION_IDLE_CONFIG_KEY,
 } from '../utils/sessionManagementHelpers.js'
-import './sessionManagement.css'
+import './styles/sessionManagement.css'
 
 const { Title, Text, Paragraph } = Typography
 
