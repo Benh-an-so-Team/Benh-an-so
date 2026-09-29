@@ -54,6 +54,47 @@ function MedicalHistoryDetailModal({
     let isMounted = true
     const fetchDetail = async () => {
       setLoading(true)
+      if (String(visitId).startsWith('sample-')) {
+        setTimeout(() => {
+          if (!isMounted) return
+          setDetail({
+            visitId,
+            visitAt: initialSummary?.visitAt || new Date().toISOString(),
+            doctorName: initialSummary?.doctorName || 'Nguyễn Văn An',
+            specialtyName: initialSummary?.specialtyName || 'Khoa Nội tổng quát',
+            diagnosisSummary: initialSummary?.diagnosisSummary || 'Viêm mũi họng cấp / Theo dõi dị ứng thời tiết',
+            symptoms: 'Nghẹt mũi, hắt hơi nhiều, rát họng 3 ngày nay, không sốt.',
+            treatmentPlan: 'Uống thuốc theo toa, súc họng nước muối sinh lý ấm, tái khám sau 5 ngày nếu không thuyên giảm.',
+            doctorNotes: 'Bệnh nhân giữ ấm cổ ngực, uống nhiều nước ấm, tránh dùng đồ uống lạnh.',
+            prescriptions: [
+              {
+                medicationName: 'Amoxicillin 500mg',
+                dosage: '1 viên x 2 lần/ngày',
+                quantity: 14,
+                unit: 'Viên',
+                usageInstruction: 'Uống sau bữa ăn sáng và tối',
+              },
+              {
+                medicationName: 'Paracetamol 500mg',
+                dosage: '1 viên khi đau rát nhiều',
+                quantity: 10,
+                unit: 'Viên',
+                usageInstruction: 'Uống cách nhau ít nhất 4-6 tiếng',
+              },
+              {
+                medicationName: 'Nước muối sinh lý 0.9%',
+                dosage: 'Súc họng 3-4 lần/ngày',
+                quantity: 2,
+                unit: 'Chai',
+                usageInstruction: 'Súc miệng sau bữa ăn và trước khi đi ngủ',
+              },
+            ],
+          })
+          setLoading(false)
+        }, 150)
+        return
+      }
+
       try {
         const res = await patientPortalMedicalHistoryApi.getMedicalHistoryDetail(visitId)
         if (isMounted) {

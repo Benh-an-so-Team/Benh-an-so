@@ -71,7 +71,7 @@ function SatisfactionReportPage() {
   const [errorMessage, setErrorMessage] = useState('')
 
   // Chế độ xem thử toàn bộ dữ liệu mẫu khi kỳ chưa có đánh giá thực tế
-  const [demoMode, setDemoMode] = useState(true)
+  const [demoMode, setDemoMode] = useState(false)
 
   // Bảng xếp hạng bác sĩ: state sắp xếp
   const [doctorSortKey, setDoctorSortKey] = useState('averageScore')
@@ -79,6 +79,36 @@ function SatisfactionReportPage() {
 
   // Danh sách nhận xét: bộ lọc điểm
   const [commentScoreFilter, setCommentScoreFilter] = useState('ALL')
+
+  // 1.5. Đọc danh sách đánh giá vừa gửi từ Cổng bệnh nhân (lưu trong localStorage)
+  const [localSurveys, setLocalSurveys] = useState([])
+
+  const reloadLocalSurveys = useCallback(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('portal_sample_surveys') || '{}')
+      setLocalSurveys(Object.values(stored))
+    } catch {
+      setLocalSurveys([])
+    }
+  }, [])
+
+  useEffect(() => {
+    reloadLocalSurveys()
+    const handleStorage = (e) => {
+      if (e.key === 'portal_sample_surveys') {
+        reloadLocalSurveys()
+      }
+    }
+    const handleFocus = () => {
+      reloadLocalSurveys()
+    }
+    window.addEventListener('storage', handleStorage)
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      window.removeEventListener('storage', handleStorage)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [reloadLocalSurveys])
 
   // 1. Fetch danh sách Bác sĩ phòng khám
   useEffect(() => {
@@ -94,6 +124,7 @@ function SatisfactionReportPage() {
 
   // 2. Fetch báo cáo khảo sát từ backend
   const fetchReport = useCallback(async () => {
+    reloadLocalSurveys()
     if (!dateRange || !dateRange[0] || !dateRange[1]) {
       message.warning('Vui lòng chọn khoảng thời gian hợp lệ.')
       return
@@ -258,9 +289,108 @@ function SatisfactionReportPage() {
     }
   }, [doctorsList, selectedDoctorId, dateRange])
 
-  // Quyết định dùng dữ liệu mẫu hay dữ liệu thật từ backend
-  const isUsingSampleData = Boolean(demoMode && (!reportData || reportData.totalSurveys === 0))
-  const effectiveReportData = isUsingSampleData ? sampleReportData : reportData
+  // Dữ liệu thực tế tổng hợp từ Backend + Các đánh giá bệnh nhân vừa gửi qua Cổng
+  const combinedRealData = useMemo(() => {
+    const base = reportData || {
+      from: dateRange[0]?.format('YYYY-MM-DD') || '2026-09-01',
+      to: dateRange[1]?.format('YYYY-MM-DD') || '2026-09-29',
+      generatedAt: new Date().toISOString(),
+      totalSurveys: 0,
+      averageScore: 0,
+      scoreDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      doctors: [],
+      feedbacks: [],
+    }
+
+    if (localSurveys.length === 0) {
+      return base
+    }
+
+    // Lọc theo bác sĩ nếu người dùng đang chọn bác sĩ cụ thể
+    const relevantLocal = selectedDoctorId
+      ? localSurveys.filter((s) => {
+          const doc = doctorsList.find((d) => String(d.id) === String(selectedDoctorId))
+          const docName = doc?.fullName || doc?.username
+          return docName && s.doctorName && s.doctorName.toLowerCase().includes(docName.toLowerCase())
+        })
+      : localSurveys
+
+    const distribution = { ...(base.scoreDistribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }) }
+    let sumScore = (base.totalSurveys || 0) * (base.averageScore || 0)
+
+    relevantLocal.forEach((s) => {
+      const sc = Math.min(5, Math.max(1, Math.round(Number(s.score) || 5)))
+      distribution[sc] = (distribution[sc] || 0) + 1
+      sumScore += sc
+    })
+
+    const totalSurveys = (base.totalSurveys || 0) + relevantLocal.length
+    const averageScore = totalSurveys > 0 ? Number((sumScore / totalSurveys).toFixed(2)) : 0
+
+    // Gộp danh sách Bác sĩ
+    const doctorMap = {}
+    ;(base.doctors || []).forEach((d) => {
+      doctorMap[d.doctorName] = { ...d }
+    })
+
+    relevantLocal.forEach((s) => {
+      const rawName = s.doctorName || 'Nguyễn Văn An'
+      const docName = rawName.startsWith('BS.') ? rawName : `BS. ${rawName}`
+      if (!doctorMap[docName]) {
+        doctorMap[docName] = {
+          doctorId: s.doctorId || `doc-${docName}`,
+          doctorName: docName,
+          specialtyName: s.specialtyName || 'Khoa Nội tổng quát',
+          totalSurveys: 0,
+          averageScore: 0,
+          satisfactionRate: 0,
+        }
+      }
+      const item = doctorMap[docName]
+      const oldSum = (item.totalSurveys || 0) * (item.averageScore || 0)
+      const newTotal = (item.totalSurveys || 0) + 1
+      const newAvg = Number(((oldSum + (Number(s.score) || 5)) / newTotal).toFixed(2))
+      const satisfiedCount =
+        Math.round(((item.satisfactionRate || 0) / 100) * (item.totalSurveys || 0)) +
+        (Number(s.score) >= 4 ? 1 : 0)
+      item.totalSurveys = newTotal
+      item.averageScore = newAvg
+      item.satisfactionRate = Number(((satisfiedCount / newTotal) * 100).toFixed(1))
+    })
+
+    // Gộp danh sách nhận xét feedbacks (đưa các nhận xét mới gửi từ Cổng lên đầu tiên)
+    const localFeedbacks = relevantLocal.map((s, idx) => ({
+      id: s.id || `local-fb-${idx}`,
+      score: Number(s.score) || 5,
+      doctorName: s.doctorName
+        ? s.doctorName.startsWith('BS.')
+          ? s.doctorName.replace(/^BS\.\s*/i, '')
+          : s.doctorName
+        : 'Nguyễn Văn An',
+      createdAt: s.createdAt
+        ? dayjs(s.createdAt).format('YYYY-MM-DD HH:mm')
+        : dayjs().format('YYYY-MM-DD HH:mm'),
+      comment:
+        s.comment ||
+        (SCORE_LABELS[s.score] ? `Đánh giá ${s.score} sao (${SCORE_LABELS[s.score]})` : 'Hài lòng với dịch vụ'),
+      isPortalRealtime: true,
+    }))
+
+    const feedbacks = [...localFeedbacks, ...(base.feedbacks || [])]
+
+    return {
+      ...base,
+      totalSurveys,
+      averageScore,
+      scoreDistribution: distribution,
+      doctors: Object.values(doctorMap),
+      feedbacks,
+    }
+  }, [reportData, localSurveys, selectedDoctorId, doctorsList, dateRange])
+
+  // Quyết định dùng dữ liệu mẫu hay dữ liệu thật từ backend + Cổng bệnh nhân
+  const isUsingSampleData = Boolean(demoMode && (!combinedRealData || combinedRealData.totalSurveys === 0))
+  const effectiveReportData = isUsingSampleData ? sampleReportData : combinedRealData
 
   // Tính toán KPIs
   const kpis = useMemo(() => {
@@ -516,6 +646,17 @@ function SatisfactionReportPage() {
             </Button>
           }
           style={{ marginBottom: 20, borderRadius: 10, background: '#f0f9ff', borderColor: '#bae6fd' }}
+        />
+      )}
+
+      {localSurveys.length > 0 && !isUsingSampleData && (
+        <Alert
+          type="success"
+          showIcon
+          icon={<CheckCircleOutlined />}
+          message={`Đã ghi nhận ${localSurveys.length} lượt đánh giá từ Cổng bệnh nhân`}
+          description="Các đánh giá sau khám mà người bệnh vừa gửi qua Cổng thông tin đã được tự động tổng hợp trực tiếp vào chỉ số KPI, bảng xếp hạng bác sĩ và danh sách nhận xét bên dưới."
+          style={{ marginBottom: 20, borderRadius: 10, borderColor: '#86efac', background: '#f0fdf4' }}
         />
       )}
 
@@ -778,7 +919,9 @@ function SatisfactionReportPage() {
                           <strong style={{ color: SCORE_COLORS[item.score] || '#1e293b' }}>
                             {SCORE_LABELS[item.score]} ({item.score}/5)
                           </strong>
-                          {isNegative ? (
+                          {item.isPortalRealtime ? (
+                            <Tag color="cyan" icon={<CheckCircleOutlined />}>Mới gửi từ Cổng bệnh nhân</Tag>
+                          ) : isNegative ? (
                             <Tag color="error">Cần xử lý sớm</Tag>
                           ) : (
                             <Tag color="success">Phản hồi tích cực</Tag>

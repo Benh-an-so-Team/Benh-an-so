@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Button, Card, Descriptions, Tag, Tooltip, message } from 'antd'
+import { Button, Card, Descriptions, Tag, Tooltip, message, Row, Col, Space } from 'antd'
 import {
   MedicineBoxOutlined,
   LogoutOutlined,
@@ -21,10 +21,18 @@ import {
   ExperimentOutlined,
   TeamOutlined,
   InfoCircleOutlined,
+  StarFilled,
+  StarOutlined,
+  EditOutlined,
 } from '@ant-design/icons'
+import dayjs from 'dayjs'
 import { useAuthContext } from '../context/AuthContext'
 import PatientNotificationBell from '../components/portal/PatientNotificationBell.jsx'
 import patientPortalAppointmentApi from '../api/patientPortalAppointmentApi.js'
+import patientPortalMedicalHistoryApi from '../api/patientPortalMedicalHistoryApi'
+import satisfactionSurveyApi from '../api/satisfactionSurveyApi.js'
+import SatisfactionSurveyModal from '../components/portal/SatisfactionSurveyModal.jsx'
+import { SCORE_LABELS } from '../utils/satisfactionSurveyHelpers.js'
 import {
   createDefaultFallbackProfiles,
   formatProfileAge,
@@ -39,6 +47,12 @@ function PortalDashboard() {
   const navigate = useNavigate()
   const [linkedProfiles, setLinkedProfiles] = useState([])
   const [profilesLoading, setProfilesLoading] = useState(false)
+
+  // Khảo sát hài lòng sau khám (NCL-10-CN-005)
+  const [surveyVisit, setSurveyVisit] = useState(null)
+  const [surveyRecord, setSurveyRecord] = useState(null)
+  const [surveyModalOpen, setSurveyModalOpen] = useState(false)
+  const [surveyInitialScore, setSurveyInitialScore] = useState(null)
 
   useEffect(() => {
     let isMounted = true
@@ -77,6 +91,77 @@ function PortalDashboard() {
     }
   }, [user])
 
+  useEffect(() => {
+    let isMounted = true
+
+    const loadDashboardSurvey = async () => {
+      let sampleSurveys = {}
+      try {
+        sampleSurveys = JSON.parse(localStorage.getItem('portal_sample_surveys') || '{}')
+      } catch {
+        sampleSurveys = {}
+      }
+
+      let latest = null
+      try {
+        const res = await patientPortalMedicalHistoryApi.getMedicalHistory()
+        const data = res.data
+        const list = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : []
+        if (list.length > 0) {
+          latest = list[0]
+        }
+      } catch {
+        // Fallback to sample below
+      }
+
+      if (!latest) {
+        latest = {
+          visitId: 'sample-visit-101',
+          isSample: true,
+          visitAt: dayjs().subtract(1, 'day').hour(9).minute(30).toISOString(),
+          doctorName: 'Nguyễn Văn An',
+          specialtyName: 'Khoa Nội tổng quát',
+          diagnosisSummary: 'Viêm mũi họng cấp / Theo dõi dị ứng thời tiết',
+        }
+      }
+
+      if (!isMounted) return
+      setSurveyVisit(latest)
+
+      if (latest.isSample || String(latest.visitId).startsWith('sample-')) {
+        if (sampleSurveys[latest.visitId]) {
+          setSurveyRecord(sampleSurveys[latest.visitId])
+        }
+      } else {
+        try {
+          const sRes = await satisfactionSurveyApi.getByVisitId(latest.visitId)
+          if (isMounted && sRes.data) {
+            setSurveyRecord(sRes.data)
+          }
+        } catch {
+          // not rated yet
+        }
+      }
+    }
+
+    loadDashboardSurvey()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user])
+
+  const handleOpenSurvey = (starScore = null) => {
+    setSurveyInitialScore(starScore)
+    setSurveyModalOpen(true)
+  }
+
+  const handleSurveySuccess = (saved) => {
+    if (saved) {
+      setSurveyRecord(saved)
+    }
+  }
+
   const handleLogout = () => {
     logout()
     navigate('/portal/login', { replace: true })
@@ -93,7 +178,6 @@ function PortalDashboard() {
     : (user?.username || '')
 
   const patientIdStr = user?.patientId ? String(user.patientId) : ''
-  const displayIdShort = patientIdStr ? `${patientIdStr.substring(0, 8)}...` : 'Đã kết nối'
 
   return (
     <div className="portal-dashboard-page">
@@ -163,6 +247,182 @@ function PortalDashboard() {
             </p>
           </div>
         </div>
+
+        {/* Banner Khảo sát mức độ hài lòng sau khám (NCL-10-CN-005) */}
+        {surveyVisit && (
+          <div
+            className="portal-dashboard-survey-banner"
+            style={{
+              background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 45%, #fef9c3 100%)',
+              border: '1px solid #fde68a',
+              borderRadius: 16,
+              padding: '18px 24px',
+              marginBottom: 24,
+              boxShadow: '0 4px 16px rgba(245, 158, 11, 0.09)',
+            }}
+          >
+            <Row gutter={[16, 16]} align="middle" justify="space-between">
+              <Col xs={24} md={15} lg={16}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: '50%',
+                      background: '#fff',
+                      border: '2px solid #f59e0b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      color: '#d97706',
+                      fontSize: 22,
+                      boxShadow: '0 2px 6px rgba(245, 158, 11, 0.2)',
+                    }}
+                  >
+                    <StarFilled />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: '#92400e' }}>
+                        Khảo sát mức độ hài lòng sau khám
+                      </span>
+                      <Tag color="gold" style={{ fontWeight: 600, borderRadius: 12 }}>
+                        Chăm sóc sau khám
+                      </Tag>
+                      {surveyRecord && (
+                        <Tag color="green" icon={<CheckCircleOutlined />} style={{ fontWeight: 600, borderRadius: 12 }}>
+                          Đã gửi đánh giá ({surveyRecord.score} ⭐)
+                        </Tag>
+                      )}
+                    </div>
+
+                    <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#78350f', lineHeight: 1.5 }}>
+                      Lượt khám ngày{' '}
+                      <strong>
+                        {surveyVisit.visitAt ? dayjs(surveyVisit.visitAt).format('DD/MM/YYYY') : 'gần đây'}
+                      </strong>{' '}
+                      với <strong>BS. {surveyVisit.doctorName}</strong>{' '}
+                      {surveyVisit.specialtyName ? `(${surveyVisit.specialtyName})` : ''} đã hoàn tất.
+                      {surveyRecord ? (
+                        <>
+                          {' '}Ý kiến của bạn:{' '}
+                          <strong style={{ color: '#15803d' }}>
+                            {surveyRecord.score} sao ({SCORE_LABELS[surveyRecord.score] || 'Hài lòng'})
+                          </strong>
+                          {surveyRecord.comment && (
+                            <em>
+                              {' '}- &ldquo;
+                              {surveyRecord.comment.length > 60
+                                ? `${surveyRecord.comment.slice(0, 60)}...`
+                                : surveyRecord.comment}
+                              &rdquo;
+                            </em>
+                          )}
+                          .
+                        </>
+                      ) : (
+                        ' Bạn có hài lòng với chất lượng phục vụ và sự tận tình của bác sĩ không?'
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </Col>
+
+              <Col xs={24} md={9} lg={8} style={{ textAlign: { xs: 'left', md: 'right' } }}>
+                {surveyRecord ? (
+                  <Space wrap style={{ justifyContent: { xs: 'flex-start', md: 'flex-end' }, width: '100%' }}>
+                    <Button
+                      icon={<EditOutlined />}
+                      onClick={() => handleOpenSurvey()}
+                      style={{
+                        borderColor: '#d97706',
+                        color: '#92400e',
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        background: '#ffffff',
+                      }}
+                    >
+                      Đã đánh giá — Sửa
+                    </Button>
+                    <Link to="/portal/medical-history">
+                      <Button type="link" style={{ color: '#b45309', fontWeight: 600 }}>
+                        Lịch sử khám <ArrowRightOutlined />
+                      </Button>
+                    </Link>
+                  </Space>
+                ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: { xs: 'flex-start', md: 'flex-end' },
+                      gap: 8,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ fontSize: 12.5, color: '#92400e', fontWeight: 600, marginRight: 2 }}>
+                        Chọn nhanh:
+                      </span>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => handleOpenSurvey(star)}
+                          title={`${star} sao - ${SCORE_LABELS[star]}`}
+                          style={{
+                            background: '#fff',
+                            border: '1px solid #fde68a',
+                            borderRadius: 6,
+                            width: 30,
+                            height: 30,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#f59e0b',
+                            fontWeight: 700,
+                            fontSize: 13,
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.15)'
+                            e.currentTarget.style.borderColor = '#f59e0b'
+                            e.currentTarget.style.background = '#fef3c7'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)'
+                            e.currentTarget.style.borderColor = '#fde68a'
+                            e.currentTarget.style.background = '#fff'
+                          }}
+                        >
+                          {star}★
+                        </button>
+                      ))}
+                    </div>
+                    <Space wrap>
+                      <Button
+                        type="primary"
+                        icon={<StarFilled />}
+                        onClick={() => handleOpenSurvey()}
+                        style={{
+                          background: '#d97706',
+                          borderColor: '#d97706',
+                          fontWeight: 600,
+                          borderRadius: 8,
+                          boxShadow: '0 2px 6px rgba(217, 119, 6, 0.25)',
+                        }}
+                      >
+                        Đánh giá ngay
+                      </Button>
+                    </Space>
+                  </div>
+                )}
+              </Col>
+            </Row>
+          </div>
+        )}
 
         <div className="portal-dashboard-grid">
           <div className="portal-dashboard-card portal-card-booking" style={{ borderColor: '#bfdbfe' }}>
@@ -497,6 +757,18 @@ function PortalDashboard() {
           </Descriptions>
         </Card>
       </main>
+
+      <SatisfactionSurveyModal
+        open={surveyModalOpen}
+        onClose={() => {
+          setSurveyModalOpen(false)
+          setSurveyInitialScore(null)
+        }}
+        visit={surveyVisit}
+        existingSurvey={surveyRecord}
+        initialScore={surveyInitialScore}
+        onSuccess={handleSurveySuccess}
+      />
     </div>
   )
 }

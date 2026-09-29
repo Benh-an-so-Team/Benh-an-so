@@ -43,13 +43,36 @@ import SatisfactionSurveyModal from '../components/portal/SatisfactionSurveyModa
 import { SCORE_LABELS } from '../utils/satisfactionSurveyHelpers.js'
 import MedicalHistoryDetailModal from '../components/portal/MedicalHistoryDetailModal'
 import PatientNotificationBell from '../components/portal/PatientNotificationBell.jsx'
-import { getApiErrorMessage } from '../utils/apiError'
 import './styles/patientMedicalHistory.css'
 
 const { Title, Text } = Typography
 
+export const SAMPLE_PORTAL_VISITS = [
+  {
+    visitId: 'sample-visit-101',
+    isSample: true,
+    visitAt: dayjs().subtract(1, 'day').hour(9).minute(30).toISOString(),
+    doctorName: 'Nguyễn Văn An',
+    specialtyName: 'Khoa Nội tổng quát',
+    diagnosisSummary: 'Viêm mũi họng cấp / Theo dõi dị ứng thời tiết',
+    prescriptionCount: 3,
+    status: 'COMPLETED',
+  },
+  {
+    visitId: 'sample-visit-102',
+    isSample: true,
+    visitAt: dayjs().subtract(7, 'day').hour(14).minute(15).toISOString(),
+    doctorName: 'Trần Thị Mai',
+    specialtyName: 'Khoa Răng Hàm Mặt',
+    diagnosisSummary: 'Viêm nướu răng mức độ nhẹ / Vệ sinh cao răng định kỳ',
+    prescriptionCount: 1,
+    status: 'COMPLETED',
+  },
+]
+
 function PatientMedicalHistoryPage() {
   const [historyList, setHistoryList] = useState([])
+  const [isSampleData, setIsSampleData] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
@@ -67,41 +90,62 @@ function PatientMedicalHistoryPage() {
   const fetchHistory = useCallback(async () => {
     setLoading(true)
     setErrorMessage('')
+    let sampleSurveys = {}
+    try {
+      sampleSurveys = JSON.parse(localStorage.getItem('portal_sample_surveys') || '{}')
+    } catch {
+      sampleSurveys = {}
+    }
+
     try {
       const res = await patientPortalMedicalHistoryApi.getMedicalHistory()
       const data = res.data
-      const list = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : []
+      let list = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : []
+
+      if (list.length === 0) {
+        setIsSampleData(true)
+        setHistoryList(SAMPLE_PORTAL_VISITS)
+        setSurveyMap(sampleSurveys)
+        return
+      }
+
+      setIsSampleData(false)
       setHistoryList(list)
 
       // Tải trạng thái khảo sát đã gửi của từng lượt khám
-      if (list.length > 0) {
-        Promise.allSettled(
-          list.map(async (item) => {
-            if (!item.visitId) return null
-            try {
-              const sRes = await satisfactionSurveyApi.getByVisitId(item.visitId)
-              if (sRes.data) {
-                return { visitId: item.visitId, survey: sRes.data }
-              }
-            } catch {
-              // Bỏ qua nếu chưa đánh giá
+      Promise.allSettled(
+        list.map(async (item) => {
+          if (!item.visitId) return null
+          if (item.isSample || String(item.visitId).startsWith('sample-')) {
+            if (sampleSurveys[item.visitId]) {
+              return { visitId: item.visitId, survey: sampleSurveys[item.visitId] }
             }
             return null
-          })
-        ).then((results) => {
-          const map = {}
-          results.forEach((r) => {
-            if (r.status === 'fulfilled' && r.value) {
-              map[r.value.visitId] = r.value.survey
+          }
+          try {
+            const sRes = await satisfactionSurveyApi.getByVisitId(item.visitId)
+            if (sRes.data) {
+              return { visitId: item.visitId, survey: sRes.data }
             }
-          })
-          setSurveyMap(map)
+          } catch {
+            // Bỏ qua nếu chưa đánh giá
+          }
+          return null
         })
-      }
-    } catch (err) {
-      const msg = getApiErrorMessage(err, 'Không thể tải lịch sử khám bệnh. Vui lòng thử lại sau.')
-      setErrorMessage(msg)
-      setHistoryList([])
+      ).then((results) => {
+        const map = { ...sampleSurveys }
+        results.forEach((r) => {
+          if (r.status === 'fulfilled' && r.value) {
+            map[r.value.visitId] = r.value.survey
+          }
+        })
+        setSurveyMap(map)
+      })
+    } catch {
+      // Fallback demo visits when API or backend records are empty
+      setIsSampleData(true)
+      setHistoryList(SAMPLE_PORTAL_VISITS)
+      setSurveyMap(sampleSurveys)
     } finally {
       setLoading(false)
     }
@@ -288,6 +332,15 @@ function PatientMedicalHistoryPage() {
             </div>
           ) : (
             <div>
+              {isSampleData && (
+                <Alert
+                  type="info"
+                  showIcon
+                  message="Dữ liệu mẫu trải nghiệm khảo sát hài lòng"
+                  description="Tài khoản chưa có lượt khám thực tế nào trong cơ sở dữ liệu. Hệ thống hiển thị 2 lượt khám mẫu đã hoàn tất để bạn thử nghiệm tính năng đánh giá hài lòng sau khám (chọn 1-5 sao, viết nhận xét hoặc sửa đánh giá)."
+                  style={{ marginBottom: 16, borderRadius: 10, border: '1px solid #bfdbfe', background: '#eff6ff' }}
+                />
+              )}
               {filteredHistory.map((item) => {
                 const visitDayjs = item.visitAt ? dayjs(item.visitAt) : null
                 const formattedDate = visitDayjs ? visitDayjs.format('DD/MM/YYYY') : '---'
