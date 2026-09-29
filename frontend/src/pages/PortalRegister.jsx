@@ -16,14 +16,15 @@ import {
   UserOutlined,
   IdcardOutlined,
   MailOutlined,
-  MedicineBoxOutlined,
   SafetyCertificateOutlined,
-  LoginOutlined,
   SearchOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { useAuthContext } from '../context/AuthContext'
-import './portalRegister.css'
+import PortalCyberBackground from '../components/portal/PortalCyberBackground'
+import PortalCyberHeader from '../components/portal/PortalCyberHeader'
+import './styles/portalLogin.css'
+import './styles/portalRegister.css'
 
 function PortalRegister() {
   const [form] = Form.useForm()
@@ -156,7 +157,7 @@ function PortalRegister() {
           setServerError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại đường truyền mạng hoặc kiểm tra xem máy chủ backend có đang hoạt động hay không.')
         }
       }
-    } catch (error) {
+    } catch {
       setServerError('Đã xảy ra lỗi không xác định. Vui lòng thử lại sau.')
     } finally {
       setLoading(false)
@@ -164,273 +165,251 @@ function PortalRegister() {
   }
 
   return (
-    <div className="portal-register-page">
-      <div className="portal-register-decoration portal-register-decoration-one" aria-hidden="true" />
-      <div className="portal-register-decoration portal-register-decoration-two" aria-hidden="true" />
+    <div className="portal-cyber-login-page portal-register-page">
+      <PortalCyberBackground />
 
-      <header className="portal-register-header">
-        <div className="portal-register-header-inner">
-          <Link className="portal-register-brand" to="/portal">
-            <span className="portal-register-brand-icon">
-              <MedicineBoxOutlined />
-            </span>
-            <span>
-              <strong>BỆNH ÁN SỐ</strong>
-              <small>Cổng thông tin bệnh nhân</small>
-            </span>
-          </Link>
+      <PortalCyberHeader activePage="register" hideNav />
 
-          <div className="portal-login-header-links">
-            <Link className="portal-header-link" to="/portal">
-              <SearchOutlined /> Tra cứu theo mã hẹn
-            </Link>
-            <Link className="portal-header-link" to="/login">
-              <UserOutlined /> Đăng nhập nhân viên
-            </Link>
-            <Link className="portal-header-btn-register" to="/portal/login">
-              <LoginOutlined /> Đăng nhập
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="portal-register-main">
-        <div className="portal-register-card">
-          <div className="portal-register-card-header">
-            <div className="portal-register-card-badge">
-              <SafetyCertificateOutlined /> Đăng ký thành viên
+      <main>
+        <div className="card-wrapper">
+          <div className="portal-register-card">
+            <div className="portal-register-card-header">
+              <span className="portal-register-card-badge">
+                <svg className="ic"><use href="#user" /></svg>
+                Đăng ký thành viên
+              </span>
+              <h1 className="portal-register-card-title">Tạo tài khoản Bệnh nhân</h1>
+              <p className="portal-register-card-sub">
+                Đăng ký tài khoản để theo dõi kết quả khám bệnh, đơn thuốc và hồ sơ y tế cá nhân
+              </p>
             </div>
-            <h1 className="portal-register-card-title">Tạo tài khoản Bệnh nhân</h1>
-            <p className="portal-register-card-sub">
-              Đăng ký tài khoản để theo dõi kết quả khám bệnh, đơn thuốc và hồ sơ y tế cá nhân
-            </p>
-          </div>
 
-          {serverError && (
-            <Alert
-              className="portal-register-alert"
-              type={phoneConflict ? 'warning' : 'error'}
-              showIcon
-              message={
-                <div>
-                  {serverError}
-                  {phoneConflict && (
-                    <div style={{ marginTop: 6 }}>
-                      <Link to="/portal/login" style={{ fontWeight: 600, color: '#176ee8' }}>
-                        👉 Bấm vào đây để chuyển sang màn hình Đăng nhập
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              }
-            />
-          )}
-
-          <Form
-            form={form}
-            className="portal-register-form"
-            layout="vertical"
-            onFinish={handleSubmit}
-            initialValues={{ gender: 'MALE' }}
-            requiredMark={false}
-            scrollToFirstError
-          >
-            <Form.Item
-              label="Họ và tên"
-              name="fullName"
-              rules={[
-                { required: true, message: 'Vui lòng nhập họ và tên' },
-                { min: 2, message: 'Họ tên quá ngắn' },
-              ]}
-            >
-              <Input
-                prefix={<UserOutlined />}
-                placeholder="Ví dụ: Nguyễn Văn A"
-                disabled={loading}
-                autoFocus
+            {serverError && (
+              <Alert
+                className="portal-register-alert"
+                type={phoneConflict ? 'warning' : 'error'}
+                showIcon
+                message={
+                  <div>
+                    {serverError}
+                    {phoneConflict && (
+                      <div style={{ marginTop: 6 }}>
+                        <Link to="/portal/login" style={{ fontWeight: 600, color: '#0284c7' }}>
+                          👉 Bấm vào đây để chuyển sang màn hình Đăng nhập
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                }
               />
-            </Form.Item>
+            )}
 
-            <Form.Item
-              label="Số điện thoại"
-              name="phone"
-              rules={[
-                { required: true, message: 'Vui lòng nhập số điện thoại' },
-                {
-                  pattern: /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/,
-                  message: 'Số điện thoại không đúng định dạng (VD: 0912345678 hoặc +84912345678)',
-                },
-              ]}
+            <Form
+              form={form}
+              className="portal-register-form"
+              layout="vertical"
+              onFinish={handleSubmit}
+              initialValues={{ gender: 'MALE' }}
+              requiredMark={false}
+              scrollToFirstError
             >
-              <Input
-                prefix={<PhoneOutlined />}
-                placeholder="Nhập số điện thoại di động"
-                disabled={loading}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Địa chỉ Email (Không bắt buộc)"
-              name="email"
-              rules={[
-                {
-                  type: 'email',
-                  message: 'Email không đúng định dạng',
-                },
-              ]}
-            >
-              <Input
-                prefix={<MailOutlined />}
-                placeholder="Ví dụ: benhnhan@gmail.com"
-                disabled={loading}
-              />
-            </Form.Item>
-
-            <div className="portal-register-grid-2">
               <Form.Item
-                label="Mật khẩu"
-                name="password"
+                label="Họ và tên"
+                name="fullName"
                 rules={[
-                  { required: true, message: 'Vui lòng nhập mật khẩu' },
-                  { min: 6, max: 50, message: 'Mật khẩu phải từ 6 đến 50 ký tự' },
+                  { required: true, message: 'Vui lòng nhập họ và tên' },
+                  { min: 2, message: 'Họ tên quá ngắn' },
                 ]}
               >
-                <Input.Password
-                  prefix={<LockOutlined />}
-                  placeholder="Từ 6 đến 50 ký tự"
+                <Input
+                  prefix={<UserOutlined />}
+                  placeholder="Ví dụ: Nguyễn Văn A"
                   disabled={loading}
-                  maxLength={50}
+                  autoFocus
                 />
               </Form.Item>
 
               <Form.Item
-                label="Xác nhận mật khẩu"
-                name="confirmPassword"
-                dependencies={['password']}
+                label="Số điện thoại"
+                name="phone"
                 rules={[
-                  { required: true, message: 'Vui lòng xác nhận lại mật khẩu' },
-                  { min: 6, max: 50, message: 'Mật khẩu phải từ 6 đến 50 ký tự' },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || getFieldValue('password') === value) {
-                        return Promise.resolve()
-                      }
-                      return Promise.reject(new Error('Mật khẩu xác nhận không khớp'))
-                    },
-                  }),
-                ]}
-              >
-                <Input.Password
-                  prefix={<LockOutlined />}
-                  placeholder="Nhập lại mật khẩu"
-                  disabled={loading}
-                  maxLength={50}
-                />
-              </Form.Item>
-            </div>
-
-            <div className="portal-register-grid-2">
-              <Form.Item
-                label="Ngày sinh"
-                name="dateOfBirth"
-                rules={[{ required: true, message: 'Vui lòng chọn ngày sinh' }]}
-              >
-                <DatePicker
-                  placeholder="DD/MM/YYYY"
-                  format="DD/MM/YYYY"
-                  disabledDate={(current) => current && current > dayjs().endOf('day')}
-                  disabled={loading}
-                />
-              </Form.Item>
-
-              <Form.Item
-                label="Giới tính"
-                name="gender"
-                rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
-              >
-                <Radio.Group disabled={loading} style={{ paddingTop: 6 }}>
-                  <Radio value="MALE">Nam</Radio>
-                  <Radio value="FEMALE">Nữ</Radio>
-                  <Radio value="OTHER">Khác</Radio>
-                </Radio.Group>
-              </Form.Item>
-            </div>
-
-            <Form.Item
-              label="Số CCCD / CMND (Không bắt buộc)"
-              name="identityNumber"
-              rules={[
-                {
-                  pattern: /^[0-9]{9}([0-9]{3})?$/,
-                  message: 'Số CCCD/CMND phải gồm 9 hoặc 12 chữ số',
-                },
-              ]}
-              extra={
-                <span className="portal-register-hint">
-                  Giúp hệ thống liên kết chính xác hồ sơ khám bệnh có sẵn của bạn (áp dụng khi gia đình dùng chung số điện thoại).
-                </span>
-              }
-            >
-              <Input
-                prefix={<IdcardOutlined />}
-                placeholder="Nhập 9 hoặc 12 số CCCD/CMND (nếu có)"
-                disabled={loading}
-                maxLength={12}
-              />
-            </Form.Item>
-
-            <div className="portal-register-consent-box">
-              <Form.Item
-                name="consentAgreed"
-                valuePropName="checked"
-                initialValue={true}
-                style={{ marginBottom: 0 }}
-                rules={[
+                  { required: true, message: 'Vui lòng nhập số điện thoại' },
                   {
-                    validator: (_, value) =>
-                      value
-                        ? Promise.resolve()
-                        : Promise.reject(new Error('Vui lòng đồng ý với điều khoản sử dụng và xử lý dữ liệu cá nhân.')),
+                    pattern: /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/,
+                    message: 'Số điện thoại không đúng định dạng (VD: 0912345678 hoặc +84912345678)',
                   },
                 ]}
               >
-                <Checkbox disabled={loading}>
-                  <div className="portal-consent-content">
-                    <div className="portal-consent-title">
-                      <SafetyCertificateOutlined style={{ color: '#1677ff' }} />
-                      Cam kết & Điều khoản bảo mật y tế
-                    </div>
-                    <div className="portal-consent-desc">
-                      Tôi đồng ý với <span className="portal-consent-link">Quy định và Phiếu đồng ý xử lý dữ liệu cá nhân</span> (theo Nghị định 13/2023/NĐ-CP).
-                    </div>
-                  </div>
-                </Checkbox>
+                <Input
+                  prefix={<PhoneOutlined />}
+                  placeholder="Nhập số điện thoại di động"
+                  disabled={loading}
+                />
               </Form.Item>
-            </div>
 
-            <Form.Item style={{ marginBottom: 8, marginTop: 12 }}>
-              <Button
-                className="portal-register-btn"
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                block
+              <Form.Item
+                label="Địa chỉ Email (Không bắt buộc)"
+                name="email"
+                rules={[
+                  {
+                    type: 'email',
+                    message: 'Email không đúng định dạng',
+                  },
+                ]}
               >
-                Đăng ký tài khoản Bệnh nhân
-              </Button>
-            </Form.Item>
-          </Form>
+                <Input
+                  prefix={<MailOutlined />}
+                  placeholder="Ví dụ: benhnhan@gmail.com"
+                  disabled={loading}
+                />
+              </Form.Item>
 
-          <div className="portal-register-footer">
-            <div className="portal-register-footer-text">
-              Đã có tài khoản Bệnh nhân?
-              <Link to="/portal/login">Đăng nhập ngay</Link>
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <Link to="/portal" style={{ fontSize: 12.5, color: '#64748b', textDecoration: 'none' }}>
-                <SearchOutlined style={{ marginRight: 4 }} />
-                Tra cứu kết quả bằng mã lịch hẹn
-              </Link>
+              <div className="portal-register-grid-2">
+                <Form.Item
+                  label="Mật khẩu"
+                  name="password"
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập mật khẩu' },
+                    { min: 6, max: 50, message: 'Mật khẩu phải từ 6 đến 50 ký tự' },
+                  ]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined />}
+                    placeholder="Từ 6 đến 50 ký tự"
+                    disabled={loading}
+                    maxLength={50}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  label="Xác nhận mật khẩu"
+                  name="confirmPassword"
+                  dependencies={['password']}
+                  rules={[
+                    { required: true, message: 'Vui lòng xác nhận lại mật khẩu' },
+                    { min: 6, max: 50, message: 'Mật khẩu phải từ 6 đến 50 ký tự' },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (!value || getFieldValue('password') === value) {
+                          return Promise.resolve()
+                        }
+                        return Promise.reject(new Error('Mật khẩu xác nhận không khớp'))
+                      },
+                    }),
+                  ]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined />}
+                    placeholder="Nhập lại mật khẩu"
+                    disabled={loading}
+                    maxLength={50}
+                  />
+                </Form.Item>
+              </div>
+
+              <div className="portal-register-grid-2">
+                <Form.Item
+                  label="Ngày sinh"
+                  name="dateOfBirth"
+                  rules={[{ required: true, message: 'Vui lòng chọn ngày sinh' }]}
+                >
+                  <DatePicker
+                    placeholder="DD/MM/YYYY"
+                    format="DD/MM/YYYY"
+                    disabledDate={(current) => current && current > dayjs().endOf('day')}
+                    disabled={loading}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  label="Giới tính"
+                  name="gender"
+                  rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
+                >
+                  <Radio.Group disabled={loading} style={{ paddingTop: 6 }}>
+                    <Radio value="MALE">Nam</Radio>
+                    <Radio value="FEMALE">Nữ</Radio>
+                    <Radio value="OTHER">Khác</Radio>
+                  </Radio.Group>
+                </Form.Item>
+              </div>
+
+              <Form.Item
+                label="Số CCCD / CMND (Không bắt buộc)"
+                name="identityNumber"
+                rules={[
+                  {
+                    pattern: /^[0-9]{9}([0-9]{3})?$/,
+                    message: 'Số CCCD/CMND phải gồm 9 hoặc 12 chữ số',
+                  },
+                ]}
+                extra={
+                  <span className="portal-register-hint">
+                    Giúp hệ thống liên kết chính xác hồ sơ khám bệnh có sẵn của bạn (áp dụng khi gia đình dùng chung số điện thoại).
+                  </span>
+                }
+              >
+                <Input
+                  prefix={<IdcardOutlined />}
+                  placeholder="Nhập 9 hoặc 12 số CCCD/CMND (nếu có)"
+                  disabled={loading}
+                  maxLength={12}
+                />
+              </Form.Item>
+
+              <div className="portal-register-consent-box">
+                <Form.Item
+                  name="consentAgreed"
+                  valuePropName="checked"
+                  initialValue={true}
+                  style={{ marginBottom: 0 }}
+                  rules={[
+                    {
+                      validator: (_, value) =>
+                        value
+                          ? Promise.resolve()
+                          : Promise.reject(new Error('Vui lòng đồng ý với điều khoản sử dụng và xử lý dữ liệu cá nhân.')),
+                    },
+                  ]}
+                >
+                  <Checkbox disabled={loading}>
+                    <div className="portal-consent-content">
+                      <div className="portal-consent-title">
+                        <SafetyCertificateOutlined style={{ color: '#0284c7' }} />
+                        Cam kết & Điều khoản bảo mật y tế
+                      </div>
+                      <div className="portal-consent-desc">
+                        Tôi đồng ý với <span className="portal-consent-link">Quy định và Phiếu đồng ý xử lý dữ liệu cá nhân</span> (theo Nghị định 13/2023/NĐ-CP).
+                      </div>
+                    </div>
+                  </Checkbox>
+                </Form.Item>
+              </div>
+
+              <Form.Item style={{ marginBottom: 8, marginTop: 12 }}>
+                <Button
+                  className="portal-register-btn"
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                >
+                  Đăng ký tài khoản Bệnh nhân
+                </Button>
+              </Form.Item>
+            </Form>
+
+            <div className="portal-register-footer">
+              <div className="portal-register-footer-text">
+                Đã có tài khoản Bệnh nhân?
+                <Link to="/portal/login">Đăng nhập ngay</Link>
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <Link to="/portal" style={{ fontSize: 13, color: '#64748b', textDecoration: 'none' }}>
+                  <SearchOutlined style={{ marginRight: 4 }} />
+                  Tra cứu kết quả bằng mã lịch hẹn
+                </Link>
+              </div>
             </div>
           </div>
         </div>

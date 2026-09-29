@@ -1,14 +1,19 @@
 import axios from 'axios'
 import { normalizeApiError } from '../utils/apiError.js'
 
-const configuredBaseUrl = import.meta.env?.VITE_API_BASE_URL
+if (typeof import.meta.env === 'undefined') {
+  import.meta.env = (typeof globalThis !== 'undefined' && globalThis.process?.env) ? globalThis.process.env : {}
+}
+
+const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL
 
 const publicApiClient = axios.create({
   baseURL: configuredBaseUrl || 'http://localhost:8080/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 60000,
+
 })
 
 publicApiClient.interceptors.request.use(

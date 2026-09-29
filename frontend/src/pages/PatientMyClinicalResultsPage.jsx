@@ -60,7 +60,7 @@ import {
   isRecentResult,
   isValidUuid,
 } from '../utils/patientClinicalResultHelpers'
-import './patientMyClinicalResults.css'
+import './styles/patientMyClinicalResults.css'
 
 const { Title, Text, Paragraph } = Typography
 

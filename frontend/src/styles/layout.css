@@ -15,7 +15,7 @@
 .clinic-sider .ant-layout-sider-children {
   display: flex;
   height: 100%;
-  padding: 14px 14px;
+  padding: 14px 10px;
   flex-direction: column;
   box-sizing: border-box;
 }
@@ -91,6 +91,7 @@
 }
 
 .clinic-menu.ant-menu-dark > .ant-menu-item,
+.clinic-menu.ant-menu-dark > .ant-menu-submenu,
 .clinic-menu.ant-menu-dark > .ant-menu-item-group {
   flex: 0 0 auto;
 }
@@ -118,17 +119,94 @@
   height: 38px;
   min-height: 38px;
   margin: 2px 0 !important;
-  padding: 8px 12px !important;
+  padding: 8px 10px !important;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: rgba(255, 255, 255, 0.75);
   font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 20px;
   white-space: nowrap;
   border-radius: 8px !important;
   transition: all 0.2s ease;
+}
+
+.clinic-menu.ant-menu-dark .ant-menu-submenu-title {
+  position: relative;
+  display: flex;
+  height: 38px;
+  min-height: 38px;
+  margin: 2px 0 !important;
+  padding: 8px 24px 8px 10px !important;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  border-radius: 8px !important;
+  transition: all 0.2s ease;
+}
+
+.clinic-menu.ant-menu-dark .ant-menu-submenu-title .ant-menu-title-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.clinic-menu.ant-menu-dark .ant-menu-submenu-title:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.clinic-menu.ant-menu-dark .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.clinic-menu.ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow {
+  right: 8px !important;
+  inset-inline-end: 8px !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  transition: all 0.2s ease;
+}
+
+.clinic-menu.ant-menu-dark .ant-menu-submenu-title:hover .ant-menu-submenu-arrow {
+  color: #ffffff !important;
+}
+
+.clinic-menu.ant-menu-dark .ant-menu-submenu-title .anticon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  stroke-width: 1.8;
+  color: currentColor;
+}
+
+.clinic-menu.ant-menu-dark .ant-menu-sub.ant-menu-inline {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-radius: 8px;
+  padding: 4px 0 4px 0 !important;
+  margin: 2px 0 4px 0 !important;
+}
+
+.clinic-menu.ant-menu-dark .ant-menu-sub.ant-menu-inline .ant-menu-item {
+  height: 34px;
+  min-height: 34px;
+  font-size: 12.5px;
+  padding-left: 18px !important;
+  padding-right: 8px !important;
+  margin: 1px 0 !important;
 }
 
 .clinic-menu.ant-menu-dark .ant-menu-item .anticon {
@@ -143,10 +221,12 @@
   color: currentColor;
 }
 
-.clinic-menu.ant-menu-dark .ant-menu-title-content {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.clinic-menu.ant-menu-dark .ant-menu-title-content,
+.clinic-menu.ant-menu-dark .ant-menu-item .ant-menu-title-content,
+.clinic-menu.ant-menu-dark .ant-menu-submenu-title .ant-menu-title-content {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
 }
 
 .clinic-menu.ant-menu-dark .ant-menu-item:hover {
@@ -180,12 +260,14 @@
   display: none;
 }
 
-.clinic-sider.ant-layout-sider-collapsed .clinic-menu .ant-menu-item {
+.clinic-sider.ant-layout-sider-collapsed .clinic-menu .ant-menu-item,
+.clinic-sider.ant-layout-sider-collapsed .clinic-menu .ant-menu-submenu-title {
   justify-content: center;
   padding-inline: 0 !important;
 }
 
-.clinic-sider.ant-layout-sider-collapsed .clinic-menu .ant-menu-item .anticon {
+.clinic-sider.ant-layout-sider-collapsed .clinic-menu .ant-menu-item .anticon,
+.clinic-sider.ant-layout-sider-collapsed .clinic-menu .ant-menu-submenu-title .anticon {
   margin: 0;
 }
 

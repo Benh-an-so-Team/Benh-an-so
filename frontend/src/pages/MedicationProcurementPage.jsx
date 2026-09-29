@@ -7,10 +7,12 @@ import {
   Col,
   DatePicker,
   Divider,
+  Dropdown,
   Empty,
   Form,
   Input,
   InputNumber,
+  Modal,
   Popconfirm,
   Radio,
   Row,
@@ -31,6 +33,7 @@ import {
   ClockCircleOutlined,
   CloseCircleOutlined,
   DeleteOutlined,
+  EllipsisOutlined,
   ExclamationCircleOutlined,
   EyeOutlined,
   FileDoneOutlined,
@@ -52,6 +55,7 @@ import AddMedicineToProcurementModal from '../components/procurement/AddMedicine
 import ProcurementPlanDetailModal from '../components/procurement/ProcurementPlanDetailModal.jsx'
 import RejectProcurementModal from '../components/procurement/RejectProcurementModal.jsx'
 import { useAuthContext } from '../context/AuthContext.jsx'
+import { showNotice } from '../components/common/notice'
 import {
   canApproveOrRejectPlan,
   formatDate,
@@ -61,7 +65,7 @@ import {
   hasEnoughConsumptionHistory,
   validateProcurementPlanForm,
 } from '../utils/medicationProcurementHelpers.js'
-import './medicationProcurement.css'
+import './styles/medicationProcurement.css'
 
 const { Title, Text, Paragraph } = Typography
 const { RangePicker } = DatePicker
@@ -287,11 +291,10 @@ export default function MedicationProcurementPage() {
       await medicationProcurementApi.approve(plan.id, {
         note: 'Đồng ý phê duyệt phiếu dự trù thuốc',
       })
-      message.success(`Đã phê duyệt phiếu ${plan.planCode} thành công!`)
+      showNotice.success('Phê duyệt thành công', `Đã phê duyệt phiếu dự trù ${plan.planCode}!`)
       fetchPlans()
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Không thể phê duyệt phiếu.'
-      message.error(msg)
+      showNotice.apiError(err, 'Không thể phê duyệt phiếu')
     } finally {
       setActionLoading(false)
     }
@@ -303,13 +306,12 @@ export default function MedicationProcurementPage() {
     setActionLoading(true)
     try {
       await medicationProcurementApi.reject(rejectPlanTarget.id, { reason })
-      message.success(`Đã từ chối phiếu ${rejectPlanTarget.planCode}!`)
+      showNotice.success('Đã từ chối phiếu', `Đã từ chối phiếu dự trù ${rejectPlanTarget.planCode}!`)
       setRejectModalOpen(false)
       setRejectPlanTarget(null)
       fetchPlans()
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Không thể từ chối phiếu.'
-      message.error(msg)
+      showNotice.apiError(err, 'Không thể từ chối phiếu')
     } finally {
       setActionLoading(false)
     }
@@ -568,70 +570,96 @@ export default function MedicationProcurementPage() {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 180,
+      width: 90,
+      align: 'center',
       render: (_, record) => {
         const sodCheck = canApproveOrRejectPlan(record, currentUserId)
         const isPending = record.status === 'PENDING_APPROVAL'
+        const canAction = isManagerOrAdmin && isPending && sodCheck.allowed && !actionLoading
+
+        const menuItems = [
+          {
+            key: 'detail',
+            icon: <EyeOutlined style={{ color: '#2563eb' }} />,
+            label: 'Chi tiết',
+            onClick: () => {
+              setSelectedPlanId(record.id)
+              setDetailModalOpen(true)
+            },
+          },
+        ]
+
+        if (isManagerOrAdmin) {
+          menuItems.push(
+            {
+              key: 'approve',
+              icon: <CheckCircleOutlined style={{ color: canAction ? '#16a34a' : '#94a3b8' }} />,
+              label: (
+                <span style={{ color: canAction ? '#16a34a' : '#94a3b8', fontWeight: 600 }}>
+                  Duyệt
+                </span>
+              ),
+              disabled: !canAction,
+              onClick: () => {
+                Modal.confirm({
+                  title: 'Phê duyệt phiếu dự trù này?',
+                  content: `Xác nhận phê duyệt phiếu dự trù ${record.planCode || ''}?`,
+                  okText: 'Duyệt',
+                  cancelText: 'Hủy',
+                  okButtonProps: { style: { background: '#16a34a', borderColor: '#16a34a' } },
+                  onOk: () => handleQuickApprove(record),
+                })
+              },
+            },
+            {
+              key: 'reject',
+              icon: <CloseCircleOutlined style={{ color: canAction ? '#dc2626' : '#94a3b8' }} />,
+              label: (
+                <span style={{ color: canAction ? '#dc2626' : '#94a3b8' }}>
+                  Từ chối
+                </span>
+              ),
+              disabled: !canAction,
+              onClick: () => {
+                setRejectPlanTarget(record)
+                setRejectModalOpen(true)
+              },
+            },
+          )
+
+          if (isPending && !sodCheck.allowed && sodCheck.reason) {
+            menuItems.push(
+              { type: 'divider' },
+              {
+                key: 'sod-warning',
+                icon: <ExclamationCircleOutlined style={{ color: '#d97706' }} />,
+                label: (
+                  <span style={{ fontSize: 12, color: '#64748b' }}>
+                    {sodCheck.reason}
+                  </span>
+                ),
+                disabled: true,
+              },
+            )
+          }
+        }
 
         return (
-          <Space size={6} wrap>
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
             <Button
               size="small"
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setSelectedPlanId(record.id)
-                setDetailModalOpen(true)
+              icon={<EllipsisOutlined style={{ fontSize: 18 }} />}
+              title="Thao tác"
+              style={{
+                borderRadius: 6,
+                width: 32,
+                height: 28,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
-              style={{ borderRadius: 6 }}
-            >
-              Chi tiết
-            </Button>
-
-            {isManagerOrAdmin && isPending && (
-              <>
-                <Tooltip title={!sodCheck.allowed ? sodCheck.reason : ''}>
-                  <Popconfirm
-                    title="Phê duyệt phiếu dự trù này?"
-                    okText="Duyệt"
-                    cancelText="Hủy"
-                    onConfirm={() => handleQuickApprove(record)}
-                    disabled={!sodCheck.allowed || actionLoading}
-                  >
-                    <Button
-                      size="small"
-                      type="primary"
-                      icon={<CheckCircleOutlined />}
-                      disabled={!sodCheck.allowed}
-                      style={{
-                        background: '#16a34a',
-                        borderColor: '#16a34a',
-                        borderRadius: 6,
-                        fontWeight: 600,
-                      }}
-                    >
-                      Duyệt
-                    </Button>
-                  </Popconfirm>
-                </Tooltip>
-
-                <Tooltip title={!sodCheck.allowed ? sodCheck.reason : ''}>
-                  <Button
-                    size="small"
-                    danger
-                    icon={<CloseCircleOutlined />}
-                    disabled={!sodCheck.allowed || actionLoading}
-                    onClick={() => {
-                      setRejectPlanTarget(record)
-                      setRejectModalOpen(true)
-                    }}
-                    style={{ borderRadius: 6 }}
-                  >
-                    Từ chối
-                  </Button>
-                </Tooltip>
-              </>
-            )}
-          </Space>
+            />
+          </Dropdown>
         )
       },
     },

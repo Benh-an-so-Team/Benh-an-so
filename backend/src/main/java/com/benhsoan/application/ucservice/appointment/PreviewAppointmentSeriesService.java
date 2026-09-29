@@ -74,13 +74,13 @@ public class PreviewAppointmentSeriesService implements PreviewAppointmentSeries
             throw new DoctorInactiveException(doctor.getId());
         }
 
-        List<AppointmentSeriesValidator.SessionSlot> slots = new ArrayList<>();
-        Duration duration = Duration.ofMinutes(command.sessionDurationMinutes());
-        for (int i = 1; i <= command.totalSessions(); i++) {
-            Instant slotStart = command.firstSessionStartTime().plus(Duration.ofDays((long) (i - 1) * command.intervalDays()));
-            Instant slotEnd = slotStart.plus(duration);
-            slots.add(new AppointmentSeriesValidator.SessionSlot(i, slotStart, slotEnd));
-        }
+        List<AppointmentSeriesValidator.SessionSlot> slots = appointmentSeriesValidator.generateSessionsSkippingDoctorOffDays(
+                command.doctorId(),
+                command.firstSessionStartTime(),
+                command.sessionDurationMinutes(),
+                command.totalSessions(),
+                command.intervalDays()
+        );
 
         List<AppointmentSeriesConflictDetail> conflicts = appointmentSeriesValidator.validateSessions(command.doctorId(), slots);
         Map<Integer, AppointmentSeriesConflictDetail> conflictMap = conflicts.stream()

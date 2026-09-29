@@ -1,0 +1,602 @@
+/* =========================================================
+   PUBLIC PATIENT PORTAL LOOKUP STYLESHEET
+   Unified Holographic Cyberpunk Medical Theme
+   ========================================================= */
+
+.public-lookup-page {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow-x: hidden;
+  color: #e2e8f0;
+}
+
+/* =========================================================
+   MAIN GRID CONTAINER
+   ========================================================= */
+.public-lookup-main {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 48px) clamp(16px, 3vw, 32px);
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  gap: clamp(28px, 4.5vw, 56px);
+}
+
+/* =========================================================
+   LEFT INTRO SECTION (HERO)
+   ========================================================= */
+.public-lookup-intro {
+  width: 100%;
+  min-width: 0;
+}
+
+.public-lookup-eyebrow {
+  display: inline-flex;
+  min-height: 32px;
+  padding: 4px 14px;
+  align-items: center;
+  gap: 8px;
+  color: var(--cy2, #7cf3ff);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(55, 230, 255, 0.1);
+  border: 1px solid rgba(55, 230, 255, 0.3);
+  border-radius: 999px;
+  box-shadow: 0 0 16px rgba(55, 230, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.public-lookup-title {
+  margin: clamp(14px, 2.5vw, 20px) 0 0;
+  font-size: clamp(26px, 4.5vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.22;
+  background: linear-gradient(135deg, #ffffff 40%, #7cf3ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.public-lookup-desc {
+  max-width: 480px;
+  margin: clamp(12px, 2vw, 16px) 0 0;
+  color: #94a3b8;
+  font-size: clamp(14px, 2.5vw, 15.5px);
+  line-height: 1.65;
+}
+
+/* Steps list */
+.public-lookup-steps {
+  display: grid;
+  margin-top: clamp(24px, 3.5vw, 32px);
+  gap: clamp(12px, 2vw, 16px);
+}
+
+.public-lookup-step-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: rgba(10, 25, 45, 0.65);
+  border: 1px solid rgba(55, 230, 255, 0.15);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.25s ease;
+}
+
+.public-lookup-step-item:hover {
+  background: rgba(15, 35, 60, 0.85);
+  border-color: rgba(55, 230, 255, 0.35);
+  box-shadow: 0 4px 20px rgba(55, 230, 255, 0.12);
+  transform: translateX(4px);
+}
+
+.public-lookup-step-item .step-num {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: #38bdf8;
+  font-size: 14px;
+  font-weight: 800;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(14, 165, 233, 0.05));
+  border: 1.5px solid rgba(56, 189, 248, 0.6);
+  border-radius: 10px;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.public-lookup-step-item .step-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.public-lookup-step-item .step-body strong {
+  color: #f1f5f9;
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.public-lookup-step-item .step-body small {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Trust Banner */
+.public-lookup-trust-note {
+  display: flex;
+  max-width: 500px;
+  margin-top: clamp(20px, 3vw, 28px);
+  padding: 14px 18px;
+  align-items: center;
+  gap: 14px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.public-lookup-trust-note .trust-icon {
+  font-size: 20px;
+  color: #34d399;
+  flex-shrink: 0;
+}
+
+.public-lookup-trust-note strong {
+  display: block;
+  color: #6ee7b7;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.public-lookup-trust-note small {
+  display: block;
+  margin-top: 2px;
+  color: #a7f3d0;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+/* =========================================================
+   RIGHT SEARCH CARD
+   ========================================================= */
+.public-lookup-card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 35px rgba(55, 230, 255, 0.12);
+  overflow: hidden;
+  color: #1e293b;
+}
+
+.public-lookup-card-heading {
+  display: flex;
+  padding: 24px 28px 18px;
+  align-items: flex-start;
+  gap: 16px;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.public-lookup-card-icon {
+  display: grid;
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  color: #0284c7;
+  font-size: 22px;
+  background: #e0f2fe;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.16);
+}
+
+.public-lookup-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  color: #0369a1;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #e0f2fe;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.public-lookup-card-heading h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.public-lookup-card-heading p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.public-lookup-form {
+  padding: 24px 28px 28px;
+}
+
+.public-lookup-field + .public-lookup-field {
+  margin-top: 18px;
+}
+
+.public-lookup-field label {
+  display: block;
+  margin-bottom: 6px;
+  color: #1e293b;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.public-lookup-field label b {
+  color: #ef4444;
+}
+
+/* Input Fields - Outer Affix Wrapper Styling */
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper {
+  background: #f8fafc !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper:hover {
+  border-color: #cbd5e1 !important;
+  background: #ffffff !important;
+}
+
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper:focus-within,
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper-focused {
+  border-color: #0284c7 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3.5px rgba(2, 132, 199, 0.15) !important;
+}
+
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper .ant-input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 15px !important;
+  color: #0f172a !important;
+  font-weight: 500 !important;
+}
+
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper .ant-input-prefix {
+  margin-right: 10px !important;
+  color: #64748b !important;
+  font-size: 17px !important;
+}
+
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper:focus-within .ant-input-prefix {
+  color: #0284c7 !important;
+}
+
+.public-lookup-field > small {
+  display: block;
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+/* Submit Button */
+.public-lookup-submit.ant-btn {
+  width: 100%;
+  height: 48px !important;
+  margin-top: 22px;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 20px -2px rgba(2, 132, 199, 0.45) !important;
+  transition: all 0.2s ease !important;
+}
+
+.public-lookup-submit.ant-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
+  box-shadow: 0 8px 24px -2px rgba(2, 132, 199, 0.55) !important;
+  transform: translateY(-1px);
+}
+
+.public-lookup-privacy {
+  display: flex;
+  margin-top: 14px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.public-lookup-card-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.public-lookup-card-foot a {
+  color: #0284c7;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.public-lookup-card-foot a:hover {
+  color: #0369a1;
+  text-decoration: underline;
+}
+
+.public-lookup-feedback {
+  padding: 0 28px 24px;
+}
+
+.public-lookup-feedback .ant-alert {
+  border-radius: 12px;
+}
+
+/* =========================================================
+   RESULT DISPLAY SECTION
+   ========================================================= */
+.public-lookup-result-wrap {
+  position: relative;
+  z-index: 5;
+  width: min(1080px, calc(100% - 32px));
+  margin: 0 auto 60px auto;
+}
+
+.public-lookup-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px 22px;
+  background: rgba(12, 28, 45, 0.85);
+  border: 1px solid rgba(55, 230, 255, 0.25);
+  border-radius: 16px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  flex-wrap: wrap;
+}
+
+.result-header-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.result-header-badge-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  color: #10b981;
+  font-size: 24px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1.5px solid rgba(16, 185, 129, 0.4);
+  border-radius: 12px;
+}
+
+.result-header-title h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.result-header-title p {
+  margin: 2px 0 0;
+  color: #94a3b8;
+  font-size: 13.5px;
+}
+
+.result-header-title p b {
+  color: var(--cy2, #7cf3ff);
+}
+
+.public-lookup-reset-btn.ant-btn {
+  height: 40px !important;
+  padding: 0 18px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 10px !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease !important;
+}
+
+.public-lookup-reset-btn.ant-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+/* Result Cards */
+.public-result-card.ant-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  overflow: hidden;
+}
+
+.public-result-card .ant-card-head {
+  padding: 16px 24px !important;
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.public-result-card .ant-card-head-title {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  color: #0f172a !important;
+}
+
+.public-result-card .ant-card-body {
+  padding: 24px !important;
+}
+
+/* Conclusion Highlight Boxes */
+.conclusion-box {
+  padding: 18px 20px;
+  border-radius: 12px;
+  height: 100%;
+}
+
+.conclusion-primary {
+  background: #f0f9ff;
+  border-left: 4px solid #0284c7;
+}
+
+.conclusion-success {
+  background: #f0fdf4;
+  border-left: 4px solid #10b981;
+}
+
+.conclusion-lbl {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  color: #64748b !important;
+}
+
+.conclusion-val {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #0f172a;
+}
+
+.conclusion-success .conclusion-val {
+  color: #065f46;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+.public-lookup-footer {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  padding: 20px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(5, 13, 24, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.public-lookup-footer-inner {
+  display: flex;
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 3vw, 32px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #94a3b8;
+  flex-wrap: wrap;
+}
+
+/* =========================================================
+   RESPONSIVE DESIGN
+   ========================================================= */
+@media (max-width: 959px) {
+  .public-lookup-main {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding-top: 32px;
+  }
+
+  .public-lookup-intro {
+    text-align: center;
+  }
+
+  .public-lookup-title,
+  .public-lookup-desc,
+  .public-lookup-trust-note {
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .public-lookup-steps {
+    max-width: 500px;
+    margin-right: auto;
+    margin-left: auto;
+    text-align: left;
+  }
+}
+
+@media (max-width: 600px) {
+  .public-lookup-card-heading {
+    padding: 18px 20px 14px;
+  }
+
+  .public-lookup-form {
+    padding: 20px;
+  }
+
+  .public-lookup-result-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .public-lookup-reset-btn.ant-btn {
+    width: 100%;
+  }
+
+  .public-lookup-footer-inner {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+}

@@ -52,18 +52,18 @@ public class ExcelPatientSheetParser implements PatientSpreadsheetParserPort {
                         .fullName(getCellStringValue(row.getCell(0)))
                         .dateOfBirth(getCellDateOrStringValue(row.getCell(1)))
                         .gender(getCellStringValue(row.getCell(2)))
-                        .phone(getCellStringValue(row.getCell(3)))
-                        .identityNumber(getCellStringValue(row.getCell(4)))
+                        .phone(getCellPhoneValue(row.getCell(3)))
+                        .identityNumber(getCellIdentityValue(row.getCell(4)))
                         .insuranceNumber(getCellStringValue(row.getCell(5)))
                         .address(getCellStringValue(row.getCell(6)))
                         .email(getCellStringValue(row.getCell(7)))
                         .bloodType(getCellStringValue(row.getCell(8)))
                         .emergencyContact(getCellStringValue(row.getCell(9)))
                         .emergencyRelationship(getCellStringValue(row.getCell(10)))
-                        .emergencyPhone(getCellStringValue(row.getCell(11)))
+                        .emergencyPhone(getCellPhoneValue(row.getCell(11)))
                         .guardianName(getCellStringValue(row.getCell(12)))
                         .guardianRelationship(getCellStringValue(row.getCell(13)))
-                        .guardianPhone(getCellStringValue(row.getCell(14)))
+                        .guardianPhone(getCellPhoneValue(row.getCell(14)))
                         .build();
 
                 if (!dto.isEmpty()) {
@@ -132,6 +132,37 @@ public class ExcelPatientSheetParser implements PatientSpreadsheetParserPort {
         }
 
         return getCellStringValue(cell);
+    }
+
+    private String getCellPhoneValue(Cell cell) {
+        String val = getCellStringValue(cell);
+        if (val == null) {
+            return null;
+        }
+        String clean = val.replaceAll("[\\s.-]", "");
+        // If Excel numeric stripped the leading zero for a 9-digit VN mobile number starting with 3,5,7,8,9
+        if (clean.matches("^[35789]\\d{8}$")) {
+            return "0" + clean;
+        }
+        return clean.isEmpty() ? null : clean;
+    }
+
+    private String getCellIdentityValue(Cell cell) {
+        String val = getCellStringValue(cell);
+        if (val == null) {
+            return null;
+        }
+        String clean = val.replaceAll("[\\s.-]", "");
+        // If Excel numeric stripped leading zeros:
+        // Vietnamese CCCD is 12 digits. If stripped to 10 or 11 digits, restore leading zeros.
+        if (clean.matches("^\\d{10,11}$")) {
+            return "0".repeat(12 - clean.length()) + clean;
+        }
+        // Vietnamese CMND is 9 digits. If stripped to 8 digits, restore leading zero.
+        if (clean.matches("^\\d{8}$")) {
+            return "0" + clean;
+        }
+        return clean.isEmpty() ? null : clean;
     }
 
     private String normalize(String value) {

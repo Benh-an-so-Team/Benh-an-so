@@ -5,6 +5,7 @@ import java.io.IOException;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataFormat;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -52,9 +53,15 @@ public class ExcelPatientTemplateGenerator implements PatientSpreadsheetTemplate
             headerStyle.setFillForegroundColor(IndexedColors.ROYAL_BLUE.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
+            // Text Style for data columns (explicitly string '@' to prevent Excel from auto-converting to numbers and dropping leading zeros)
+            CellStyle textStyle = workbook.createCellStyle();
+            DataFormat dataFormat = workbook.createDataFormat();
+            textStyle.setDataFormat(dataFormat.getFormat("@"));
+
             // Create Header Row
             Row headerRow = sheet.createRow(0);
             for (int i = 0; i < HEADERS.length; i++) {
+                sheet.setDefaultColumnStyle(i, textStyle);
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(HEADERS[i]);
                 cell.setCellStyle(headerStyle);

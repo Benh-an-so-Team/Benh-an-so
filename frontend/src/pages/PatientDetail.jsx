@@ -477,6 +477,17 @@ function PatientDetail() {
                 >
                   Xem văn bản mẫu
                 </Button>
+                {userRoles.includes('admin') && (
+                  <Button
+                    size="small"
+                    type="default"
+                    icon={<SafetyCertificateOutlined />}
+                    onClick={() => navigate(`/personal-data-requests?patientId=${patient.id}`)}
+                    style={{ fontWeight: 500 }}
+                  >
+                    Yêu cầu dữ liệu cá nhân
+                  </Button>
+                )}
               </Space>
             </div>
           </Descriptions.Item>

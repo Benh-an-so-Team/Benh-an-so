@@ -46,6 +46,7 @@ import {
   UploadOutlined,
   UsergroupDeleteOutlined,
   UserOutlined,
+  TeamOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
 
@@ -53,6 +54,7 @@ import patientImportApi from '../api/patientImportApi.js'
 import patientApi from '../api/patientApi.js'
 import { useAuthContext } from '../context/AuthContext'
 import {
+  calculateAgeFromDob,
   exportErrorsToCsv,
   formatDateTime,
   formatFileSize,
@@ -62,7 +64,7 @@ import {
   parseAndValidateSpreadsheet,
   validateSpreadsheetFile,
 } from '../utils/patientImportHelpers.js'
-import './patientImport.css'
+import './styles/patientImport.css'
 
 const { Title, Text, Paragraph } = Typography
 const { Dragger } = Upload
@@ -113,6 +115,12 @@ function PatientImportPage() {
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState(null)
   const [skipDuplicates, setSkipDuplicates] = useState(true)
+
+  // Duplicate preview & comparison modal state
+  const [inspectDuplicateModalVisible, setInspectDuplicateModalVisible] = useState(false)
+  const [inspectingDuplicateRow, setInspectingDuplicateRow] = useState(null)
+  const [inspectingPatientDetail, setInspectingPatientDetail] = useState(null)
+  const [inspectingLoading, setInspectingLoading] = useState(false)
 
   // Tab 2: Audit Logs state
   const [logsLoading, setLogsLoading] = useState(false)
@@ -266,7 +274,10 @@ function PatientImportPage() {
         formData.append('file', selectedFile)
 
         const response = await patientImportApi.previewImport(formData)
-        data = response.data
+        data = {
+          ...response.data,
+          validRows: response.data?.validRows || clientResult?.validRows || [],
+        }
       } catch (backendErr) {
         console.warn('Backend preview không phản hồi hoặc lỗi 500, kích hoạt chế độ phân tích client thông minh:', backendErr)
         if (clientResult && !clientResult.isEmpty) {
@@ -331,6 +342,24 @@ function PatientImportPage() {
     message.success('Đã chuyển tất cả dòng nghi trùng về lựa chọn "Bỏ qua".')
   }
 
+  const handleInspectDuplicate = async (row) => {
+    setInspectingDuplicateRow(row)
+    setInspectingPatientDetail(null)
+    setInspectDuplicateModalVisible(true)
+
+    if (row.matchedExistingPatientId) {
+      try {
+        setInspectingLoading(true)
+        const res = await patientApi.getById(row.matchedExistingPatientId)
+        setInspectingPatientDetail(res.data)
+      } catch (err) {
+        console.warn('Không thể tải chi tiết hồ sơ bệnh nhân gốc:', err)
+      } finally {
+        setInspectingLoading(false)
+      }
+    }
+  }
+
   const handleDownloadErrors = () => {
     const errors = previewData?.errors || importResult?.errors || []
     if (errors.length === 0) {
@@ -392,6 +421,26 @@ function PatientImportPage() {
 
         for (const r of validRowsToImport) {
           try {
+            // Map nhóm máu từ dạng ký hiệu Excel ('A', 'B', 'AB', 'O', 'O+', 'O-', ...) sang enum của backend
+            let mappedBloodType = undefined
+            const rawBt = String(r.bloodType || '').toUpperCase().trim()
+            if (rawBt) {
+              if (['A', 'A+', 'A_POS', 'A_POSITIVE'].includes(rawBt)) mappedBloodType = 'A_POSITIVE'
+              else if (['A-', 'A_NEG', 'A_NEGATIVE'].includes(rawBt)) mappedBloodType = 'A_NEGATIVE'
+              else if (['B', 'B+', 'B_POS', 'B_POSITIVE'].includes(rawBt)) mappedBloodType = 'B_POSITIVE'
+              else if (['B-', 'B_NEG', 'B_NEGATIVE'].includes(rawBt)) mappedBloodType = 'B_NEGATIVE'
+              else if (['AB', 'AB+', 'AB_POS', 'AB_POSITIVE'].includes(rawBt)) mappedBloodType = 'AB_POSITIVE'
+              else if (['AB-', 'AB_NEG', 'AB_NEGATIVE'].includes(rawBt)) mappedBloodType = 'AB_NEGATIVE'
+              else if (['O', 'O+', 'O_POS', 'O_POSITIVE'].includes(rawBt)) mappedBloodType = 'O_POSITIVE'
+              else if (['O-', 'O_NEG', 'O_NEGATIVE'].includes(rawBt)) mappedBloodType = 'O_NEGATIVE'
+              else mappedBloodType = 'UNKNOWN'
+            }
+
+            // Kiểm tra chưa thành niên (<18 tuổi) để gán người ký phiếu đồng ý
+            const age = calculateAgeFromDob(r.dateOfBirth)
+            const isMinor = age !== null && age < 18
+            const consentSigner = isMinor ? (r.guardianName || r.fullName) : r.fullName
+
             const createPayload = {
               fullName: r.fullName,
               dateOfBirth: r.dateOfBirth,
@@ -404,14 +453,16 @@ function PatientImportPage() {
               address: r.address || undefined,
               identityNumber: r.identityNumber || undefined,
               insuranceNumber: r.insuranceNumber || undefined,
-              bloodType: r.bloodType || undefined,
+              bloodType: mappedBloodType,
               emergencyContact: r.emergencyContact || undefined,
               emergencyRelationship: r.emergencyRelationship || undefined,
               emergencyPhone: r.emergencyPhone || undefined,
               guardianName: r.guardianName || undefined,
               guardianRelationship: r.guardianRelationship || undefined,
               guardianPhone: r.guardianPhone || undefined,
+              consentSignerName: consentSigner,
               consentAgreed: true,
+              consentVersion: '1.0',
             }
             const res = await patientApi.create(createPayload)
             const code = res.data?.patientCode || res.data?.code || `BN-${Date.now().toString().slice(-5)}`
@@ -705,15 +756,46 @@ function PatientImportPage() {
     {
       title: 'Hồ sơ nghi trùng trong hệ thống',
       key: 'existingData',
-      width: 320,
-      render: (_, r) => (
-        <div className="patient-import-dup-existing">
-          <div>
-            <strong>Mã BN: {r.matchedExistingPatientCode || 'Đã có'}</strong> — {r.matchedExistingFullName || r.fullName}
+      width: 340,
+      render: (_, r) => {
+        const isDbMatch = Boolean(r.matchedExistingPatientId || (r.matchedExistingPatientCode && r.matchedExistingPatientCode.startsWith('BN')))
+        const isFileMatch = Boolean(r.matchedExistingPatientCode && r.matchedExistingPatientCode.startsWith('Dòng'))
+
+        return (
+          <div className="patient-import-dup-existing">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              {isDbMatch && (
+                <Tag color="blue" style={{ fontWeight: 600 }}>
+                  Mã BN: {r.matchedExistingPatientCode}
+                </Tag>
+              )}
+              {isFileMatch && (
+                <Tag color="orange" style={{ fontWeight: 600 }}>
+                  {r.matchedExistingPatientCode}
+                </Tag>
+              )}
+              {!isDbMatch && !isFileMatch && (
+                <Tag color="warning">Nghi trùng</Tag>
+              )}
+              <strong style={{ color: '#0f172a' }}>
+                {r.matchedExistingFullName || r.fullName}
+              </strong>
+            </div>
+            <div style={{ marginTop: 4, fontSize: 12, color: '#475569' }}>{r.duplicateReason}</div>
+            <div style={{ marginTop: 6 }}>
+              <Button
+                type="link"
+                size="small"
+                icon={<EyeOutlined />}
+                style={{ padding: 0, height: 'auto', fontSize: 12 }}
+                onClick={() => handleInspectDuplicate(r)}
+              >
+                Xem chi tiết đối chiếu
+              </Button>
+            </div>
           </div>
-          <div style={{ marginTop: 4 }}>{r.duplicateReason}</div>
-        </div>
-      ),
+        )
+      },
     },
     {
       title: 'Lựa chọn xử lý',
@@ -838,6 +920,36 @@ function PatientImportPage() {
 
   return (
     <div className="patient-import-container">
+      {/* Top Module Navigation Tabs */}
+      <Tabs
+        activeKey="import"
+        onChange={(key) => {
+          if (key === 'list') {
+            navigate('/patients')
+          }
+        }}
+        type="card"
+        style={{ marginBottom: 16 }}
+        items={[
+          {
+            key: 'list',
+            label: (
+              <span style={{ fontWeight: 600, fontSize: 14 }}>
+                <TeamOutlined /> Danh sách hồ sơ bệnh nhân
+              </span>
+            ),
+          },
+          {
+            key: 'import',
+            label: (
+              <span style={{ fontWeight: 600, fontSize: 14, color: '#16a34a' }}>
+                <FileExcelOutlined /> Nhập hồ sơ từ Excel
+              </span>
+            ),
+          },
+        ]}
+      />
+
       {/* Top Header */}
       <div className="patient-import-header">
         <div className="patient-import-title-group">
@@ -845,9 +957,6 @@ function PatientImportPage() {
             <FileExcelOutlined style={{ color: '#16a34a' }} />
             Nhập hồ sơ bệnh nhân từ tệp bảng tính
           </h1>
-          <p className="patient-import-subtitle">
-            Module Quản lý hồ sơ bệnh nhân • Nạp danh sách bệnh nhân hàng loạt với cơ chế kiểm tra và đối soát an toàn
-          </p>
         </div>
         <Space size={10}>
           <Button icon={<RollbackOutlined />} onClick={() => navigate('/patients')}>
@@ -1529,6 +1638,169 @@ function PatientImportPage() {
           </div>
         )}
       </Drawer>
+
+      {/* Modal: Xem trước và đối chiếu hồ sơ nghi trùng lặp */}
+      <Modal
+        title={
+          <Space>
+            <WarningOutlined style={{ color: '#d97706' }} />
+            <span>Đối chiếu thông tin hồ sơ nghi trùng (Dòng {inspectingDuplicateRow?.rowNumber})</span>
+          </Space>
+        }
+        width={800}
+        open={inspectDuplicateModalVisible}
+        onCancel={() => setInspectDuplicateModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setInspectDuplicateModalVisible(false)}>
+            Đóng
+          </Button>,
+          <Button
+            key="skip"
+            onClick={() => {
+              if (inspectingDuplicateRow) {
+                handleDuplicateDecisionChange(inspectingDuplicateRow.rowNumber, 'SKIP')
+                message.info(`Dòng ${inspectingDuplicateRow.rowNumber} đã được đặt thành "Bỏ qua".`)
+              }
+              setInspectDuplicateModalVisible(false)
+            }}
+          >
+            Bỏ qua dòng này
+          </Button>,
+          <Button
+            key="merge"
+            type="primary"
+            style={{ backgroundColor: '#2563eb' }}
+            onClick={() => {
+              if (inspectingDuplicateRow) {
+                handleDuplicateDecisionChange(inspectingDuplicateRow.rowNumber, 'MERGE')
+                message.success(`Dòng ${inspectingDuplicateRow.rowNumber} đã được đánh dấu để gộp hồ sơ!`)
+              }
+              setInspectDuplicateModalVisible(false)
+            }}
+          >
+            Đánh dấu để gộp
+          </Button>,
+        ]}
+      >
+        {inspectingDuplicateRow && (
+          <div>
+            <Alert
+              type="warning"
+              showIcon
+              message="Lý do ghi nhận nghi trùng lặp:"
+              description={inspectingDuplicateRow.duplicateReason}
+              style={{ marginBottom: 16 }}
+            />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              {/* Cột 1: Thông tin từ tệp tải lên */}
+              <Card
+                size="small"
+                title={
+                  <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                    <FileExcelOutlined style={{ color: '#16a34a', marginRight: 6 }} />
+                    Dữ liệu dòng {inspectingDuplicateRow.rowNumber} trong tệp
+                  </span>
+                }
+                style={{ background: '#f8fafc', borderColor: '#cbd5e1' }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+                  <div>
+                    <Text type="secondary">Họ và tên:</Text>{' '}
+                    <strong>{inspectingDuplicateRow.fullName || '—'}</strong>
+                  </div>
+                  <div>
+                    <Text type="secondary">Ngày sinh:</Text>{' '}
+                    <span>{inspectingDuplicateRow.dateOfBirth || '—'}</span>
+                  </div>
+                  <div>
+                    <Text type="secondary">Số điện thoại:</Text>{' '}
+                    <span>{inspectingDuplicateRow.phone || '—'}</span>
+                  </div>
+                  <div>
+                    <Text type="secondary">Số CCCD/CMND:</Text>{' '}
+                    <Text code>{inspectingDuplicateRow.identityNumber || '—'}</Text>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Cột 2: Thông tin trong hệ thống */}
+              <Card
+                size="small"
+                title={
+                  <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                    <SolutionOutlined style={{ color: '#2563eb', marginRight: 6 }} />
+                    Hồ sơ đối chiếu trong hệ thống
+                  </span>
+                }
+                style={{ background: '#eff6ff', borderColor: '#bfdbfe' }}
+              >
+                {inspectingLoading ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <Spin tip="Đang tải dữ liệu hồ sơ..." />
+                  </div>
+                ) : inspectingPatientDetail ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+                    <div>
+                      <Text type="secondary">Mã bệnh nhân:</Text>{' '}
+                      <Tag color="blue" style={{ fontWeight: 600 }}>
+                        {inspectingPatientDetail.patientCode || inspectingDuplicateRow.matchedExistingPatientCode}
+                      </Tag>
+                    </div>
+                    <div>
+                      <Text type="secondary">Họ và tên:</Text>{' '}
+                      <strong style={{ color: '#1e3a8a' }}>{inspectingPatientDetail.fullName || '—'}</strong>
+                    </div>
+                    <div>
+                      <Text type="secondary">Ngày sinh:</Text>{' '}
+                      <span>{inspectingPatientDetail.dateOfBirth || '—'}</span>
+                    </div>
+                    <div>
+                      <Text type="secondary">Số điện thoại:</Text>{' '}
+                      <span>{inspectingPatientDetail.phone || '—'}</span>
+                    </div>
+                    <div>
+                      <Text type="secondary">Số CCCD/CMND:</Text>{' '}
+                      <Text code>{inspectingPatientDetail.identityNumber || '—'}</Text>
+                    </div>
+                    <div>
+                      <Text type="secondary">Địa chỉ:</Text>{' '}
+                      <span>{inspectingPatientDetail.address || '—'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+                    <div>
+                      <Text type="secondary">Đối chiếu:</Text>{' '}
+                      <Tag color="orange" style={{ fontWeight: 600 }}>
+                        {inspectingDuplicateRow.matchedExistingPatientCode || 'Hồ sơ đã có'}
+                      </Tag>
+                    </div>
+                    <div>
+                      <Text type="secondary">Họ và tên:</Text>{' '}
+                      <strong>{inspectingDuplicateRow.matchedExistingFullName || inspectingDuplicateRow.fullName}</strong>
+                    </div>
+                    <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>
+                      {inspectingDuplicateRow.matchedExistingPatientCode?.startsWith('Dòng')
+                        ? 'Dòng này trùng khớp thông tin với dòng khác trong cùng tệp Excel vừa tải lên.'
+                        : 'Thông tin định danh đã tồn tại trong cơ sở dữ liệu của hệ thống.'}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            </div>
+
+            <div style={{ marginTop: 16, padding: '10px 14px', background: '#f1f5f9', borderRadius: 6, fontSize: 13 }}>
+              <Text strong>Lựa chọn hiện tại:</Text>{' '}
+              {duplicateDecisions[inspectingDuplicateRow.rowNumber] === 'MERGE' ? (
+                <Tag color="purple">Đánh dấu để gộp</Tag>
+              ) : (
+                <Tag color="default">Bỏ qua dòng này (Mặc định)</Tag>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

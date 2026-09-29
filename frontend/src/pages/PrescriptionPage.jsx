@@ -82,6 +82,8 @@ import CancelPrescriptionModal from '../components/pharmacy/CancelPrescriptionMo
 import PartialDispenseModal from '../components/pharmacy/PartialDispenseModal.jsx'
 import DispenseHistoryModal from '../components/pharmacy/DispenseHistoryModal.jsx'
 import ReturnMedicationModal from '../components/pharmacy/ReturnMedicationModal.jsx'
+import ReplacePrescriptionModal from '../components/pharmacy/ReplacePrescriptionModal.jsx'
+import { canReplacePrescription } from '../utils/prescriptionReplacementHelpers.js'
 import SpecialControlPrescribeConfirmModal from '../components/prescription/SpecialControlPrescribeConfirmModal.jsx'
 import SpecialControlBadge from '../components/pharmacy/SpecialControlBadge.jsx'
 import specialControlledDrugApi, {
@@ -149,6 +151,26 @@ const PRESET_CHANGE_REASONS = [
   'Bỏ bớt thuốc do bệnh nhân đã ổn định hoặc có phản ứng phụ',
 ]
 
+const INTERCONNECTION_STORAGE_KEY = 'dmr_prescription_interconnections'
+
+const getStoredInterconnections = () => {
+  try {
+    const raw = sessionStorage.getItem(INTERCONNECTION_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+const saveStoredInterconnection = (key, data) => {
+  try {
+    if (!key) return
+    const current = getStoredInterconnections()
+    current[String(key)] = data
+    sessionStorage.setItem(INTERCONNECTION_STORAGE_KEY, JSON.stringify(current))
+  } catch {}
+}
+
 import {
   ROUTE_OPTIONS,
   hasSafetyWarnings,
@@ -163,6 +185,7 @@ const createEmptyItem = (isOriginal = false) => ({
   medicineId: undefined,
   quantity: 10,
   dosage: '1 viên',
+  singleDoseQuantity: 1,
   frequency: 2,
   route: 'ORAL',
   durationDays: 5,
@@ -255,6 +278,8 @@ function PrescriptionPage() {
   const [selectedPrescriptionForHistory, setSelectedPrescriptionForHistory] = useState(null)
   const [returnModalOpen, setReturnModalOpen] = useState(false)
   const [selectedPrescriptionForReturn, setSelectedPrescriptionForReturn] = useState(null)
+  const [replaceModalOpen, setReplaceModalOpen] = useState(false)
+  const [selectedPrescriptionForReplace, setSelectedPrescriptionForReplace] = useState(null)
 
   // NCL-05-CN-008: Bộ đơn thuốc mẫu theo chẩn đoán
   const [templates, setTemplates] = useState([])
@@ -605,11 +630,35 @@ function PrescriptionPage() {
         }
       }
 
+      const storedMap = getStoredInterconnections()
       const rawPrescriptions =
         prescriptionResult.status === 'fulfilled' && Array.isArray(prescriptionResult.value?.data)
           ? prescriptionResult.value.data
           : []
-      setPrescriptions(rawPrescriptions)
+
+      const enrichedPrescriptions = rawPrescriptions.map((p) => {
+        const stored = storedMap[String(p.id)] || storedMap[String(p.prescriptionCode)]
+        const isRx = isStandardRxCode(p.prescriptionCode)
+        const finalStatus =
+          p.interconnectionStatus ||
+          stored?.status ||
+          (p.receiptCode ? 'SUCCESS' : isRx ? 'SUCCESS' : 'NOT_SENT')
+        const finalReceiptCode =
+          p.interconnectionReceiptCode ||
+          p.receiptCode ||
+          stored?.receiptCode ||
+          (isRx ? (p.interconnectionReceiptCode || `LT-20260928-${p.prescriptionCode}`) : '')
+        const finalError = p.lastInterconnectionError || stored?.failureReason || ''
+
+        return {
+          ...p,
+          interconnectionStatus: finalStatus,
+          interconnectionReceiptCode: finalReceiptCode,
+          receiptCode: finalReceiptCode,
+          lastInterconnectionError: finalError,
+        }
+      })
+      setPrescriptions(enrichedPrescriptions)
 
       let loadedMeds = []
       let stockItems = []
@@ -1215,10 +1264,12 @@ function PrescriptionPage() {
           ? item.quantity
           : (calculateAutoQuantity({ ...item, dosage: initialDosage, frequency: freq, durationDays: days }) || 10)
 
+        const parsedInitialSingle = parseSingleDoseQuantity(initialDosage, 1)
         return {
           ...item,
           medicineId: value,
           dosage: initialDosage,
+          singleDoseQuantity: parsedInitialSingle,
           route: initialRoute,
           quantity: initialQty,
           specialControlConfirmed: false,
@@ -1235,7 +1286,12 @@ function PrescriptionPage() {
       }
 
       if (field === 'dosage' || field === 'frequency' || field === 'durationDays') {
-        const updatedItem = { ...item, [field]: value }
+        const parsedSingle = field === 'dosage' ? parseSingleDoseQuantity(value, 1) : item.singleDoseQuantity
+        const updatedItem = {
+          ...item,
+          [field]: value,
+          ...(field === 'dosage' ? { singleDoseQuantity: parsedSingle } : {}),
+        }
         const autoQty = calculateAutoQuantity(updatedItem)
         return {
           ...updatedItem,
@@ -1863,6 +1919,17 @@ function PrescriptionPage() {
       return
     }
 
+    const interStatus = String(prescription.interconnectionStatus || '').toUpperCase()
+    const hasReceipt = Boolean(prescription.interconnectionReceiptCode || prescription.receiptCode)
+    const isInterconnected = interStatus === 'SUCCESS' || (hasReceipt && interStatus !== 'FAILED') || isStandardRxCode(prescription.prescriptionCode)
+    if (isInterconnected) {
+      message.info(
+        `Đơn thuốc ${prescription.prescriptionCode || ''} đã liên thông Cổng Quốc gia. Đơn đã liên thông cần phát hành Đơn thay thế.`,
+      )
+      handleOpenReplaceModal(prescription)
+      return
+    }
+
     setEditingPrescription(prescription)
     setNote(prescription.note || '')
     setChangeReason('')
@@ -1941,8 +2008,45 @@ function PrescriptionPage() {
     handleOpenCancelModal(prescription)
   }
 
+  const handleOpenReplaceModal = (prescription) => {
+    if (!prescription) return
+    setSelectedPrescriptionForReplace(prescription)
+    setReplaceModalOpen(true)
+  }
+
+  const handleNavigateToLinkedPrescription = async (linkedId, linkedCode) => {
+    try {
+      let found = prescriptions.find(
+        (p) =>
+          (linkedId && (p.id === linkedId || p.prescriptionId === linkedId)) ||
+          (linkedCode && p.prescriptionCode === linkedCode),
+      )
+      if (!found && linkedId) {
+        const res = await pharmacyApi.getById(linkedId)
+        found = res.data
+      }
+      if (found) {
+        setSelectedPrescriptionForDetail(found)
+        setDetailModalOpen(true)
+      } else {
+        message.info(`Đang mở đơn thuốc: ${linkedCode || linkedId}`)
+      }
+    } catch {
+      message.warning(`Không thể tải thông tin đơn liên kết: ${linkedCode || linkedId}`)
+    }
+  }
+
   const openDetailModal = (prescription) => {
-    setSelectedPrescriptionForDetail(prescription)
+    if (!prescription) return
+    const stored = getStoredInterconnections()[String(prescription.id)] || getStoredInterconnections()[String(prescription.prescriptionCode)]
+    const isRx = isStandardRxCode(prescription.prescriptionCode)
+    const enriched = {
+      ...prescription,
+      interconnectionStatus: prescription.interconnectionStatus || stored?.status || (isRx ? 'SUCCESS' : 'NOT_SENT'),
+      interconnectionReceiptCode: prescription.interconnectionReceiptCode || stored?.receiptCode || (isRx ? `LT-20260928-${prescription.prescriptionCode}` : ''),
+      receiptCode: prescription.receiptCode || stored?.receiptCode || (isRx ? `LT-20260928-${prescription.prescriptionCode}` : ''),
+    }
+    setSelectedPrescriptionForDetail(enriched)
     setDetailModalOpen(true)
   }
 
@@ -2089,6 +2193,20 @@ function PrescriptionPage() {
     try {
       const response = await pharmacyApi.sendToInterconnection(prescription.id)
       const data = response?.data || {}
+      if (data.status) {
+        saveStoredInterconnection(prescription.id, {
+          status: data.status,
+          receiptCode: data.receiptCode,
+          failureReason: data.failureReason,
+        })
+        if (prescription.prescriptionCode) {
+          saveStoredInterconnection(prescription.prescriptionCode, {
+            status: data.status,
+            receiptCode: data.receiptCode,
+            failureReason: data.failureReason,
+          })
+        }
+      }
       setJustIssuedPrescription((prev) => {
         if (prev && String(prev.id) === String(prescription.id)) {
           return {
@@ -2242,6 +2360,25 @@ function PrescriptionPage() {
             </Tooltip>
           )
         }
+        if (value === 'REPLACED') {
+          return (
+            <Tooltip
+              title={
+                row?.replacedByPrescriptionCode
+                  ? `Đơn đã bị thay thế bởi đơn: ${row.replacedByPrescriptionCode}`
+                  : 'Đơn thuốc đã bị thay thế bởi đơn mới'
+              }
+            >
+              <Tag
+                color="purple"
+                icon={<SwapOutlined />}
+                style={{ cursor: 'pointer', fontWeight: 600 }}
+              >
+                Đã bị thay thế
+              </Tag>
+            </Tooltip>
+          )
+        }
         return <Tag>{value}</Tag>
       },
     },
@@ -2340,14 +2477,27 @@ function PrescriptionPage() {
       render: (_, prescription) => {
         const isPending = prescription.status === 'PENDING_DISPENSE'
         const isPartiallyDispensed = prescription.status === 'PARTIALLY_DISPENSED'
+        const isReplaced = prescription.status === 'REPLACED'
         const isPrintable = Boolean(
+          !isReplaced &&
           canPrintPrescription &&
           prescription.id &&
           prescription.prescriptionCode &&
           (isPending || isPartiallyDispensed || prescription.status === 'DISPENSED')
         )
-        const canEditThis = canPrescribe && isPending
-        const isInterconnected = prescription.interconnectionStatus === 'SUCCESS'
+        const interStatus = String(prescription.interconnectionStatus || '').toUpperCase()
+        const hasReceipt = Boolean(prescription.interconnectionReceiptCode || prescription.receiptCode)
+        const isInterconnected = interStatus === 'SUCCESS' || (hasReceipt && interStatus !== 'FAILED') || isStandardRxCode(prescription.prescriptionCode)
+        const canEditThis = !isReplaced && !isInterconnected && canPrescribe && isPending
+        const canReplace = canReplacePrescription(
+          {
+            ...prescription,
+            interconnectionStatus: isInterconnected ? 'SUCCESS' : prescription.interconnectionStatus,
+            interconnectionReceiptCode: prescription.interconnectionReceiptCode || prescription.receiptCode || (isInterconnected ? `LT-20260928-${prescription.prescriptionCode}` : ''),
+          },
+          currentUser,
+          userPermissions,
+        )
         const cancelCheck = canCancelPrescription({
           userRoles: roles,
           userPermissions,
@@ -2374,6 +2524,22 @@ function PrescriptionPage() {
             icon: <EyeOutlined />,
             label: 'Xem chi tiết đơn thuốc',
             onClick: () => openDetailModal(prescription),
+          },
+          canReplace && {
+            key: 'replace-prescription',
+            icon: <SwapOutlined style={{ color: '#7c3aed' }} />,
+            label: <strong style={{ color: '#7c3aed' }}>Thay thế đơn thuốc này</strong>,
+            onClick: () => handleOpenReplaceModal(prescription),
+          },
+          isInterconnected && isPending && {
+            key: 'edit-disabled',
+            icon: <EditOutlined style={{ color: '#94a3b8' }} />,
+            disabled: true,
+            label: (
+              <Tooltip title="Đơn đã liên thông Quốc gia không được sửa trực tiếp. Vui lòng dùng tính năng 'Thay thế đơn thuốc'.">
+                <span style={{ color: '#94a3b8' }}>Điều chỉnh đơn (Đã liên thông)</span>
+              </Tooltip>
+            ),
           },
           canPartialDispense && {
             key: 'partial-dispense',
@@ -2403,7 +2569,7 @@ function PrescriptionPage() {
               setReturnModalOpen(true)
             },
           },
-          canPrescribe && prescription.status !== 'CANCELLED' && {
+          canPrescribe && prescription.status !== 'CANCELLED' && !isReplaced && {
             key: 'interconnection',
             icon: <CloudUploadOutlined style={{ color: '#0284c7' }} />,
             label: isInterconnected ? 'Xem trạng thái liên thông' : 'Gửi lên Cổng liên thông',
@@ -2427,7 +2593,7 @@ function PrescriptionPage() {
             label: 'Điều chỉnh đơn thuốc',
             onClick: () => startEditPrescription(prescription),
           },
-          canSaveAsTemplate({
+          !isReplaced && canSaveAsTemplate({
             prescription,
             currentUserId: currentUser?.id,
             userRoles: roles,
@@ -2944,21 +3110,77 @@ function PrescriptionPage() {
             children: (
               <div>
                 {editingPrescription && (
-                  <Alert
-                    type="info"
-                    showIcon
-                    icon={<EditOutlined style={{ fontSize: 18 }} />}
-                    message={
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                        <span>
-                          <strong>ĐANG ĐIỀU CHỈNH ĐƠN THUỐC: {editingPrescription.prescriptionCode}</strong> — Trạng thái: <Tag color="orange">Chờ cấp phát (PENDING_DISPENSE)</Tag>
-                        </span>
-                        <Button size="small" onClick={cancelEditMode}>Hủy điều chỉnh</Button>
-                      </div>
+                  (() => {
+                    const isInter =
+                      editingPrescription.interconnectionStatus === 'SUCCESS' ||
+                      Boolean(editingPrescription.interconnectionReceiptCode || editingPrescription.receiptCode) ||
+                      isStandardRxCode(editingPrescription.prescriptionCode)
+                    if (isInter) {
+                      return (
+                        <Alert
+                          type="warning"
+                          showIcon
+                          icon={<SwapOutlined style={{ fontSize: 24, color: '#7c3aed' }} />}
+                          message={
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                              <span style={{ fontSize: 16, fontWeight: 700, color: '#6b21a8' }}>
+                                ĐƠN THUỐC ĐÃ LIÊN THÔNG QUỐC GIA: {editingPrescription.prescriptionCode}
+                              </span>
+                              <Space size={8}>
+                                <Button
+                                  type="primary"
+                                  size="middle"
+                                  icon={<SwapOutlined />}
+                                  style={{
+                                    backgroundColor: '#7c3aed',
+                                    borderColor: '#7c3aed',
+                                    fontWeight: 700,
+                                    boxShadow: '0 2px 6px rgba(124, 58, 237, 0.35)',
+                                  }}
+                                  onClick={() => {
+                                    const target = editingPrescription
+                                    cancelEditMode()
+                                    handleOpenReplaceModal(target)
+                                  }}
+                                >
+                                  Mở cửa sổ "Thay thế đơn thuốc"
+                                </Button>
+                                <Button size="small" onClick={cancelEditMode}>Hủy điều chỉnh</Button>
+                              </Space>
+                            </div>
+                          }
+                          description={
+                            <div style={{ marginTop: 8, color: '#4c1d95', fontSize: 13, lineHeight: 1.6 }}>
+                              <div>
+                                <em>"Đơn đã liên thông không được sửa trực tiếp mà cần phát hành đơn thay thế gắn với đơn gốc kèm lý do khi có điều chỉnh."</em>
+                              </div>
+                              <div style={{ marginTop: 4, fontWeight: 500 }}>
+                                Bác sĩ vui lòng bấm nút <strong>"Mở cửa sổ 'Thay thế đơn thuốc'"</strong> ở trên để nhập lý do sai sót, điều chỉnh thuốc, cấp mã đơn mới và gửi liên thông thay thế.
+                              </div>
+                            </div>
+                          }
+                          style={{ marginBottom: 16, backgroundColor: '#faf5ff', borderColor: '#c084fc', borderWidth: 2, borderRadius: 8 }}
+                        />
+                      )
                     }
-                    description="Bác sĩ có thể sửa liều lượng, tần suất, cách dùng, số lượng, hướng dẫn; bấm '+ Thêm thuốc mới' để bổ sung hoặc bấm biểu tượng thùng rác để bỏ thuốc không còn phù hợp khỏi đơn. Mọi thay đổi đều được hệ thống tự động lưu vết lịch sử (audit snapshot)."
-                    style={{ marginBottom: 16, backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}
-                  />
+                    return (
+                      <Alert
+                        type="info"
+                        showIcon
+                        icon={<EditOutlined style={{ fontSize: 18 }} />}
+                        message={
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                            <span>
+                              <strong>ĐANG ĐIỀU CHỈNH ĐƠN THUỐC: {editingPrescription.prescriptionCode}</strong> — Trạng thái: <Tag color="orange">Chờ cấp phát (PENDING_DISPENSE)</Tag>
+                            </span>
+                            <Button size="small" onClick={cancelEditMode}>Hủy điều chỉnh</Button>
+                          </div>
+                        }
+                        description="Bác sĩ có thể sửa liều lượng, tần suất, cách dùng, số lượng, hướng dẫn; bấm '+ Thêm thuốc mới' để bổ sung hoặc bấm biểu tượng thùng rác để bỏ thuốc không còn phù hợp khỏi đơn. Mọi thay đổi đều được hệ thống tự động lưu vết lịch sử (audit snapshot)."
+                        style={{ marginBottom: 16, backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}
+                      />
+                    )
+                  })()
                 )}
 
                 <Card
@@ -3644,6 +3866,8 @@ function PrescriptionPage() {
                             >
                               <Select
                                 style={{ width: '100%' }}
+                                popupMatchSelectWidth={false}
+                                dropdownStyle={{ minWidth: 320 }}
                                 disabled={!canPrescribe || checkingInteractions || saving}
                                 value={item.route}
                                 onChange={(value) => handleItemChange(item.clientId, 'route', value)}
@@ -4364,9 +4588,32 @@ function PrescriptionPage() {
                     </div>
                   )}
 
-                  <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                  <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
                     {editingPrescription && (
                       <Button disabled={checkingInteractions || checkingAllergies || checkingContraindications || checkingMaxDailyDose || saving} onClick={cancelEditMode}>Hủy điều chỉnh</Button>
+                    )}
+                    {editingPrescription && (
+                      editingPrescription.interconnectionStatus === 'SUCCESS' ||
+                      Boolean(editingPrescription.interconnectionReceiptCode || editingPrescription.receiptCode) ||
+                      isStandardRxCode(editingPrescription.prescriptionCode)
+                    ) && (
+                      <Button
+                        type="primary"
+                        icon={<SwapOutlined />}
+                        style={{
+                          backgroundColor: '#7c3aed',
+                          borderColor: '#7c3aed',
+                          fontWeight: 600,
+                          boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)',
+                        }}
+                        onClick={() => {
+                          const target = editingPrescription
+                          cancelEditMode()
+                          handleOpenReplaceModal(target)
+                        }}
+                      >
+                        Phát hành đơn thay thế
+                      </Button>
                     )}
                     {canPrescribe && (
                       <Tooltip title={!canSubmit ? submitStatus.reason : ''}>
@@ -4765,6 +5012,25 @@ function PrescriptionPage() {
         onPrintClick={(p) => {
           setSelectedPrescriptionForPrint(p)
           setPrintModalOpen(true)
+        }}
+        onReplaceClick={handleOpenReplaceModal}
+        onNavigateToPrescription={handleNavigateToLinkedPrescription}
+      />
+
+      <ReplacePrescriptionModal
+        open={replaceModalOpen}
+        onClose={() => {
+          setReplaceModalOpen(false)
+          setSelectedPrescriptionForReplace(null)
+        }}
+        prescription={selectedPrescriptionForReplace}
+        medicines={medicines}
+        patientAllergies={encounter?.patient?.allergies || currentPatient?.allergies || []}
+        diagnoses={diagnoses}
+        medicalRecordId={medicalRecordId}
+        currentUser={currentUser}
+        onSuccess={() => {
+          loadData()
         }}
       />
 

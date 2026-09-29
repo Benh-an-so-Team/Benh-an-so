@@ -1,12 +1,13 @@
 import React from 'react'
 import AppRoutes from './routes/AppRoutes'
 import './App.css'
-import { ConfigProvider, message } from 'antd'
+import { ConfigProvider, message, App as AntdApp } from 'antd'
 import viVN from 'antd/locale/vi_VN'
 import dayjs from 'dayjs'
 import 'dayjs/locale/vi'
 import ForceChangePasswordModal from './components/auth/ForceChangePasswordModal'
 import SessionTimeoutWarningModal from './components/auth/SessionTimeoutWarningModal'
+import { NoticeProvider } from './components/common/notice'
 
 dayjs.locale('vi')
 
@@ -81,10 +82,14 @@ function App() {
           },
         }}
       >
-        <ForceChangePasswordModal />
-        <SessionTimeoutWarningModal />
-        <AppRoutes />
-      </ConfigProvider>
+      <AntdApp>
+        <NoticeProvider>
+          <ForceChangePasswordModal />
+          <SessionTimeoutWarningModal />
+          <AppRoutes />
+        </NoticeProvider>
+      </AntdApp>
+    </ConfigProvider>
   )
 }
 

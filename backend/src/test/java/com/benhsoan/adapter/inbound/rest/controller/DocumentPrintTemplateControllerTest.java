@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,6 +36,7 @@ import com.benhsoan.port.dto.result.clinic.DocumentPrintTemplateResult;
 import com.benhsoan.port.inbound.clinic.GetDocumentPrintTemplatesUseCase;
 import com.benhsoan.port.inbound.clinic.PreviewDocumentPrintTemplateUseCase;
 import com.benhsoan.port.inbound.clinic.UpdateDocumentPrintTemplateUseCase;
+import com.benhsoan.port.inbound.clinic.UploadPrintTemplateLogoUseCase;
 import com.benhsoan.port.outbound.authSecurity.JwtTokenPort;
 import com.benhsoan.port.outbound.repository.audit.AuditLogRepository;
 import com.benhsoan.port.outbound.repository.auth.RoleRepository;
@@ -57,6 +60,7 @@ class DocumentPrintTemplateControllerTest {
     @MockitoBean private GetDocumentPrintTemplatesUseCase getDocumentPrintTemplatesUseCase;
     @MockitoBean private UpdateDocumentPrintTemplateUseCase updateDocumentPrintTemplateUseCase;
     @MockitoBean private PreviewDocumentPrintTemplateUseCase previewDocumentPrintTemplateUseCase;
+    @MockitoBean private UploadPrintTemplateLogoUseCase uploadPrintTemplateLogoUseCase;
     @MockitoBean private JwtTokenPort jwtTokenPort;
     @MockitoBean private UserRepository userRepository;
     @MockitoBean private UserSessionRepository userSessionRepository;
@@ -186,5 +190,21 @@ class DocumentPrintTemplateControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PDF))
                 .andExpect(header().string("Content-Disposition", "inline; filename=\"preview-prescription.pdf\""))
                 .andExpect(content().bytes(mockPdf));
+    }
+
+    @Test
+    @DisplayName("POST /system/print-templates/logo uploads logo and returns 200 with logoUrl")
+    void uploadLogo_Returns200_WithLogoUrl() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "logo.png", "image/png", "dummy-image-content".getBytes()
+        );
+        when(uploadPrintTemplateLogoUseCase.uploadLogo(any()))
+                .thenReturn("https://res.cloudinary.com/demo/image/upload/v12345/logo.png");
+
+        mockMvc.perform(multipart("/system/print-templates/logo")
+                        .file(file)
+                        .with(user("admin").authorities(new SimpleGrantedAuthority("PERMISSION_PRINT_TEMPLATE_UPDATE"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.logoUrl").value("https://res.cloudinary.com/demo/image/upload/v12345/logo.png"));
     }
 }

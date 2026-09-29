@@ -127,6 +127,15 @@ const medicalRecordApi = {
   getSigningReminders: (medicalRecordId) => {
     return axiosClient.get(`/medical-records/${medicalRecordId}/signing-reminders`)
   },
+  getEligibleForArchive: (params = {}) => {
+    return axiosClient.get('/medical-records/archive/eligible', { params })
+  },
+  searchArchived: (params = {}) => {
+    return axiosClient.get('/medical-records/archive', { params })
+  },
+  batchArchive: (payload) => {
+    return axiosClient.post('/medical-records/archive/batch', payload)
+  },
 }
 
 export default medicalRecordApi

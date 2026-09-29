@@ -286,4 +286,56 @@ class AppointmentSeriesValidatorTest {
         );
         assertTrue(ex.getMessage().contains("phải diễn ra sau"));
     }
+
+    @Test
+    void generateSessionsSkipsNonWorkingDaysAndEnsuresTotalSessions() {
+        // Friday 2026-09-04 at 09:00 VN = 02:00 UTC
+        Instant s1Start = Instant.parse("2026-09-04T02:00:00Z");
+
+        // Doctor only works on weekdays (Mon-Fri)
+        when(doctorScheduleValidator.isDoctorWorkingAndAvailable(eq(DOCTOR_ID), any(), any()))
+                .thenAnswer(inv -> {
+                    Instant start = inv.getArgument(1);
+                    java.time.DayOfWeek dow = start.atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).getDayOfWeek();
+                    return dow != java.time.DayOfWeek.SATURDAY && dow != java.time.DayOfWeek.SUNDAY;
+                });
+
+        var slots = validator.generateSessionsSkippingDoctorOffDays(DOCTOR_ID, s1Start, 30, 3, 1);
+
+        assertEquals(3, slots.size());
+        assertEquals(1, slots.get(0).sequenceNumber());
+        assertEquals(s1Start, slots.get(0).startTime()); // Friday 2026-09-04
+
+        // Session 2 skips Saturday and Sunday -> Monday 2026-09-07
+        assertEquals(2, slots.get(1).sequenceNumber());
+        assertEquals(Instant.parse("2026-09-07T02:00:00Z"), slots.get(1).startTime());
+
+        // Session 3 -> Tuesday 2026-09-08
+        assertEquals(3, slots.get(2).sequenceNumber());
+        assertEquals(Instant.parse("2026-09-08T02:00:00Z"), slots.get(2).startTime());
+    }
+
+    @Test
+    void generateSessionsSkipsDoctorTimeOff() {
+        // Monday 2026-09-07 at 09:00 VN = 02:00 UTC
+        Instant s1Start = Instant.parse("2026-09-07T02:00:00Z");
+        Instant tuesdaySlot = Instant.parse("2026-09-08T02:00:00Z");
+
+        // Doctor is on time-off on Tuesday
+        when(doctorScheduleValidator.isDoctorWorkingAndAvailable(eq(DOCTOR_ID), any(), any()))
+                .thenAnswer(inv -> {
+                    Instant start = inv.getArgument(1);
+                    return !start.equals(tuesdaySlot);
+                });
+
+        var slots = validator.generateSessionsSkippingDoctorOffDays(DOCTOR_ID, s1Start, 30, 3, 1);
+
+        assertEquals(3, slots.size());
+        // Session 1: Monday
+        assertEquals(s1Start, slots.get(0).startTime());
+        // Session 2: Skips Tuesday -> Wednesday 2026-09-09
+        assertEquals(Instant.parse("2026-09-09T02:00:00Z"), slots.get(1).startTime());
+        // Session 3: Thursday 2026-09-10
+        assertEquals(Instant.parse("2026-09-10T02:00:00Z"), slots.get(2).startTime());
+    }
 }

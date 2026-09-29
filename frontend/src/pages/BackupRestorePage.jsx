@@ -20,6 +20,7 @@ import {
 import {
   CloudDownloadOutlined,
   CloudUploadOutlined,
+  ClockCircleOutlined,
   DatabaseOutlined,
   DownloadOutlined,
   ExclamationCircleOutlined,
@@ -349,7 +350,10 @@ function BackupRestorePage() {
             SAO LƯU & PHỤC HỒI DỮ LIỆU
           </Title>
         </div>
-        <Space>
+        <Space wrap>
+          <Button icon={<ClockCircleOutlined />} href="/system/scheduled-backup">
+            Lịch sao lưu tự động
+          </Button>
           <Button icon={<ReloadOutlined />} loading={loading} onClick={loadBackups}>
             Làm mới
           </Button>

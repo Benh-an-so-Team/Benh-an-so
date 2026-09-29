@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
@@ -79,6 +80,15 @@ public class PatientRepositoryAdapter implements PatientRepository {
     }
 
     @Override
+    public Optional<Patient> findByIdentityNumber(String identityNumber) {
+        if (identityNumber == null) {
+            return Optional.empty();
+        }
+        return jpaRepository.findByIdentityNumber(identityNumber)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public Optional<Patient> findTopByOrderByPatientCodeDesc() {
         return jpaRepository.findTopByOrderByPatientCodeDesc()
             .map(mapper::toDomain);
@@ -147,9 +157,12 @@ public class PatientRepositoryAdapter implements PatientRepository {
     public Page<Patient> search(
         SearchPatientCommand command
     ) {
+        Pageable pageable = (command != null && command.pageable() != null)
+                ? command.pageable()
+                : PageRequest.of(0, 50);
         return jpaRepository.findAll(
             PatientSpecification.build(command),
-            command.pageable()
+            pageable
         ).map(mapper::toDomain);
     }
 

@@ -54,6 +54,7 @@ import specialControlledDrugApi, {
   mergeSpecialControlData,
 } from '../api/specialControlledDrugApi'
 import { SafetyCertificateOutlined } from '@ant-design/icons'
+import PrescriptionLookupPanel from '../components/pharmacy/PrescriptionLookupPanel.jsx'
 
 
 const { Text, Title } = Typography
@@ -717,6 +718,14 @@ function PharmacyPage() {
         />
       )}
 
+      {/* Khối Tra cứu đơn thuốc bằng mã đơn khi cấp phát (NCL-12-CN-006) */}
+      <PrescriptionLookupPanel
+        canDispense={canDispense}
+        onDispenseSuccess={() => {
+          loadData()
+        }}
+      />
+
       <Row gutter={[16, 16]} align="stretch">
         <Col xs={24} xl={9}>
           <Card
@@ -731,6 +740,8 @@ function PharmacyPage() {
                     ? 'Đơn chờ cấp phát'
                     : prescriptionStatusFilter === 'CANCELLED'
                     ? 'Đơn đã hủy cấp phát'
+                    : prescriptionStatusFilter === 'REPLACED'
+                    ? 'Đơn đã bị thay thế'
                     : 'Đơn cần cấp'}{' '}
                   ({prescriptionTotal})
                 </span>
@@ -749,6 +760,7 @@ function PharmacyPage() {
                     { value: 'PARTIALLY_DISPENSED', label: 'Cấp một phần' },
                     { value: 'DISPENSED', label: 'Đã cấp phát' },
                     { value: 'CANCELLED', label: 'Đã hủy cấp phát' },
+                    { value: 'REPLACED', label: 'Đã bị thay thế' },
                   ]}
                 />
               </div>
@@ -827,6 +839,8 @@ function PharmacyPage() {
                             <Tag color="green" style={{ fontWeight: 600, margin: 0 }}>Đã cấp phát</Tag>
                           ) : item.status === 'CANCELLED' ? (
                             <Tag color="red" style={{ fontWeight: 600, margin: 0 }}>Đã hủy cấp phát</Tag>
+                          ) : item.status === 'REPLACED' ? (
+                            <Tag color="purple" style={{ fontWeight: 600, margin: 0 }}>Đã bị thay thế</Tag>
                           ) : (
                             <Tag color="orange" style={{ margin: 0 }}>Chờ cấp phát</Tag>
                           )}
@@ -917,12 +931,33 @@ function PharmacyPage() {
                       <Tag color="green" style={{ fontWeight: 600 }}>Đã cấp phát</Tag>
                     ) : selectedPrescription.status === 'CANCELLED' ? (
                       <Tag color="red" style={{ fontWeight: 600 }}>Đã hủy cấp phát</Tag>
+                    ) : selectedPrescription.status === 'REPLACED' ? (
+                      <Tooltip title={selectedPrescription.replacedByPrescriptionCode ? `Đã được thay thế bởi đơn: ${selectedPrescription.replacedByPrescriptionCode}` : 'Đơn thuốc này đã bị thay thế'}>
+                        <Tag color="purple" style={{ fontWeight: 600 }}>Đã bị thay thế</Tag>
+                      </Tooltip>
                     ) : (
                       <Tag color="orange">Chờ cấp phát</Tag>
                     )}
                   </Descriptions.Item>
                   <Descriptions.Item label="Ghi chú">{selectedPrescription.note || 'Không có'}</Descriptions.Item>
                 </Descriptions>
+
+                {selectedPrescription.status === 'REPLACED' && (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    message="Đơn thuốc này đã bị thay thế"
+                    description={
+                      <div>
+                        Đơn thuốc gốc đã bị vô hiệu hóa vì có đơn thuốc thay thế
+                        {selectedPrescription.replacedByPrescriptionCode ? (
+                          <strong style={{ marginLeft: 4 }}>({selectedPrescription.replacedByPrescriptionCode})</strong>
+                        ) : null}.
+                        Tuyệt đối không cấp phát, xuất kho hay thực hiện thao tác trên đơn thuốc này.
+                      </div>
+                    }
+                  />
+                )}
 
                 {hasPreviewShortage && selectedPrescription.status !== 'DISPENSED' && (
                   <Alert
