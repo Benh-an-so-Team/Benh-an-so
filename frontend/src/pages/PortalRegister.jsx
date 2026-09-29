@@ -17,8 +17,6 @@ import {
   IdcardOutlined,
   MailOutlined,
   SafetyCertificateFilled,
-  SafetyCertificateOutlined,
-  SearchOutlined,
   ReadOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
@@ -438,12 +436,6 @@ function PortalRegister() {
               <div className="portal-register-footer-text">
                 Đã có tài khoản Bệnh nhân?
                 <Link to="/portal/login">Đăng nhập ngay</Link>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <Link to="/portal" style={{ fontSize: 13, color: '#64748b', textDecoration: 'none' }}>
-                  <SearchOutlined style={{ marginRight: 4 }} />
-                  Tra cứu kết quả bằng mã lịch hẹn
-                </Link>
               </div>
             </div>
           </div>
