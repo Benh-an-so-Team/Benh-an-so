@@ -39,6 +39,20 @@ const documentPrintTemplateApi = {
         ...params,
       },
     }),
+
+  /**
+   * Upload logo image to Cloudinary
+   * @param {File} file
+   */
+  uploadLogo: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return axiosClient.post('/system/print-templates/logo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
 }
 
 export default documentPrintTemplateApi

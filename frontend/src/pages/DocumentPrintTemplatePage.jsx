@@ -284,8 +284,8 @@ export default function DocumentPrintTemplatePage() {
     })
   }
 
-  // Handle Logo Upload (Client-side validation & preview)
-  const handleLogoUpload = (file) => {
+  // Handle Logo Upload (Client-side validation & Cloudinary upload)
+  const handleLogoUpload = async (file) => {
     setLogoError('')
     const validation = validateLogoFile(file)
     if (!validation.isValid) {
@@ -293,15 +293,22 @@ export default function DocumentPrintTemplatePage() {
       return false
     }
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result
-      if (dataUrl) {
-        updateCurrentField('logoUrl', dataUrl)
-        message.success('Đã tải ảnh logo thành công. Bạn có thể xem trước ngay bên phải.')
+    try {
+      message.loading({ content: 'Đang tải ảnh logo lên Cloudinary...', key: 'logoUpload' })
+      const res = await documentPrintTemplateApi.uploadLogo(file)
+      const uploadedUrl = res?.data?.logoUrl
+      if (uploadedUrl) {
+        updateCurrentField('logoUrl', uploadedUrl)
+        message.success({ content: 'Đã tải ảnh logo lên Cloudinary thành công!', key: 'logoUpload' })
+      } else {
+        message.error({ content: 'Không nhận được đường dẫn ảnh từ máy chủ.', key: 'logoUpload' })
       }
+    } catch (err) {
+      const errMsg =
+        err?.response?.data?.message || err?.message || 'Không thể tải ảnh logo lên máy chủ.'
+      setLogoError(errMsg)
+      message.error({ content: errMsg, key: 'logoUpload' })
     }
-    reader.readAsDataURL(file)
     return false // prevent automatic POST upload
   }
 
@@ -829,8 +836,19 @@ export default function DocumentPrintTemplatePage() {
                     </label>
                   </div>
 
+                  <div style={{ marginTop: 8, width: '100%', maxWidth: 400 }}>
+                    <Input
+                      size="small"
+                      placeholder="Đường dẫn URL ảnh logo (Cloudinary hoặc link ảnh)..."
+                      value={currentTemplate.logoUrl}
+                      onChange={(e) => updateCurrentField('logoUrl', e.target.value)}
+                      allowClear
+                      id="input-logo-url"
+                    />
+                  </div>
+
                   <span className="print-logo-tip">
-                    Hỗ trợ định dạng PNG, JPG, JPEG, WEBP, SVG. Dung lượng tối đa: 2MB.
+                    Hỗ trợ định dạng PNG, JPG, JPEG, WEBP, SVG. Dung lượng tối đa: 2MB. Ảnh sẽ được tự động lưu lên Cloudinary.
                   </span>
 
                   {logoError && <div className="print-logo-error">{logoError}</div>}

@@ -28,6 +28,7 @@ test('TC-DPT-01: documentPrintTemplateApi cung cấp đầy đủ các endpoint 
   assert.equal(typeof documentPrintTemplateApi.update, 'function')
   assert.equal(typeof documentPrintTemplateApi.previewPdf, 'function')
   assert.equal(typeof documentPrintTemplateApi.getAuditHistory, 'function')
+  assert.equal(typeof documentPrintTemplateApi.uploadLogo, 'function')
 })
 
 test('TC-DPT-02: Phân quyền menu: Chỉ Quản trị viên (Admin) mới thấy menu Cấu hình mẫu in chứng từ', () => {
