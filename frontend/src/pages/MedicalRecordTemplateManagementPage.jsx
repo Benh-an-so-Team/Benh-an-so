@@ -39,7 +39,7 @@ import TemplateFormModal from '../components/medicalRecordTemplate/TemplateFormM
 import StatusToggleModal from '../components/medicalRecordTemplate/StatusToggleModal'
 import { formatTemplateName, formatSpecialtyName, formatTemplateShortId } from '../constants/medicalRecordTemplateConstants'
 import { useAuthContext } from '../context/AuthContext'
-import './medicalRecordTemplateManagement.css'
+import './styles/medicalRecordTemplateManagement.css'
 
 const { Title, Text } = Typography
 

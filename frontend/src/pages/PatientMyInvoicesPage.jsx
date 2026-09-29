@@ -52,7 +52,7 @@ import {
   mapInvoicesWithAdjustments,
   sortInvoicesByDateDesc,
 } from '../utils/patientInvoiceHelpers'
-import './patientMyInvoices.css'
+import './styles/patientMyInvoices.css'
 
 const { Title, Text } = Typography
 

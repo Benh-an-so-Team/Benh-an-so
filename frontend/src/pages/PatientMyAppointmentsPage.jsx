@@ -39,7 +39,7 @@ import patientPortalAppointmentApi from '../api/patientPortalAppointmentApi'
 import RescheduleAppointmentModal from '../components/portal/RescheduleAppointmentModal'
 import { useAuthContext } from '../context/AuthContext'
 import PatientNotificationBell from '../components/portal/PatientNotificationBell.jsx'
-import './patientMyAppointments.css'
+import './styles/patientMyAppointments.css'
 
 const { Title, Text, Paragraph } = Typography
 
