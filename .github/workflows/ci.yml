@@ -54,6 +54,11 @@ jobs:
         working-directory: backend
         env:
           TESTCONTAINERS_RYUK_DISABLED: "false"
+          CLOUDINARY_ENABLED: ${{ secrets.CLOUDINARY_ENABLED || vars.CLOUDINARY_ENABLED || (secrets.CLOUDINARY_CLOUD_NAME != '' && 'true') || 'false' }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME || vars.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY || vars.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET || vars.CLOUDINARY_API_SECRET }}
+          CLOUDINARY_FOLDER_PREFIX: ${{ secrets.CLOUDINARY_FOLDER_PREFIX || vars.CLOUDINARY_FOLDER_PREFIX || 'benh-soan/clinical-results' }}
         run: |
           if [ -f "./mvnw" ] && [ -f "./.mvn/wrapper/maven-wrapper.properties" ]; then
             ./mvnw -B -ntp clean test

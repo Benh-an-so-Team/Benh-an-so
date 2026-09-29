@@ -25,3 +25,8 @@ app:
   jwt:
     secret: TEST_SECRET_32_CHARS_LONG_FOR_TEST_ONLY_!!
     expiration-ms: 3600000
+
+clinical-attachments:
+  cloudinary:
+    enabled: ${CLOUDINARY_ENABLED:false}
+
