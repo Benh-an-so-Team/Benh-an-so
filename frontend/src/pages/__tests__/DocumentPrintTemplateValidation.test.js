@@ -28,6 +28,7 @@ test('TC-DPT-01: documentPrintTemplateApi cung cấp đầy đủ các endpoint 
   assert.equal(typeof documentPrintTemplateApi.update, 'function')
   assert.equal(typeof documentPrintTemplateApi.previewPdf, 'function')
   assert.equal(typeof documentPrintTemplateApi.getAuditHistory, 'function')
+  assert.equal(typeof documentPrintTemplateApi.uploadLogo, 'function')
 })
 
 test('TC-DPT-02: Phân quyền menu: Chỉ Quản trị viên (Admin) mới thấy menu Cấu hình mẫu in chứng từ', () => {
@@ -258,3 +259,37 @@ test('TC-DPT-08: DocumentPrintTemplatePage.jsx đáp ứng đầy đủ yêu c�
     'Phải có cơ chế phát hiện thay đổi chưa áp dụng để nhắc người dùng trước khi rời trang',
   )
 })
+
+test('TC-DPT-09: Khắc phục triệt để lỗi console và validation (CONFIGURATION & App.useApp)', () => {
+  const apiFileContent = fs.readFileSync(
+    path.join(frontendDir, 'src/api/documentPrintTemplateApi.js'),
+    'utf-8',
+  )
+  assert.ok(
+    apiFileContent.includes("resourceType: 'CONFIGURATION'"),
+    'documentPrintTemplateApi phải dùng resourceType: CONFIGURATION khớp với enum backend',
+  )
+  assert.equal(
+    apiFileContent.includes("resourceType: 'SYSTEM_CONFIG'"),
+    false,
+    'documentPrintTemplateApi không được dùng SYSTEM_CONFIG vì gây lỗi 400',
+  )
+
+  const pageContent = fs.readFileSync(
+    path.join(frontendDir, 'src/pages/DocumentPrintTemplatePage.jsx'),
+    'utf-8',
+  )
+  assert.ok(
+    pageContent.includes('App.useApp()'),
+    'DocumentPrintTemplatePage phải dùng App.useApp() để loại bỏ warning antd message/Modal',
+  )
+  assert.ok(
+    pageContent.includes("current.logoUrl.startsWith('data:')"),
+    'DocumentPrintTemplatePage phải chặn dữ liệu Base64 thô trước khi gửi PUT lên backend',
+  )
+  assert.ok(
+    pageContent.includes('current.logoUrl.length > 1000'),
+    'DocumentPrintTemplatePage phải kiểm tra giới hạn 1000 ký tự cho logoUrl',
+  )
+})
+
