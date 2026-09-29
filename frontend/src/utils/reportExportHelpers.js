@@ -7,11 +7,97 @@ export const REPORT_TYPES = [
   { value: 'ACCESS_LOG_REPORT', label: 'Báo cáo nhật ký truy cập hồ sơ bệnh án' },
 ]
 
-export const validateExportParams = (from, to) => {
-  if (!from || !to) {
+export const REPORTS_WITH_IDENTIFYING_DATA = [
+  'VISIT_REPORT',
+  'OPERATIONAL_REPORT',
+  'DOCTOR_VISITS_REPORT',
+]
+
+export const isIdentifyingReportType = (reportType) => {
+  return REPORTS_WITH_IDENTIFYING_DATA.includes(reportType)
+}
+
+export const canUserExportUnmasked = (permissions) => {
+  if (!Array.isArray(permissions)) return false
+  return permissions.some(
+    (p) => String(p || '').toUpperCase().replace(/^PERMISSION_/, '') === 'REPORT_UNMASKED_EXPORT'
+  )
+}
+
+export const validateUnmaskReason = (reason) => {
+  if (reason === null || reason === undefined || !String(reason).trim()) {
     return {
       isValid: false,
-      message: 'Vui lòng chọn khoảng thời gian.',
+      error: 'Vui lòng nhập lý do xuất bản dữ liệu đầy đủ.',
+    }
+  }
+  const trimmed = String(reason).trim()
+  if (trimmed.length < 5) {
+    return {
+      isValid: false,
+      error: 'Lý do xuất bản dữ liệu đầy đủ phải có ít nhất 5 ký tự.',
+    }
+  }
+  if (trimmed.length > 500) {
+    return {
+      isValid: false,
+      error: 'Lý do xuất không được vượt quá 500 ký tự.',
+    }
+  }
+  return {
+    isValid: true,
+    error: null,
+    reason: trimmed,
+  }
+}
+
+export const buildExportQueryParams = ({
+  reportType,
+  from,
+  to,
+  doctorId,
+  unmask,
+  reason,
+  ...extra
+} = {}) => {
+  const isIdentifiable = isIdentifyingReportType(reportType)
+  const isUnmasked = Boolean(isIdentifiable && unmask)
+
+  const params = {
+    reportType,
+    from,
+    to,
+    ...extra,
+  }
+
+  if (doctorId) {
+    params.doctorId = doctorId
+  }
+
+  if (isIdentifiable) {
+    params.unmask = isUnmasked
+    if (isUnmasked && reason) {
+      params.reason = String(reason).trim()
+    }
+  }
+
+  return params
+}
+
+export const validateExportParams = (arg1, arg2) => {
+  let from = arg1
+  let to = arg2
+  if (arg1 && typeof arg1 === 'object' && !(arg1 instanceof Date) && !dayjs.isDayjs(arg1)) {
+    from = arg1.from
+    to = arg1.to
+  }
+
+  if (!from || !to) {
+    const msg = 'Vui lòng chọn khoảng thời gian.'
+    return {
+      isValid: false,
+      message: msg,
+      errorMessage: msg,
     }
   }
 
@@ -19,24 +105,30 @@ export const validateExportParams = (from, to) => {
   const toDay = dayjs(to)
 
   if (!fromDay.isValid() || !toDay.isValid()) {
+    const msg = 'Khoảng thời gian không hợp lệ.'
     return {
       isValid: false,
-      message: 'Khoảng thời gian không hợp lệ.',
+      message: msg,
+      errorMessage: msg,
     }
   }
 
   if (fromDay.isAfter(toDay, 'day')) {
+    const msg = 'Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.'
     return {
       isValid: false,
-      message: 'Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.',
+      message: msg,
+      errorMessage: msg,
     }
   }
 
   const daysDiff = toDay.diff(fromDay, 'day') + 1
   if (daysDiff > 366) {
+    const msg = 'Khoảng thời gian xuất báo cáo không được vượt quá 366 ngày.'
     return {
       isValid: false,
-      message: 'Khoảng thời gian xuất báo cáo không được vượt quá 366 ngày.',
+      message: msg,
+      errorMessage: msg,
     }
   }
 
@@ -45,6 +137,7 @@ export const validateExportParams = (from, to) => {
     from: fromDay.format('YYYY-MM-DD'),
     to: toDay.format('YYYY-MM-DD'),
     message: null,
+    errorMessage: null,
   }
 }
 
@@ -142,6 +235,9 @@ export const getExportErrorMessage = async (error) => {
   const errorMsg = String(errorData?.message || '')
 
   if (status === 403) {
+    if (errorMsg.includes('unmasked') || errorMsg.includes('REPORT_UNMASKED_EXPORT')) {
+      return 'Bạn không có quyền xuất dữ liệu đầy đủ'
+    }
     return 'Bạn không có quyền xuất báo cáo (Yêu cầu quyền ACCESS_LOG_REPORT_EXPORT của Quản trị viên).'
   }
 
@@ -157,6 +253,9 @@ export const getExportErrorMessage = async (error) => {
   }
 
   if (status === 400) {
+    if (errorMsg.toLowerCase().includes('reason') || errorMsg.toLowerCase().includes('lý do')) {
+      return errorMsg
+    }
     return 'Khoảng thời gian không hợp lệ.'
   }
 

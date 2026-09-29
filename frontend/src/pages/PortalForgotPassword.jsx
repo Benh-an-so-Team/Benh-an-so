@@ -13,13 +13,12 @@ import {
   PhoneOutlined,
   LockOutlined,
   KeyOutlined,
-  SafetyCertificateOutlined,
-  MedicineBoxOutlined,
-  SearchOutlined,
-  UserOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons'
 import authApi, { parseRetryAfterSeconds } from '../api/authApi'
+import PortalCyberBackground from '../components/portal/PortalCyberBackground'
+import PortalCyberHeader from '../components/portal/PortalCyberHeader'
+import './styles/portalLogin.css'
 import './portalForgotPassword.css'
 
 function maskPhone(phone) {
@@ -162,227 +161,81 @@ function PortalForgotPassword() {
   }
 
   return (
-    <div className="portal-forgot-page">
-      <div className="portal-forgot-decoration portal-forgot-decoration-one" aria-hidden="true" />
-      <div className="portal-forgot-decoration portal-forgot-decoration-two" aria-hidden="true" />
+    <div className="portal-cyber-login-page portal-forgot-page">
+      <PortalCyberBackground />
 
-      <header className="portal-login-header">
-        <div className="portal-login-header-inner">
-          <Link className="portal-login-brand" to="/portal">
-            <span className="portal-login-brand-icon">
-              <MedicineBoxOutlined />
-            </span>
-            <span>
-              <strong>BỆNH ÁN SỐ</strong>
-              <small>Cổng thông tin bệnh nhân trực tuyến</small>
-            </span>
-          </Link>
+      <PortalCyberHeader activePage="forgot-password" hideNav />
 
-          <div className="portal-login-header-links">
-            <Link className="portal-header-link" to="/portal">
-              <SearchOutlined /> Tra cứu theo mã hẹn
-            </Link>
-            <Link className="portal-header-link" to="/login">
-              <UserOutlined /> Đăng nhập nhân viên
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="portal-forgot-main">
-        <div className="portal-forgot-card">
-          <div className="portal-forgot-card-header">
-            <div className="portal-forgot-badge">
-              <SafetyCertificateOutlined /> Bảo mật tài khoản
+      <main>
+        <div className="card-wrapper">
+          <div className="portal-forgot-card">
+            <div className="portal-forgot-card-header">
+              <span className="portal-forgot-badge">
+                <svg className="ic"><use href="#shield" /></svg>
+                Bảo mật tài khoản
+              </span>
+              <h1 className="portal-forgot-title">Khôi phục mật khẩu</h1>
+              <p className="portal-forgot-sub">
+                Xác thực qua tin nhắn SMS OTP để thiết lập lại mật khẩu mới
+              </p>
             </div>
-            <h1 className="portal-forgot-title">Khôi phục mật khẩu</h1>
-            <p className="portal-forgot-sub">
-              Xác thực qua tin nhắn SMS OTP để thiết lập lại mật khẩu mới
-            </p>
-          </div>
 
-          <Steps
-            className="portal-forgot-steps"
-            size="small"
-            current={currentStep}
-            items={[
-              { title: 'Nhập SĐT' },
-              { title: 'Xác thực & Mật khẩu' },
-              { title: 'Hoàn tất' },
-            ]}
-          />
-
-          {errorMessage && (
-            <Alert
-              className="portal-forgot-alert"
-              type="error"
-              showIcon
-              message={errorMessage}
+            <Steps
+              className="portal-forgot-steps"
+              size="small"
+              current={currentStep}
+              items={[
+                { title: 'Nhập SĐT' },
+                { title: 'Xác thực & Mật khẩu' },
+                { title: 'Hoàn tất' },
+              ]}
             />
-          )}
 
-          {infoMessage && currentStep === 1 && (
-            <Alert
-              className="portal-forgot-alert"
-              type="info"
-              showIcon
-              message={infoMessage}
-              closable
-              onClose={() => setInfoMessage('')}
-            />
-          )}
+            {errorMessage && (
+              <Alert
+                className="portal-forgot-alert"
+                type="error"
+                showIcon
+                message={errorMessage}
+              />
+            )}
 
-          {/* BƯỚC 1: NHẬP SỐ ĐIỆN THOẠI */}
-          {currentStep === 0 && (
-            <Form
-              form={phoneForm}
-              className="portal-forgot-form"
-              layout="vertical"
-              onFinish={handleRequestOtp}
-              requiredMark={false}
-            >
-              <Form.Item
-                label={<span style={{ fontWeight: 600, color: '#334155' }}>Số điện thoại đã đăng ký</span>}
-                name="phone"
-                rules={[
-                  { required: true, message: 'Vui lòng nhập số điện thoại' },
-                  {
-                    pattern: /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/,
-                    message: 'Số điện thoại không đúng định dạng di động Việt Nam (VD: 0912345678)',
-                  },
-                ]}
-              >
-                <Input
-                  prefix={<PhoneOutlined />}
-                  placeholder="Nhập số điện thoại (VD: 0912345678)"
-                  disabled={loading}
-                  autoFocus
-                />
-              </Form.Item>
+            {infoMessage && currentStep === 1 && (
+              <Alert
+                className="portal-forgot-alert"
+                type="info"
+                showIcon
+                message={infoMessage}
+                closable
+                onClose={() => setInfoMessage('')}
+              />
+            )}
 
-              <Form.Item style={{ marginBottom: 8, marginTop: 16 }}>
-                <Button
-                  className="portal-forgot-btn-submit"
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  disabled={cooldownSeconds > 0}
-                  block
-                >
-                  {cooldownSeconds > 0
-                    ? `Vui lòng đợi (${cooldownSeconds}s)`
-                    : 'Gửi mã xác thực qua SMS'}
-                </Button>
-              </Form.Item>
-            </Form>
-          )}
-
-          {/* BƯỚC 2: NHẬP OTP VÀ MẬT KHẨU MỚI */}
-          {currentStep === 1 && (
-            <div>
-              <div className="portal-forgot-phone-preview">
-                <span>Số điện thoại nhận mã:</span>
-                <strong>{maskPhone(phone)}</strong>
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={() => {
-                    setCurrentStep(0)
-                    setErrorMessage('')
-                  }}
-                  style={{ padding: 0 }}
-                >
-                  Đổi số khác
-                </Button>
-              </div>
-
+            {/* BƯỚC 1: NHẬP SỐ ĐIỆN THOẠI */}
+            {currentStep === 0 && (
               <Form
-                form={resetForm}
+                form={phoneForm}
                 className="portal-forgot-form"
                 layout="vertical"
-                onFinish={handleResetPassword}
+                onFinish={handleRequestOtp}
                 requiredMark={false}
               >
                 <Form.Item
-                  label={<span style={{ fontWeight: 600, color: '#334155' }}>Mã xác thực OTP (6 chữ số)</span>}
-                  name="code"
+                  label="Số điện thoại đã đăng ký"
+                  name="phone"
                   rules={[
-                    { required: true, message: 'Vui lòng nhập mã xác thực OTP' },
-                    { pattern: /^[0-9]{6}$/, message: 'Mã xác thực gồm đúng 6 chữ số' },
-                  ]}
-                >
-                  <Input
-                    prefix={<KeyOutlined />}
-                    placeholder="Nhập 6 chữ số OTP từ SMS"
-                    maxLength={6}
-                    disabled={loading}
-                    autoFocus
-                  />
-                </Form.Item>
-
-                <div className="portal-forgot-resend-row">
-                  <span>Chưa nhận được tin nhắn?</span>
-                  <Button
-                    type="link"
-                    size="small"
-                    onClick={handleResendOtp}
-                    disabled={cooldownSeconds > 0 || loading}
-                    style={{ padding: 0 }}
-                  >
-                    {cooldownSeconds > 0
-                      ? `Gửi lại mã sau ${cooldownSeconds}s`
-                      : 'Gửi lại mã OTP'}
-                  </Button>
-                </div>
-
-                <div className="portal-forgot-password-rules">
-                  <strong>Chính sách mật khẩu an toàn:</strong>
-                  <div>• Độ dài từ 8 đến 50 ký tự</div>
-                  <div>• Chứa ít nhất 1 chữ in hoa (A-Z)</div>
-                  <div>• Chứa ít nhất 1 chữ thường (a-z)</div>
-                  <div>• Chứa ít nhất 1 chữ số (0-9)</div>
-                </div>
-
-                <Form.Item
-                  label={<span style={{ fontWeight: 600, color: '#334155' }}>Mật khẩu mới</span>}
-                  name="newPassword"
-                  rules={[
-                    { required: true, message: 'Vui lòng nhập mật khẩu mới' },
-                    { min: 8, message: 'Mật khẩu phải có tối thiểu 8 ký tự' },
-                    { max: 50, message: 'Mật khẩu không được quá 50 ký tự' },
+                    { required: true, message: 'Vui lòng nhập số điện thoại' },
                     {
-                      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
-                      message: 'Mật khẩu phải có ít nhất 1 chữ hoa, 1 chữ thường và 1 số',
+                      pattern: /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/,
+                      message: 'Số điện thoại không đúng định dạng di động Việt Nam (VD: 0912345678)',
                     },
                   ]}
                 >
-                  <Input.Password
-                    prefix={<LockOutlined />}
-                    placeholder="Nhập mật khẩu mới an toàn"
+                  <Input
+                    prefix={<PhoneOutlined />}
+                    placeholder="Nhập số điện thoại (VD: 0912345678)"
                     disabled={loading}
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  label={<span style={{ fontWeight: 600, color: '#334155' }}>Xác nhận mật khẩu mới</span>}
-                  name="confirmPassword"
-                  dependencies={['newPassword']}
-                  rules={[
-                    { required: true, message: 'Vui lòng nhập lại mật khẩu mới' },
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (!value || getFieldValue('newPassword') === value) {
-                          return Promise.resolve()
-                        }
-                        return Promise.reject(new Error('Mật khẩu xác nhận không khớp'))
-                      },
-                    }),
-                  ]}
-                >
-                  <Input.Password
-                    prefix={<LockOutlined />}
-                    placeholder="Nhập lại mật khẩu mới"
-                    disabled={loading}
+                    autoFocus
                   />
                 </Form.Item>
 
@@ -392,44 +245,171 @@ function PortalForgotPassword() {
                     type="primary"
                     htmlType="submit"
                     loading={loading}
+                    disabled={cooldownSeconds > 0}
                     block
                   >
-                    Xác nhận đặt lại mật khẩu
+                    {cooldownSeconds > 0
+                      ? `Vui lòng đợi (${cooldownSeconds}s)`
+                      : 'Gửi mã xác thực qua SMS'}
                   </Button>
                 </Form.Item>
               </Form>
-            </div>
-          )}
+            )}
 
-          {/* BƯỚC 3: THÀNH CÔNG */}
-          {currentStep === 2 && (
-            <Result
-              status="success"
-              title="Đặt lại mật khẩu thành công!"
-              subTitle="Mật khẩu của bạn đã được cập nhật an toàn. Toàn bộ phiên đăng nhập cũ đã được thu hồi bảo mật. Vui lòng đăng nhập lại bằng mật khẩu mới."
-              extra={[
-                <Button
-                  key="login"
-                  type="primary"
-                  className="portal-forgot-btn-submit"
-                  onClick={() => navigate('/portal/login', { replace: true, state: { phone } })}
-                  block
+            {/* BƯỚC 2: NHẬP OTP VÀ MẬT KHẨU MỚI */}
+            {currentStep === 1 && (
+              <div>
+                <div className="portal-forgot-phone-preview">
+                  <span>Số điện thoại nhận mã:</span>
+                  <strong>{maskPhone(phone)}</strong>
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => {
+                      setCurrentStep(0)
+                      setErrorMessage('')
+                    }}
+                    style={{ padding: 0 }}
+                  >
+                    Đổi số khác
+                  </Button>
+                </div>
+
+                <Form
+                  form={resetForm}
+                  className="portal-forgot-form"
+                  layout="vertical"
+                  onFinish={handleResetPassword}
+                  requiredMark={false}
                 >
-                  Đăng nhập Cổng bệnh nhân ngay
-                </Button>,
-              ]}
-            />
-          )}
+                  <Form.Item
+                    label="Mã xác thực OTP (6 chữ số)"
+                    name="code"
+                    rules={[
+                      { required: true, message: 'Vui lòng nhập mã xác thực OTP' },
+                      { pattern: /^[0-9]{6}$/, message: 'Mã xác thực gồm đúng 6 chữ số' },
+                    ]}
+                  >
+                    <Input
+                      prefix={<KeyOutlined />}
+                      placeholder="Nhập 6 chữ số OTP từ SMS"
+                      maxLength={6}
+                      disabled={loading}
+                      autoFocus
+                    />
+                  </Form.Item>
 
-          {currentStep !== 2 && (
-            <div className="portal-forgot-footer">
-              <div className="portal-forgot-footer-text">
-                <Link to="/portal/login">
-                  <ArrowLeftOutlined style={{ marginRight: 6 }} /> Quay lại trang Đăng nhập
-                </Link>
+                  <div className="portal-forgot-resend-row">
+                    <span>Chưa nhận được tin nhắn?</span>
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={handleResendOtp}
+                      disabled={cooldownSeconds > 0 || loading}
+                      style={{ padding: 0 }}
+                    >
+                      {cooldownSeconds > 0
+                        ? `Gửi lại mã sau ${cooldownSeconds}s`
+                        : 'Gửi lại mã OTP'}
+                    </Button>
+                  </div>
+
+                  <div className="portal-forgot-password-rules">
+                    <strong>Chính sách mật khẩu an toàn:</strong>
+                    <div>• Độ dài từ 8 đến 50 ký tự</div>
+                    <div>• Chứa ít nhất 1 chữ in hoa (A-Z)</div>
+                    <div>• Chứa ít nhất 1 chữ thường (a-z)</div>
+                    <div>• Chứa ít nhất 1 chữ số (0-9)</div>
+                  </div>
+
+                  <Form.Item
+                    label="Mật khẩu mới"
+                    name="newPassword"
+                    rules={[
+                      { required: true, message: 'Vui lòng nhập mật khẩu mới' },
+                      { min: 8, message: 'Mật khẩu phải có tối thiểu 8 ký tự' },
+                      { max: 50, message: 'Mật khẩu không được quá 50 ký tự' },
+                      {
+                        pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
+                        message: 'Mật khẩu phải có ít nhất 1 chữ hoa, 1 chữ thường và 1 số',
+                      },
+                    ]}
+                  >
+                    <Input.Password
+                      prefix={<LockOutlined />}
+                      placeholder="Nhập mật khẩu mới an toàn"
+                      disabled={loading}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Xác nhận mật khẩu mới"
+                    name="confirmPassword"
+                    dependencies={['newPassword']}
+                    rules={[
+                      { required: true, message: 'Vui lòng nhập lại mật khẩu mới' },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (!value || getFieldValue('newPassword') === value) {
+                            return Promise.resolve()
+                          }
+                          return Promise.reject(new Error('Mật khẩu xác nhận không khớp'))
+                        },
+                      }),
+                    ]}
+                  >
+                    <Input.Password
+                      prefix={<LockOutlined />}
+                      placeholder="Nhập lại mật khẩu mới"
+                      disabled={loading}
+                    />
+                  </Form.Item>
+
+                  <Form.Item style={{ marginBottom: 8, marginTop: 16 }}>
+                    <Button
+                      className="portal-forgot-btn-submit"
+                      type="primary"
+                      htmlType="submit"
+                      loading={loading}
+                      block
+                    >
+                      Xác nhận đặt lại mật khẩu
+                    </Button>
+                  </Form.Item>
+                </Form>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* BƯỚC 3: THÀNH CÔNG */}
+            {currentStep === 2 && (
+              <Result
+                status="success"
+                title="Đặt lại mật khẩu thành công!"
+                subTitle="Mật khẩu của bạn đã được cập nhật an toàn. Toàn bộ phiên đăng nhập cũ đã được thu hồi bảo mật. Vui lòng đăng nhập lại bằng mật khẩu mới."
+                extra={[
+                  <Button
+                    key="login"
+                    type="primary"
+                    className="portal-forgot-btn-submit"
+                    onClick={() => navigate('/portal/login', { replace: true, state: { phone } })}
+                    block
+                  >
+                    Đăng nhập Cổng bệnh nhân ngay
+                  </Button>,
+                ]}
+              />
+            )}
+
+            {currentStep !== 2 && (
+              <div className="portal-forgot-footer">
+                <div className="portal-forgot-footer-text">
+                  <Link to="/portal/login">
+                    <ArrowLeftOutlined /> Quay lại trang Đăng nhập
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>

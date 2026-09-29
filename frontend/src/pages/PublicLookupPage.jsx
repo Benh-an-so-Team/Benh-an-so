@@ -34,6 +34,9 @@ import {
 import dayjs from 'dayjs'
 
 import portalApi from '../api/portalApi.js'
+import PortalCyberBackground from '../components/portal/PortalCyberBackground'
+import PortalCyberHeader from '../components/portal/PortalCyberHeader'
+import './styles/portalLogin.css'
 import './styles/publicLookup.css'
 
 const { Text, Title, Paragraph } = Typography
@@ -244,36 +247,10 @@ function PublicLookupPage() {
   ]
 
   return (
-    <div className="public-lookup-page">
-      <div className="public-lookup-decoration public-lookup-decoration-one" aria-hidden="true" />
-      <div className="public-lookup-decoration public-lookup-decoration-two" aria-hidden="true" />
+    <div className="portal-cyber-login-page public-lookup-page">
+      <PortalCyberBackground />
 
-      {/* Header */}
-      <header className="public-lookup-header">
-        <div className="public-lookup-header-inner">
-          <Link className="public-lookup-brand" to="/portal" aria-label="Bệnh Án Số - Cổng tra cứu">
-            <span className="public-lookup-brand-icon">
-              <MedicineBoxOutlined />
-            </span>
-            <span>
-              <strong>BỆNH ÁN SỐ</strong>
-              <small>Cổng tra cứu kết quả khám bệnh trực tuyến</small>
-            </span>
-          </Link>
-
-          <div className="public-lookup-header-actions">
-            <span className="public-lookup-secure">
-              <SafetyCertificateOutlined /> Tra cứu an toàn
-            </span>
-            <Link className="public-lookup-login" to="/portal/login" style={{ background: '#e6f7ff', borderColor: '#91d5ff', color: '#096dd9' }}>
-              <UserOutlined /> Đăng nhập Bệnh nhân
-            </Link>
-            <Link className="public-lookup-login" to="/login">
-              <LoginOutlined /> Đăng nhập nhân viên
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PortalCyberHeader activePage="lookup" />
 
       {/* Main Content */}
       <main className="public-lookup-main" style={{ gridTemplateColumns: result ? '1fr' : undefined }}>
@@ -281,51 +258,54 @@ function PublicLookupPage() {
           <span className="public-lookup-eyebrow">
             <SafetyCertificateOutlined /> Tra cứu kết quả trực tuyến
           </span>
-          <h1>Tra cứu kết quả khám bệnh</h1>
-          <p>
-            Nhập mã hẹn để tra cứu kết quả khám đã được hệ thống công bố.
+          <h1 className="public-lookup-title">Tra cứu kết quả khám bệnh</h1>
+          <p className="public-lookup-desc">
+            Nhập mã hẹn để tra cứu kết quả khám bệnh, chỉ định thuốc và kết luận chuyên khoa đã được cơ sở y tế công bố trực tuyến.
           </p>
 
           <div className="public-lookup-steps" aria-label="Hướng dẫn tra cứu">
-            <div>
-              <b>1</b>
-              <span>
+            <div className="public-lookup-step-item">
+              <div className="step-num">01</div>
+              <div className="step-body">
                 <strong>Nhập mã hẹn</strong>
-                <small>Sử dụng mã hẹn để tra cứu kết quả.</small>
-              </span>
+                <small>Sử dụng mã hẹn (ví dụ: APT000001) được cấp khi đăng ký khám.</small>
+              </div>
             </div>
-            <div>
-              <b>2</b>
-              <span>
+            <div className="public-lookup-step-item">
+              <div className="step-num">02</div>
+              <div className="step-body">
                 <strong>Xác minh số điện thoại (tùy chọn)</strong>
-                <small>Bảo vệ riêng tư thông tin y tế.</small>
-              </span>
+                <small>Bảo vệ quyền riêng tư và đối soát dữ liệu bệnh nhân.</small>
+              </div>
             </div>
-            <div>
-              <b>3</b>
-              <span>
-                <strong>Xem kết quả khám</strong>
-                <small>Nhận chẩn đoán và dặn dò của bác sĩ.</small>
-              </span>
+            <div className="public-lookup-step-item">
+              <div className="step-num">03</div>
+              <div className="step-body">
+                <strong>Xem kết quả khám tức thì</strong>
+                <small>Xem chẩn đoán, cận lâm sàng và dặn dò của bác sĩ.</small>
+              </div>
             </div>
           </div>
 
           <div className="public-lookup-trust-note">
-            <LockOutlined />
-            <span>
-              <strong>Bảo mật thông tin y tế</strong>
-              <small>Dữ liệu chỉ hiển thị khi tra cứu đúng Mã hẹn hợp lệ.</small>
-            </span>
+            <LockOutlined className="trust-icon" />
+            <div>
+              <strong>Bảo mật thông tin y tế 100%</strong>
+              <small>Dữ liệu chỉ hiển thị khi tra cứu đúng Mã hẹn hợp lệ theo quy định an toàn.</small>
+            </div>
           </div>
         </section>
 
         {/* Search Card Section */}
         <section className="public-lookup-card">
           <div className="public-lookup-card-heading">
-            <span>
+            <span className="public-lookup-card-icon">
               <SearchOutlined />
             </span>
             <div>
+              <span className="public-lookup-card-badge">
+                <SafetyCertificateOutlined /> Cổng tra cứu công khai
+              </span>
               <h2>Tra cứu kết quả</h2>
               <p>Vui lòng nhập chính xác mã hẹn và số điện thoại bệnh nhân.</p>
             </div>
@@ -387,7 +367,12 @@ function PublicLookupPage() {
             </Button>
 
             <div className="public-lookup-privacy">
-              <LockOutlined /> Dữ liệu tra cứu an toàn và bảo mật.
+              <LockOutlined /> Dữ liệu tra cứu an toàn và bảo mật theo chuẩn y tế điện tử.
+            </div>
+
+            <div className="public-lookup-card-foot">
+              <span>Đã có tài khoản Bệnh nhân?</span>
+              <Link to="/portal/login">Đăng nhập để xem toàn bộ hồ sơ y bạ &rarr;</Link>
             </div>
           </form>
 
@@ -409,20 +394,25 @@ function PublicLookupPage() {
 
       {/* Result Display Section (Renders when result is loaded) */}
       {result && (
-        <div style={{ width: 'min(1080px, calc(100% - 40px))', margin: '0 auto 48px auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <Title level={4} style={{ margin: 0, color: '#172840' }}>
-              <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
-              KẾT QUẢ KHÁM BỆNH CHI TIẾT
-            </Title>
-            <Button icon={<ArrowLeftOutlined />} onClick={handleReset}>
+        <div className="public-lookup-result-wrap">
+          <div className="public-lookup-result-header">
+            <div className="result-header-title">
+              <span className="result-header-badge-icon">
+                <CheckCircleOutlined />
+              </span>
+              <div>
+                <h3>KẾT QUẢ KHÁM BỆNH CHI TIẾT</h3>
+                <p>Mã hẹn: <b>{result.appointmentCode}</b> &bull; Lượt khám: <b>{result.visitCode || '—'}</b></p>
+              </div>
+            </div>
+            <Button className="public-lookup-reset-btn" icon={<ArrowLeftOutlined />} onClick={handleReset}>
               Tra cứu mã khác
             </Button>
           </div>
 
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             {/* Section A: THÔNG TIN BỆNH NHÂN */}
-            <Card title={<Space><UserOutlined style={{ color: '#1890ff' }} /><span>THÔNG TIN BỆNH NHÂN</span></Space>} style={{ borderRadius: 12 }}>
+            <Card className="public-result-card" title={<Space><UserOutlined style={{ color: '#0284c7' }} /><span>THÔNG TIN BỆNH NHÂN</span></Space>}>
               <Descriptions column={{ xs: 1, sm: 2, md: 4 }} bordered size="middle">
                 <Descriptions.Item label="Họ và tên"><Text strong>{result.patientName || '—'}</Text></Descriptions.Item>
                 <Descriptions.Item label="Ngày sinh">{formatDate(result.patientDateOfBirth)}</Descriptions.Item>
@@ -432,7 +422,7 @@ function PublicLookupPage() {
             </Card>
 
             {/* Section B: THÔNG TIN LƯỢT KHÁM */}
-            <Card title={<Space><CalendarOutlined style={{ color: '#722ed1' }} /><span>THÔNG TIN LƯỢT KHÁM</span></Space>} style={{ borderRadius: 12 }}>
+            <Card className="public-result-card" title={<Space><CalendarOutlined style={{ color: '#7c3aed' }} /><span>THÔNG TIN LƯỢT KHÁM</span></Space>}>
               <Descriptions column={{ xs: 1, sm: 2, md: 3 }} bordered size="middle">
                 <Descriptions.Item label="Mã hẹn"><Tag color="purple">{result.appointmentCode || '—'}</Tag></Descriptions.Item>
                 <Descriptions.Item label="Thời gian hẹn">{formatDateTime(result.appointmentStartTime)}</Descriptions.Item>
@@ -444,25 +434,25 @@ function PublicLookupPage() {
             </Card>
 
             {/* Section C: KẾT LUẬN & DẶN DÒ */}
-            <Card title={<Space><InfoCircleOutlined style={{ color: '#fa8c16' }} /><span>KẾT LUẬN & DẶN DÒ BÁC SĨ</span></Space>} style={{ borderRadius: 12 }}>
+            <Card className="public-result-card" title={<Space><InfoCircleOutlined style={{ color: '#f59e0b' }} /><span>KẾT LUẬN & DẶN DÒ BÁC SĨ</span></Space>}>
               <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>
-                  <div style={{ background: '#fafafa', padding: 16, borderRadius: 8, borderLeft: '4px solid #1890ff', height: '100%' }}>
-                    <Text type="secondary" style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>KẾT LUẬN CHUNG</Text>
-                    <Text strong style={{ fontSize: 15, color: '#262626' }}>{result.conclusion || '—'}</Text>
+                  <div className="conclusion-box conclusion-primary">
+                    <Text type="secondary" className="conclusion-lbl">KẾT LUẬN CHUNG</Text>
+                    <div className="conclusion-val">{result.conclusion || '—'}</div>
                   </div>
                 </Col>
                 <Col xs={24} md={12}>
-                  <div style={{ background: '#f6ffed', padding: 16, borderRadius: 8, borderLeft: '4px solid #52c41a', height: '100%' }}>
-                    <Text type="secondary" style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>DẶN DÒ & CHỈ ĐỊNH BÁC SĨ</Text>
-                    <Text style={{ fontSize: 15, color: '#274e13' }}>{result.doctorInstructions || '—'}</Text>
+                  <div className="conclusion-box conclusion-success">
+                    <Text type="secondary" className="conclusion-lbl">DẶN DÒ & CHỈ ĐỊNH BÁC SĨ</Text>
+                    <div className="conclusion-val">{result.doctorInstructions || '—'}</div>
                   </div>
                 </Col>
               </Row>
             </Card>
 
             {/* Section D: CHẨN ĐOÁN */}
-            <Card title={<Space><FileTextOutlined style={{ color: '#ff4d4f' }} /><span>CHẨN ĐOÁN CỦA BÁC SĨ</span></Space>} style={{ borderRadius: 12 }}>
+            <Card className="public-result-card" title={<Space><FileTextOutlined style={{ color: '#ef4444' }} /><span>CHẨN ĐOÁN CỦA BÁC SĨ</span></Space>}>
               {Array.isArray(result.diagnoses) && result.diagnoses.length > 0 ? (
                 <Table
                   columns={diagnosesColumns}
@@ -477,7 +467,7 @@ function PublicLookupPage() {
             </Card>
 
             {/* Section E: KẾT QUẢ CẬN LÂM SÀNG */}
-            <Card title={<Space><FileDoneOutlined style={{ color: '#13c2c2' }} /><span>KẾT QUẢ CẬN LÂM SÀNG & XÉT NGHIỆM</span></Space>} style={{ borderRadius: 12 }}>
+            <Card className="public-result-card" title={<Space><FileDoneOutlined style={{ color: '#06b6d4' }} /><span>KẾT QUẢ CẬN LÂM SÀNG & XÉT NGHIỆM</span></Space>}>
               {Array.isArray(result.clinicalTestResults) && result.clinicalTestResults.length > 0 ? (
                 <Table
                   columns={testResultsColumns}
@@ -493,7 +483,7 @@ function PublicLookupPage() {
             </Card>
 
             {/* Section F: ĐƠN THUỐC */}
-            <Card title={<Space><MedicineBoxOutlined style={{ color: '#eb2f96' }} /><span>ĐƠN THUỐC CHỈ ĐỊNH</span></Space>} style={{ borderRadius: 12 }}>
+            <Card className="public-result-card" title={<Space><MedicineBoxOutlined style={{ color: '#ec4899' }} /><span>ĐƠN THUỐC CHỈ ĐỊNH</span></Space>}>
               {Array.isArray(result.prescriptions) && result.prescriptions.length > 0 ? (
                 <Table
                   columns={prescriptionColumns}
@@ -513,10 +503,10 @@ function PublicLookupPage() {
 
       {/* Footer */}
       <footer className="public-lookup-footer">
-        <div className="public-lookup-header-inner">
-          <span>© {new Date().getFullYear()} Bệnh Án Số — Hệ thống quản lý hồ sơ sức khỏe điện tử</span>
+        <div className="public-lookup-footer-inner">
+          <span>© {new Date().getFullYear()} Bệnh Án Số — Hệ thống chuyển đổi số y tế &amp; hồ sơ sức khỏe điện tử</span>
           <span>
-            <SafetyCertificateOutlined /> Kết nối tra cứu an toàn & bảo mật
+            <SafetyCertificateOutlined /> Kết nối tra cứu dữ liệu an toàn &amp; bảo mật
           </span>
         </div>
       </footer>
