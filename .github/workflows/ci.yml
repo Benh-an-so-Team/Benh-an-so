@@ -204,8 +204,10 @@ jobs:
             echo "Installing frontend dependencies..."
             cd frontend
             npm ci
-            echo "Installing Vercel CLI..."
-            npm install --global vercel@latest
+            export PATH="$PWD/node_modules/.bin:$PATH"
+            echo "$PWD/node_modules/.bin" >> $GITHUB_PATH
+            echo "Installing Vercel CLI and Vite globally..."
+            npm install --global vercel@latest vite@5.4.10
             echo "Deploying frontend to Vercel production..."
             vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
             vercel build --prod --token="$VERCEL_TOKEN"
