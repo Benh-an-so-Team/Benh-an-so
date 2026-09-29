@@ -54,6 +54,7 @@ import specialControlledDrugApi, {
   mergeSpecialControlData,
 } from '../api/specialControlledDrugApi'
 import { SafetyCertificateOutlined } from '@ant-design/icons'
+import PrescriptionLookupPanel from '../components/pharmacy/PrescriptionLookupPanel.jsx'
 
 
 const { Text, Title } = Typography
@@ -716,6 +717,14 @@ function PharmacyPage() {
           style={{ marginBottom: 16 }}
         />
       )}
+
+      {/* Khối Tra cứu đơn thuốc bằng mã đơn khi cấp phát (NCL-12-CN-006) */}
+      <PrescriptionLookupPanel
+        canDispense={canDispense}
+        onDispenseSuccess={() => {
+          loadData()
+        }}
+      />
 
       <Row gutter={[16, 16]} align="stretch">
         <Col xs={24} xl={9}>
