@@ -1,170 +1,39 @@
 /* =========================================================
    PUBLIC PATIENT PORTAL LOOKUP STYLESHEET
-   100% Fluid & Responsive from 200px (Smartwatch) to 1920px (4K Desktop)
-   Mobile Typography Tuned (375px - 430px): Crisp 14px-16px text, no sub-12px fonts
+   Unified Holographic Cyberpunk Medical Theme
    ========================================================= */
-
-*, *::before, *::after {
-  box-sizing: border-box;
-}
 
 .public-lookup-page {
   position: relative;
   width: 100%;
-  max-width: 100vw;
   min-height: 100vh;
   min-height: 100dvh;
-  overflow-x: hidden;
-  color: #1d2c43;
-  background:
-    radial-gradient(circle at 8% 14%, rgba(23, 110, 232, 0.08), transparent 28%),
-    radial-gradient(circle at 92% 82%, rgba(21, 166, 106, 0.07), transparent 25%),
-    #f5f8fc;
-}
-
-.public-lookup-decoration {
-  position: absolute;
-  z-index: 0;
-  width: 330px;
-  height: 330px;
-  pointer-events: none;
-  border: 1px solid rgba(23, 110, 232, 0.08);
-  border-radius: 50%;
-}
-
-.public-lookup-decoration-one {
-  top: 100px;
-  left: -230px;
-}
-
-.public-lookup-decoration-two {
-  right: -220px;
-  bottom: 45px;
-}
-
-/* Header */
-.public-lookup-header {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  min-height: 64px;
-  background: rgba(255, 255, 255, 0.94);
-  border-bottom: 1px solid #e2e8f0;
-  backdrop-filter: blur(14px);
-}
-
-.public-lookup-header-inner {
   display: flex;
-  width: 100%;
-  max-width: 1120px;
-  min-height: 64px;
-  margin: 0 auto;
-  padding: 8px clamp(12px, 3vw, 24px);
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.public-lookup-brand {
-  display: inline-flex;
-  min-width: 0;
-  max-width: 100%;
-  align-items: center;
-  color: inherit;
-  text-decoration: none;
-}
-
-.public-lookup-brand-icon {
-  display: grid;
-  flex: 0 0 clamp(36px, 8vw, 44px);
-  width: clamp(36px, 8vw, 44px);
-  height: clamp(36px, 8vw, 44px);
-  place-items: center;
-  color: #ffffff;
-  font-size: clamp(16px, 4vw, 22px);
-  background: linear-gradient(145deg, #2580ed, #145fc7);
-  border-radius: 10px;
-  box-shadow: 0 7px 16px rgba(23, 110, 232, 0.22);
-}
-
-.public-lookup-brand > span:last-child {
-  display: flex;
-  min-width: 0;
-  margin-left: clamp(8px, 2vw, 12px);
   flex-direction: column;
+  justify-content: space-between;
+  overflow-x: hidden;
+  color: #e2e8f0;
 }
 
-.public-lookup-brand strong {
-  color: #1f3553;
-  font-size: clamp(14px, 3.5vw, 17px);
-  font-weight: 760;
-  letter-spacing: 0.02em;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.public-lookup-brand small {
-  margin-top: 2px;
-  color: #596a7d;
-  font-size: clamp(11.5px, 2.5vw, 13px);
-  line-height: 1.3;
-}
-
-.public-lookup-header-actions {
-  display: flex;
-  align-items: center;
-  gap: clamp(10px, 2vw, 20px);
-  flex-wrap: wrap;
-}
-
-.public-lookup-secure {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #15803d;
-  font-size: clamp(12px, 2.8vw, 13.5px);
-  font-weight: 650;
-  white-space: nowrap;
-}
-
-.public-lookup-login {
-  display: inline-flex;
-  min-height: 40px;
-  padding: 0 clamp(10px, 2.5vw, 16px);
-  align-items: center;
-  gap: 6px;
-  color: #1e3a8a;
-  font-size: clamp(12.5px, 2.8vw, 14px);
-  font-weight: 650;
-  white-space: nowrap;
-  text-decoration: none;
-  background: #ffffff;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 8px;
-  transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
-}
-
-.public-lookup-login:hover {
-  color: #176ee8;
-  background: #f4f9ff;
-  border-color: #93c5fd;
-}
-
-/* Main Content Grid */
+/* =========================================================
+   MAIN GRID CONTAINER
+   ========================================================= */
 .public-lookup-main {
   position: relative;
-  z-index: 1;
+  z-index: 5;
   display: grid;
   width: 100%;
-  max-width: 1080px;
+  max-width: 1140px;
   margin: 0 auto;
-  padding: clamp(24px, 4vw, 48px) clamp(12px, 3vw, 24px);
+  padding: clamp(24px, 4vw, 48px) clamp(16px, 3vw, 32px);
   align-items: center;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: clamp(24px, 4vw, 48px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  gap: clamp(28px, 4.5vw, 56px);
 }
 
+/* =========================================================
+   LEFT INTRO SECTION (HERO)
+   ========================================================= */
 .public-lookup-intro {
   width: 100%;
   min-width: 0;
@@ -172,184 +41,220 @@
 
 .public-lookup-eyebrow {
   display: inline-flex;
-  min-height: 28px;
-  padding: 4px 12px;
+  min-height: 32px;
+  padding: 4px 14px;
   align-items: center;
-  gap: 6px;
-  color: #1d4ed8;
-  font-size: clamp(12px, 2.8vw, 13.5px);
+  gap: 8px;
+  color: var(--cy2, #7cf3ff);
+  font-size: 13px;
   font-weight: 700;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
+  letter-spacing: 0.04em;
+  background: rgba(55, 230, 255, 0.1);
+  border: 1px solid rgba(55, 230, 255, 0.3);
   border-radius: 999px;
+  box-shadow: 0 0 16px rgba(55, 230, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-.public-lookup-intro h1 {
-  width: 100%;
-  max-width: 520px;
-  margin: clamp(14px, 3vw, 20px) 0 0;
-  color: #0f172a;
-  font-size: clamp(22px, 5vw, 36px);
-  font-weight: 780;
-  letter-spacing: -0.03em;
-  line-height: 1.25;
+.public-lookup-title {
+  margin: clamp(14px, 2.5vw, 20px) 0 0;
+  font-size: clamp(26px, 4.5vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.22;
+  background: linear-gradient(135deg, #ffffff 40%, #7cf3ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.public-lookup-intro > p {
-  width: 100%;
-  max-width: 500px;
-  margin: clamp(12px, 2.5vw, 18px) 0 0;
-  color: #475569;
-  font-size: clamp(14px, 3vw, 16px);
-  line-height: 1.6;
+.public-lookup-desc {
+  max-width: 480px;
+  margin: clamp(12px, 2vw, 16px) 0 0;
+  color: #94a3b8;
+  font-size: clamp(14px, 2.5vw, 15.5px);
+  line-height: 1.65;
 }
 
+/* Steps list */
 .public-lookup-steps {
   display: grid;
-  margin-top: clamp(20px, 3.5vw, 32px);
-  gap: clamp(12px, 2.5vw, 18px);
+  margin-top: clamp(24px, 3.5vw, 32px);
+  gap: clamp(12px, 2vw, 16px);
 }
 
-.public-lookup-steps > div {
+.public-lookup-step-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: rgba(10, 25, 45, 0.65);
+  border: 1px solid rgba(55, 230, 255, 0.15);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.25s ease;
 }
 
-.public-lookup-steps b {
+.public-lookup-step-item:hover {
+  background: rgba(15, 35, 60, 0.85);
+  border-color: rgba(55, 230, 255, 0.35);
+  box-shadow: 0 4px 20px rgba(55, 230, 255, 0.12);
+  transform: translateX(4px);
+}
+
+.public-lookup-step-item .step-num {
   display: grid;
-  flex: 0 0 clamp(28px, 6vw, 34px);
-  width: clamp(28px, 6vw, 34px);
-  height: clamp(28px, 6vw, 34px);
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
   place-items: center;
-  color: #1d4ed8;
-  font-size: clamp(13px, 2.8vw, 15px);
-  font-weight: 700;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 9px;
-  box-shadow: 0 4px 10px rgba(37, 61, 95, 0.05);
+  color: #38bdf8;
+  font-size: 14px;
+  font-weight: 800;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(14, 165, 233, 0.05));
+  border: 1.5px solid rgba(56, 189, 248, 0.6);
+  border-radius: 10px;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
 }
 
-.public-lookup-steps span {
+.public-lookup-step-item .step-body {
   display: flex;
-  min-width: 0;
-  margin-left: clamp(10px, 2.5vw, 14px);
   flex-direction: column;
+  min-width: 0;
 }
 
-.public-lookup-steps strong {
-  color: #1e293b;
-  font-size: clamp(14px, 3vw, 15.5px);
+.public-lookup-step-item .step-body strong {
+  color: #f1f5f9;
+  font-size: 14.5px;
   font-weight: 700;
   line-height: 1.3;
 }
 
-.public-lookup-steps small {
+.public-lookup-step-item .step-body small {
   margin-top: 3px;
-  color: #475569;
-  font-size: clamp(12px, 2.8vw, 13.5px);
+  color: #94a3b8;
+  font-size: 13px;
   line-height: 1.45;
 }
 
+/* Trust Banner */
 .public-lookup-trust-note {
   display: flex;
-  width: 100%;
   max-width: 500px;
-  margin-top: clamp(20px, 3.5vw, 28px);
-  padding: 14px 16px;
-  align-items: flex-start;
-  color: #14532d;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 12px;
+  margin-top: clamp(20px, 3vw, 28px);
+  padding: 14px 18px;
+  align-items: center;
+  gap: 14px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-.public-lookup-trust-note > .anticon {
-  flex: 0 0 auto;
-  margin-top: 3px;
-  font-size: 16px;
-}
-
-.public-lookup-trust-note span {
-  display: flex;
-  min-width: 0;
-  margin-left: 10px;
-  flex-direction: column;
+.public-lookup-trust-note .trust-icon {
+  font-size: 20px;
+  color: #34d399;
+  flex-shrink: 0;
 }
 
 .public-lookup-trust-note strong {
-  font-size: clamp(13px, 2.8vw, 14.5px);
+  display: block;
+  color: #6ee7b7;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .public-lookup-trust-note small {
-  margin-top: 3px;
-  color: #15803d;
-  font-size: clamp(12px, 2.8vw, 13.5px);
-  line-height: 1.5;
+  display: block;
+  margin-top: 2px;
+  color: #a7f3d0;
+  font-size: 12.5px;
+  line-height: 1.4;
 }
 
-/* Card Form */
+/* =========================================================
+   RIGHT SEARCH CARD
+   ========================================================= */
 .public-lookup-card {
+  position: relative;
   width: 100%;
-  max-width: 100%;
-  min-width: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 35px rgba(55, 230, 255, 0.12);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid #cbd5e1;
-  border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  color: #1e293b;
 }
 
 .public-lookup-card-heading {
   display: flex;
-  min-height: 72px;
-  padding: clamp(14px, 3vw, 20px) clamp(16px, 3vw, 24px);
-  align-items: center;
-  gap: 14px;
-  background: linear-gradient(110deg, #eff6ff, #ffffff 72%);
-  border-bottom: 1px solid #e2e8f0;
+  padding: 24px 28px 18px;
+  align-items: flex-start;
+  gap: 16px;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.public-lookup-card-heading > span {
+.public-lookup-card-icon {
   display: grid;
-  flex: 0 0 clamp(36px, 7vw, 44px);
-  width: clamp(36px, 7vw, 44px);
-  height: clamp(36px, 7vw, 44px);
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
   place-items: center;
-  color: #1d4ed8;
-  font-size: clamp(16px, 3.8vw, 20px);
-  background: #dbeafe;
-  border-radius: 11px;
+  color: #0284c7;
+  font-size: 22px;
+  background: #e0f2fe;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.16);
+}
+
+.public-lookup-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  color: #0369a1;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #e0f2fe;
+  border-radius: 6px;
+  margin-bottom: 6px;
 }
 
 .public-lookup-card-heading h2 {
   margin: 0;
   color: #0f172a;
-  font-size: clamp(16px, 3.5vw, 19px);
-  font-weight: 750;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .public-lookup-card-heading p {
-  margin: 3px 0 0;
+  margin: 4px 0 0;
   color: #64748b;
-  font-size: clamp(12px, 2.8vw, 13.5px);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .public-lookup-form {
-  width: 100%;
-  padding: clamp(18px, 3.5vw, 26px) clamp(16px, 3vw, 24px);
+  padding: 24px 28px 28px;
 }
 
 .public-lookup-field + .public-lookup-field {
-  margin-top: clamp(14px, 2.8vw, 18px);
+  margin-top: 18px;
 }
 
 .public-lookup-field label {
   display: block;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
   color: #1e293b;
-  font-size: clamp(13.5px, 3vw, 15px);
+  font-size: 13.5px;
   font-weight: 700;
 }
 
@@ -357,81 +262,298 @@
   color: #ef4444;
 }
 
-.public-lookup-field .ant-input-affix-wrapper {
-  width: 100%;
-  min-height: 46px;
-  font-size: clamp(14px, 3.2vw, 16px) !important;
-  border-color: #cbd5e1;
-  border-radius: 9px !important;
-  box-shadow: none;
+/* Input Fields - Outer Affix Wrapper Styling */
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper {
+  background: #f8fafc !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
 }
 
-.public-lookup-field .ant-input {
-  font-size: clamp(14px, 3.2vw, 16px) !important;
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper:hover {
+  border-color: #cbd5e1 !important;
+  background: #ffffff !important;
+}
+
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper:focus-within,
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper-focused {
+  border-color: #0284c7 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3.5px rgba(2, 132, 199, 0.15) !important;
+}
+
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper .ant-input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 15px !important;
+  color: #0f172a !important;
+  font-weight: 500 !important;
+}
+
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper .ant-input-prefix {
+  margin-right: 10px !important;
+  color: #64748b !important;
+  font-size: 17px !important;
+}
+
+.public-lookup-page .public-lookup-field .ant-input-affix-wrapper:focus-within .ant-input-prefix {
+  color: #0284c7 !important;
 }
 
 .public-lookup-field > small {
   display: block;
   margin-top: 6px;
-  color: #475569;
-  font-size: clamp(12px, 2.8vw, 13.5px);
-  line-height: 1.45;
-  overflow-wrap: anywhere;
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.4;
 }
 
+/* Submit Button */
 .public-lookup-submit.ant-btn {
   width: 100%;
-  min-height: 48px;
-  margin-top: clamp(18px, 3.5vw, 22px);
-  font-size: clamp(14px, 3.5vw, 16px);
-  font-weight: 700;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  border-radius: 9px !important;
-  box-shadow: 0 8px 20px rgba(29, 78, 216, 0.22);
+  height: 48px !important;
+  margin-top: 22px;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 20px -2px rgba(2, 132, 199, 0.45) !important;
+  transition: all 0.2s ease !important;
+}
+
+.public-lookup-submit.ant-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
+  box-shadow: 0 8px 24px -2px rgba(2, 132, 199, 0.55) !important;
+  transform: translateY(-1px);
 }
 
 .public-lookup-privacy {
   display: flex;
-  margin-top: 12px;
+  margin-top: 14px;
   align-items: center;
   justify-content: center;
   gap: 6px;
   color: #64748b;
-  font-size: clamp(12px, 2.5vw, 13px);
+  font-size: 12.5px;
   text-align: center;
 }
 
+.public-lookup-card-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.public-lookup-card-foot a {
+  color: #0284c7;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.public-lookup-card-foot a:hover {
+  color: #0369a1;
+  text-decoration: underline;
+}
+
 .public-lookup-feedback {
-  padding: 0 clamp(16px, 3vw, 24px) 20px;
+  padding: 0 28px 24px;
 }
 
-.public-lookup-feedback:empty {
-  display: none;
-}
-
-/* Footer */
-.public-lookup-footer {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  min-height: 60px;
-  padding: 16px 0;
-  color: #475569;
-  font-size: clamp(12px, 2.8vw, 14px);
-  border-top: 1px solid #e2e8f0;
+.public-lookup-feedback .ant-alert {
+  border-radius: 12px;
 }
 
 /* =========================================================
-   BREAKPOINT MEDIA QUERIES
+   RESULT DISPLAY SECTION
    ========================================================= */
+.public-lookup-result-wrap {
+  position: relative;
+  z-index: 5;
+  width: min(1080px, calc(100% - 32px));
+  margin: 0 auto 60px auto;
+}
 
-/* Tablet (768px - 959px) */
+.public-lookup-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px 22px;
+  background: rgba(12, 28, 45, 0.85);
+  border: 1px solid rgba(55, 230, 255, 0.25);
+  border-radius: 16px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  flex-wrap: wrap;
+}
+
+.result-header-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.result-header-badge-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  color: #10b981;
+  font-size: 24px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1.5px solid rgba(16, 185, 129, 0.4);
+  border-radius: 12px;
+}
+
+.result-header-title h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.result-header-title p {
+  margin: 2px 0 0;
+  color: #94a3b8;
+  font-size: 13.5px;
+}
+
+.result-header-title p b {
+  color: var(--cy2, #7cf3ff);
+}
+
+.public-lookup-reset-btn.ant-btn {
+  height: 40px !important;
+  padding: 0 18px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 10px !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease !important;
+}
+
+.public-lookup-reset-btn.ant-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+/* Result Cards */
+.public-result-card.ant-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  overflow: hidden;
+}
+
+.public-result-card .ant-card-head {
+  padding: 16px 24px !important;
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.public-result-card .ant-card-head-title {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  color: #0f172a !important;
+}
+
+.public-result-card .ant-card-body {
+  padding: 24px !important;
+}
+
+/* Conclusion Highlight Boxes */
+.conclusion-box {
+  padding: 18px 20px;
+  border-radius: 12px;
+  height: 100%;
+}
+
+.conclusion-primary {
+  background: #f0f9ff;
+  border-left: 4px solid #0284c7;
+}
+
+.conclusion-success {
+  background: #f0fdf4;
+  border-left: 4px solid #10b981;
+}
+
+.conclusion-lbl {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  color: #64748b !important;
+}
+
+.conclusion-val {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #0f172a;
+}
+
+.conclusion-success .conclusion-val {
+  color: #065f46;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+.public-lookup-footer {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  padding: 20px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(5, 13, 24, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.public-lookup-footer-inner {
+  display: flex;
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 3vw, 32px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #94a3b8;
+  flex-wrap: wrap;
+}
+
+/* =========================================================
+   RESPONSIVE DESIGN
+   ========================================================= */
 @media (max-width: 959px) {
   .public-lookup-main {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 36px;
     padding-top: 32px;
   }
 
@@ -439,119 +561,42 @@
     text-align: center;
   }
 
-  .public-lookup-intro h1,
-  .public-lookup-intro > p,
+  .public-lookup-title,
+  .public-lookup-desc,
   .public-lookup-trust-note {
     margin-right: auto;
     margin-left: auto;
   }
 
   .public-lookup-steps {
-    max-width: 480px;
+    max-width: 500px;
     margin-right: auto;
     margin-left: auto;
     text-align: left;
   }
 }
 
-/* Mobile (360px - 599px) */
-@media (max-width: 599px) {
-  .public-lookup-header-inner {
-    padding: 8px 14px;
+@media (max-width: 600px) {
+  .public-lookup-card-heading {
+    padding: 18px 20px 14px;
   }
 
-  .public-lookup-secure {
-    display: none;
+  .public-lookup-form {
+    padding: 20px;
   }
 
-  .public-lookup-login {
-    min-height: 38px;
-    padding: 0 12px;
-    font-size: 13px;
-  }
-
-  .public-lookup-result-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .public-lookup-field .ant-input,
-  .public-lookup-field .ant-input-affix-wrapper input {
-    font-size: 16px !important; /* Prevents iOS Safari auto-zoom on input focus */
-  }
-}
-
-/* Ultra-small / Smartwatch (<= 320px & <= 280px) */
-@media (max-width: 320px) {
-  .public-lookup-header-inner {
+  .public-lookup-result-header {
     flex-direction: column;
     align-items: flex-start;
-    padding: 6px 10px;
-    gap: 8px;
   }
 
-  .public-lookup-header-actions {
+  .public-lookup-reset-btn.ant-btn {
     width: 100%;
-    justify-content: flex-end;
   }
 
-  .public-lookup-brand small {
-    display: none;
-  }
-
-  .public-lookup-card-heading > span {
-    display: none;
-  }
-
-  .public-lookup-intro > p {
-    font-size: 12px;
-  }
-
-  .public-lookup-submit.ant-btn {
-    font-size: 13px;
-    padding: 0 8px;
-  }
-}
-
-@media (max-width: 280px) {
-  .public-lookup-brand strong {
-    font-size: 12px;
-  }
-
-  .public-lookup-brand-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 13px;
-  }
-
-  .public-lookup-login {
-    font-size: 11px;
-    padding: 0 8px;
-  }
-
-  .public-lookup-card-heading h2 {
-    font-size: 14px;
-  }
-
-  .public-lookup-field label {
-    font-size: 12px;
-  }
-
-  .public-lookup-submit.ant-btn {
-    font-size: 12px;
-  }
-}
-
-/* Safe area support for mobile notch */
-@supports (padding: max(0px)) {
-  .public-lookup-page {
-    padding-left: max(0px, env(safe-area-inset-left));
-    padding-right: max(0px, env(safe-area-inset-right));
-    padding-bottom: max(0px, env(safe-area-inset-bottom));
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .public-lookup-login {
-    transition: none;
+  .public-lookup-footer-inner {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
   }
 }
