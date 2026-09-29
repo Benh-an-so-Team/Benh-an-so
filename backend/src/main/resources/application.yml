@@ -116,7 +116,7 @@ clinical-attachments:
     - image/png
     - application/pdf
   cloudinary:
-    enabled: ${CLOUDINARY_ENABLED:false}
+    enabled: ${CLOUDINARY_ENABLED:true}
     cloud-name: ${CLOUDINARY_CLOUD_NAME:}
     api-key: ${CLOUDINARY_API_KEY:}
     api-secret: ${CLOUDINARY_API_SECRET:}

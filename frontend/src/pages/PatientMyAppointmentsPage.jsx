@@ -34,6 +34,7 @@ import {
   SyncOutlined,
   TeamOutlined,
   UserOutlined,
+  StarOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 
@@ -755,6 +756,25 @@ function PatientMyAppointmentsPage() {
                               ? 'Không đến khám'
                               : 'Lịch hẹn đã qua giờ khám'}
                           </Text>
+                        )}
+                        {apt.status === 'COMPLETED' && (
+                          <div style={{ marginTop: 8 }}>
+                            <Link to="/portal/medical-history">
+                              <Button
+                                size="small"
+                                icon={<StarOutlined />}
+                                style={{
+                                  borderColor: '#f59e0b',
+                                  color: '#b45309',
+                                  background: '#fffbeb',
+                                  fontWeight: 600,
+                                  fontSize: 12,
+                                }}
+                              >
+                                Đánh giá lượt khám
+                              </Button>
+                            </Link>
+                          </div>
                         )}
                       </Col>
                     </Row>
