@@ -72,6 +72,7 @@ const DiscountRequestManagementPage = React.lazy(() => import('../pages/Discount
 const MedicalRecordArchivePage = React.lazy(() => import('../pages/MedicalRecordArchivePage.jsx'))
 const WaitingRoomDisplayPage = React.lazy(() => import('../pages/WaitingRoomDisplayPage'))
 const PrescriptionReconciliationPage = React.lazy(() => import('../pages/PrescriptionReconciliationPage'))
+const PersonalDataRequestManagementPage = React.lazy(() => import('../pages/PersonalDataRequestManagementPage.jsx'))
 const NotFound = React.lazy(() => import('../pages/NotFound'))
 
 const LazyPage = ({ children }) => (
@@ -244,6 +245,8 @@ function AppRoutes() {
         <Route path="cashier-shifts/close" element={<PrivateRoute allowedPermissions={['CASHIER_SHIFT_CREATE']} allowedRoles={['receptionist', 'admin']}><LazyPage><CashierShiftClosingPage /></LazyPage></PrivateRoute>} />
         <Route path="cashier-shifts/history" element={<PrivateRoute allowedPermissions={['CASHIER_SHIFT_READ']} allowedRoles={['receptionist', 'manager', 'clinic_manager', 'admin']}><LazyPage><CashierShiftHistoryPage /></LazyPage></PrivateRoute>} />
         <Route path="cashier-shifts" element={<Navigate to="/cashier-shifts/history" replace />} />
+        <Route path="personal-data-requests" element={<PrivateRoute allowedPermissions={['PERSONAL_DATA_REQUEST_READ']} allowedRoles={['admin']}><LazyPage><PersonalDataRequestManagementPage /></LazyPage></PrivateRoute>} />
+        <Route path="system/personal-data-requests" element={<Navigate to="/personal-data-requests" replace />} />
 
       </Route>
 
