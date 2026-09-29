@@ -1,5 +1,6 @@
 package com.benhsoan.application.ucservice.appointment;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -94,14 +95,14 @@ public class AppointmentSeriesValidator {
 
             long gapDays = java.time.temporal.ChronoUnit.DAYS.between(prevDate, currDate);
             if (intervalDays == 1) {
-                if (gapDays > 3) {
+                if (gapDays > 14) {
                     throw new ValidationException("Khoảng cách giữa buổi số " + prev.sequenceNumber()
                             + " và buổi số " + curr.sequenceNumber() + " (" + gapDays
                             + " ngày) vượt quá giới hạn chu kỳ hàng ngày.");
                 }
             } else {
                 long minGap = Math.max(1, intervalDays - 3);
-                long maxGap = intervalDays + 7;
+                long maxGap = intervalDays + 14;
                 if (gapDays < minGap || gapDays > maxGap) {
                     throw new ValidationException("Khoảng cách giữa buổi số " + prev.sequenceNumber()
                             + " và buổi số " + curr.sequenceNumber() + " (" + gapDays
@@ -109,6 +110,67 @@ public class AppointmentSeriesValidator {
                 }
             }
         }
+    }
+
+    public List<SessionSlot> generateSessionsSkippingDoctorOffDays(
+            UUID doctorId,
+            Instant firstSessionStartTime,
+            int sessionDurationMinutes,
+            int totalSessions,
+            int intervalDays
+    ) {
+        List<SessionSlot> slots = new ArrayList<>();
+        Duration duration = Duration.ofMinutes(sessionDurationMinutes);
+
+        ZonedDateTime firstZoned = firstSessionStartTime.atZone(CLINIC_ZONE);
+        LocalTime slotStartTime = firstZoned.toLocalTime();
+        LocalDate startDate = firstZoned.toLocalDate();
+
+        // 1. Session 1: If doctor is not working on startDate, look ahead up to 7 days
+        LocalDate s1Date = startDate;
+        if (!isDoctorWorkingAndAvailable(doctorId, s1Date, slotStartTime, duration)) {
+            for (int offset = 1; offset <= 7; offset++) {
+                LocalDate candidate = startDate.plusDays(offset);
+                if (isDoctorWorkingAndAvailable(doctorId, candidate, slotStartTime, duration)) {
+                    s1Date = candidate;
+                    break;
+                }
+            }
+        }
+
+        ZonedDateTime s1Start = s1Date.atTime(slotStartTime).atZone(CLINIC_ZONE);
+        slots.add(new SessionSlot(1, s1Start.toInstant(), s1Start.toInstant().plus(duration)));
+
+        // 2. Subsequent sessions: target = previousDate + intervalDays
+        LocalDate prevDate = s1Date;
+        for (int seq = 2; seq <= totalSessions; seq++) {
+            LocalDate nominalDate = prevDate.plusDays(intervalDays);
+            LocalDate sessionDate = nominalDate;
+
+            // If doctor is off on nominalDate, look ahead up to 7 days to skip off days
+            if (!isDoctorWorkingAndAvailable(doctorId, nominalDate, slotStartTime, duration)) {
+                for (int offset = 1; offset <= 7; offset++) {
+                    LocalDate candidate = nominalDate.plusDays(offset);
+                    if (isDoctorWorkingAndAvailable(doctorId, candidate, slotStartTime, duration)) {
+                        sessionDate = candidate;
+                        break;
+                    }
+                }
+            }
+
+            ZonedDateTime slotStart = sessionDate.atTime(slotStartTime).atZone(CLINIC_ZONE);
+            slots.add(new SessionSlot(seq, slotStart.toInstant(), slotStart.toInstant().plus(duration)));
+            prevDate = sessionDate;
+        }
+
+        return slots;
+    }
+
+    private boolean isDoctorWorkingAndAvailable(UUID doctorId, LocalDate date, LocalTime startTime, Duration duration) {
+        ZonedDateTime startZoned = date.atTime(startTime).atZone(CLINIC_ZONE);
+        Instant startInstant = startZoned.toInstant();
+        Instant endInstant = startInstant.plus(duration);
+        return doctorScheduleValidator.isDoctorWorkingAndAvailable(doctorId, startInstant, endInstant);
     }
 
     public List<AppointmentSeriesConflictDetail> validateSessions(UUID doctorId, List<SessionSlot> sessions) {
