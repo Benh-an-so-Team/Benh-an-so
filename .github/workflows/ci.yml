@@ -204,23 +204,13 @@ jobs:
             echo "Installing frontend dependencies..."
             cd frontend
             npm ci
-            export PATH="$PWD/node_modules/.bin:$PATH"
-            echo "$PWD/node_modules/.bin" >> $GITHUB_PATH
+            cd ..
+            export PATH="$PWD/frontend/node_modules/.bin:$PATH"
+            echo "$PWD/frontend/node_modules/.bin" >> $GITHUB_PATH
             echo "Installing Vercel CLI and Vite globally..."
             npm install --global vercel@latest vite@5.4.10
-            echo "Deploying frontend to Vercel production..."
+            echo "Deploying frontend to Vercel production from repository root..."
             vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-            node -e '
-              const fs = require("fs");
-              const p = ".vercel/project.json";
-              if (fs.existsSync(p)) {
-                const j = JSON.parse(fs.readFileSync(p, "utf8"));
-                if (j.settings && j.settings.rootDirectory) delete j.settings.rootDirectory;
-                if (j.rootDirectory) delete j.rootDirectory;
-                fs.writeFileSync(p, JSON.stringify(j, null, 2));
-                console.log("Sanitized project.json rootDirectory for local subdirectory build");
-              }
-            '
             vercel build --prod --token="$VERCEL_TOKEN"
             vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
             echo "Vercel production deployment completed successfully!"
