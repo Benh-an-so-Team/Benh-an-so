@@ -44,6 +44,7 @@ const SystemManagementPage = React.lazy(() => import('../pages/SystemManagementP
 const DiagnosisCatalogPage = React.lazy(() => import('../pages/DiagnosisCatalogPage'))
 const ClinicalServiceManagementPage = React.lazy(() => import('../pages/ClinicalServiceManagementPage'))
 const MedicalRecordTemplateManagementPage = React.lazy(() => import('../pages/MedicalRecordTemplateManagementPage'))
+const DocumentPrintTemplatePage = React.lazy(() => import('../pages/DocumentPrintTemplatePage'))
 const SpecialtyManagementPage = React.lazy(() => import('../pages/SpecialtyManagementPage'))
 const SessionManagementPage = React.lazy(() => import('../pages/SessionManagementPage'))
 const BackupRestorePage = React.lazy(() => import('../pages/BackupRestorePage'))
@@ -230,6 +231,8 @@ function AppRoutes() {
         <Route path="medical-record-templates" element={<Navigate to="/system/medical-record-templates" replace />} />
         <Route path="system/specialties" element={<PrivateRoute allowedPermissions={['SPECIALTY_MANAGE']} allowedRoles={['admin']}><LazyPage><SpecialtyManagementPage /></LazyPage></PrivateRoute>} />
         <Route path="specialties" element={<Navigate to="/system/specialties" replace />} />
+        <Route path="system/print-templates" element={<PrivateRoute allowedRoles={['admin']}><LazyPage><DocumentPrintTemplatePage /></LazyPage></PrivateRoute>} />
+        <Route path="print-templates" element={<Navigate to="/system/print-templates" replace />} />
         <Route path="prescription-interconnections" element={<PrivateRoute allowedPermissions={['PRESCRIPTION_INTERCONNECTION_READ']} allowedRoles={['admin']}><LazyPage><PrescriptionInterconnectionPage /></LazyPage></PrivateRoute>} />
         <Route path="prescription-reconciliation" element={<PrivateRoute allowedPermissions={['PRESCRIPTION_RECONCILIATION_VIEW']} allowedRoles={['admin', 'pharmacist']}><LazyPage><PrescriptionReconciliationPage /></LazyPage></PrivateRoute>} />
         <Route path="pharmacy/prescription-reconciliation" element={<Navigate to="/prescription-reconciliation" replace />} />
