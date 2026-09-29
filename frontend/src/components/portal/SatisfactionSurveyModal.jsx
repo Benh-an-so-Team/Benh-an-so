@@ -89,42 +89,6 @@ function SatisfactionSurveyModal({
 
     setSubmitting(true)
     try {
-      const isSample = visit?.isSample || String(visitId).startsWith('sample-') || existingSurvey?.id?.startsWith('survey-sample-')
-
-      if (isSample) {
-        const sampleRecord = {
-          id: existingSurvey?.id || 'survey-sample-' + Date.now(),
-          visitId,
-          score,
-          comment: comment.trim(),
-          doctorName: visit?.doctorName || 'Nguyễn Văn An',
-          specialtyName: visit?.specialtyName || 'Khoa Nội tổng quát',
-          visitAt: visit?.visitAt || new Date().toISOString(),
-          createdAt: existingSurvey?.createdAt || new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }
-
-        try {
-          const stored = JSON.parse(localStorage.getItem('portal_sample_surveys') || '{}')
-          stored[visitId] = sampleRecord
-          localStorage.setItem('portal_sample_surveys', JSON.stringify(stored))
-        } catch {
-          // ignore
-        }
-
-        if (isEditing) {
-          message.success('Đã cập nhật đánh giá chất lượng dịch vụ thành công!')
-        } else {
-          message.success('Cảm ơn bạn đã gửi đánh giá! Ý kiến của bạn giúp phòng khám phục vụ tốt hơn.')
-        }
-
-        if (onSuccess) {
-          onSuccess(sampleRecord)
-        }
-        onClose()
-        return
-      }
-
       let res
       if (isEditing) {
         // Cập nhật đánh giá cũ

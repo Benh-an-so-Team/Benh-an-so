@@ -11,6 +11,7 @@ import {
   Empty,
   List,
   Modal,
+  Rate,
   Row,
   Skeleton,
   Space,
@@ -22,16 +23,21 @@ import {
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  EditOutlined,
   FileDoneOutlined,
   FileTextOutlined,
   InfoCircleOutlined,
   MedicineBoxOutlined,
   PrinterOutlined,
+  StarFilled,
+  StarOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 
 import patientPortalMedicalHistoryApi from '../../api/patientPortalMedicalHistoryApi'
+import satisfactionSurveyApi from '../../api/satisfactionSurveyApi.js'
+import { SCORE_LABELS } from '../../utils/satisfactionSurveyHelpers.js'
 import { getApiErrorMessage } from '../../utils/apiError'
 
 const { Text, Title, Paragraph } = Typography
@@ -41,60 +47,29 @@ function MedicalHistoryDetailModal({
   onClose,
   visitId,
   initialSummary = null,
+  survey = null,
+  onOpenSurvey = null,
 }) {
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [currentSurvey, setCurrentSurvey] = useState(survey)
+
+  useEffect(() => {
+    setCurrentSurvey(survey)
+  }, [survey])
 
   useEffect(() => {
     if (!open || !visitId) {
       setDetail(null)
+      setCurrentSurvey(null)
       return
     }
 
     let isMounted = true
+
+    // Tải chi tiết hồ sơ y tế thật từ backend
     const fetchDetail = async () => {
       setLoading(true)
-      if (String(visitId).startsWith('sample-')) {
-        setTimeout(() => {
-          if (!isMounted) return
-          setDetail({
-            visitId,
-            visitAt: initialSummary?.visitAt || new Date().toISOString(),
-            doctorName: initialSummary?.doctorName || 'Nguyễn Văn An',
-            specialtyName: initialSummary?.specialtyName || 'Khoa Nội tổng quát',
-            diagnosisSummary: initialSummary?.diagnosisSummary || 'Viêm mũi họng cấp / Theo dõi dị ứng thời tiết',
-            symptoms: 'Nghẹt mũi, hắt hơi nhiều, rát họng 3 ngày nay, không sốt.',
-            treatmentPlan: 'Uống thuốc theo toa, súc họng nước muối sinh lý ấm, tái khám sau 5 ngày nếu không thuyên giảm.',
-            doctorNotes: 'Bệnh nhân giữ ấm cổ ngực, uống nhiều nước ấm, tránh dùng đồ uống lạnh.',
-            prescriptions: [
-              {
-                medicationName: 'Amoxicillin 500mg',
-                dosage: '1 viên x 2 lần/ngày',
-                quantity: 14,
-                unit: 'Viên',
-                usageInstruction: 'Uống sau bữa ăn sáng và tối',
-              },
-              {
-                medicationName: 'Paracetamol 500mg',
-                dosage: '1 viên khi đau rát nhiều',
-                quantity: 10,
-                unit: 'Viên',
-                usageInstruction: 'Uống cách nhau ít nhất 4-6 tiếng',
-              },
-              {
-                medicationName: 'Nước muối sinh lý 0.9%',
-                dosage: 'Súc họng 3-4 lần/ngày',
-                quantity: 2,
-                unit: 'Chai',
-                usageInstruction: 'Súc miệng sau bữa ăn và trước khi đi ngủ',
-              },
-            ],
-          })
-          setLoading(false)
-        }, 150)
-        return
-      }
-
       try {
         const res = await patientPortalMedicalHistoryApi.getMedicalHistoryDetail(visitId)
         if (isMounted) {
@@ -117,7 +92,20 @@ function MedicalHistoryDetailModal({
       }
     }
 
+    // Tải đồng thời thông tin khảo sát thực tế từ database
+    const fetchSurvey = async () => {
+      try {
+        const sRes = await satisfactionSurveyApi.getByVisitId(visitId)
+        if (isMounted && sRes.data) {
+          setCurrentSurvey(sRes.data)
+        }
+      } catch {
+        // Chưa đánh giá hoặc bỏ qua
+      }
+    }
+
     fetchDetail()
+    fetchSurvey()
 
     return () => {
       isMounted = false
@@ -420,6 +408,157 @@ function MedicalHistoryDetailModal({
               ) : (
                 <div style={{ fontStyle: 'italic', color: '#b45309' }}>
                   Uống thuốc đầy đủ theo đơn, chú ý nghỉ ngơi và tái khám ngay khi có triệu chứng bất thường.
+                </div>
+              )}
+            </div>
+
+            {/* 4. Đánh giá chất lượng dịch vụ sau khám (NCL-10-CN-005) */}
+            <div
+              style={{
+                marginTop: 20,
+                borderTop: '1px dashed #cbd5e1',
+                paddingTop: 16,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 12,
+                  flexWrap: 'wrap',
+                  gap: 8,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: '#1e3a8a',
+                  }}
+                >
+                  <StarFilled style={{ color: '#f59e0b' }} />
+                  <span>4. Đánh giá chất lượng dịch vụ sau khám</span>
+                </div>
+                {currentSurvey ? (
+                  <Tag color="success" icon={<CheckCircleOutlined />} style={{ fontWeight: 600 }}>
+                    Đã gửi đánh giá
+                  </Tag>
+                ) : (
+                  <Tag color="warning" icon={<ClockCircleOutlined />} style={{ fontWeight: 600 }}>
+                    Chưa đánh giá
+                  </Tag>
+                )}
+              </div>
+
+              {currentSurvey ? (
+                <div
+                  style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 12,
+                    padding: '16px 18px',
+                  }}
+                >
+                  <Row gutter={[16, 12]} align="middle" justify="space-between">
+                    <Col xs={24} sm={16}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                        <Rate disabled value={currentSurvey.score} style={{ fontSize: 18, color: '#f59e0b' }} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                          {currentSurvey.score}/5 sao — {SCORE_LABELS[currentSurvey.score] || 'Hài lòng'}
+                        </span>
+                      </div>
+                      {currentSurvey.comment ? (
+                        <div
+                          style={{
+                            fontSize: 13.5,
+                            color: '#334155',
+                            background: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: 8,
+                            padding: '10px 14px',
+                            fontStyle: 'italic',
+                            lineHeight: 1.5,
+                            marginTop: 6,
+                          }}
+                        >
+                          &ldquo;{currentSurvey.comment}&rdquo;
+                        </div>
+                      ) : (
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          (Không có nhận xét chi tiết)
+                        </Text>
+                      )}
+                      {currentSurvey.submittedAt && (
+                        <div style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
+                          Thời gian đánh giá: {dayjs(currentSurvey.submittedAt).format('HH:mm DD/MM/YYYY')}
+                        </div>
+                      )}
+                    </Col>
+                    <Col xs={24} sm={8} style={{ textAlign: { xs: 'left', sm: 'right' } }}>
+                      <Button
+                        icon={<EditOutlined />}
+                        style={{
+                          borderRadius: 8,
+                          fontWeight: 600,
+                          borderColor: '#86efac',
+                          color: '#15803d',
+                          background: '#f0fdf4',
+                        }}
+                        onClick={() => {
+                          if (onOpenSurvey) {
+                            onOpenSurvey(detail || initialSummary, currentSurvey)
+                          }
+                        }}
+                      >
+                        Chỉnh sửa đánh giá
+                      </Button>
+                    </Col>
+                  </Row>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    background: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    borderRadius: 12,
+                    padding: '16px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ maxWidth: 480 }}>
+                    <div style={{ fontWeight: 700, color: '#92400e', marginBottom: 2 }}>
+                      Bạn chưa gửi đánh giá cho lượt khám này
+                    </div>
+                    <div style={{ fontSize: 13, color: '#78350f', lineHeight: 1.5 }}>
+                      Đóng góp ý kiến của bạn về bác sĩ và trải nghiệm khám giúp phòng khám không ngừng cải thiện chất lượng điều trị và dịch vụ.
+                    </div>
+                  </div>
+                  <Button
+                    type="primary"
+                    icon={<StarOutlined />}
+                    style={{
+                      background: '#f59e0b',
+                      borderColor: '#f59e0b',
+                      fontWeight: 600,
+                      borderRadius: 8,
+                      boxShadow: '0 2px 6px rgba(245, 158, 11, 0.25)',
+                    }}
+                    onClick={() => {
+                      if (onOpenSurvey) {
+                        onOpenSurvey(detail || initialSummary, null)
+                      }
+                    }}
+                  >
+                    Đánh giá ca khám ngay
+                  </Button>
                 </div>
               )}
             </div>

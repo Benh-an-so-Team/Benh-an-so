@@ -95,52 +95,34 @@ function PortalDashboard() {
     let isMounted = true
 
     const loadDashboardSurvey = async () => {
-      let sampleSurveys = {}
-      try {
-        sampleSurveys = JSON.parse(localStorage.getItem('portal_sample_surveys') || '{}')
-      } catch {
-        sampleSurveys = {}
-      }
-
-      let latest = null
       try {
         const res = await patientPortalMedicalHistoryApi.getMedicalHistory()
         const data = res.data
         const list = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : []
         if (list.length > 0) {
-          latest = list[0]
+          const latest = list[0]
+          if (!isMounted) return
+          setSurveyVisit(latest)
+
+          if (latest.visitId) {
+            try {
+              const sRes = await satisfactionSurveyApi.getByVisitId(latest.visitId)
+              if (isMounted && sRes.data) {
+                setSurveyRecord(sRes.data)
+              }
+            } catch {
+              // not rated yet
+            }
+          }
+        } else {
+          if (!isMounted) return
+          setSurveyVisit(null)
+          setSurveyRecord(null)
         }
       } catch {
-        // Fallback to sample below
-      }
-
-      if (!latest) {
-        latest = {
-          visitId: 'sample-visit-101',
-          isSample: true,
-          visitAt: dayjs().subtract(1, 'day').hour(9).minute(30).toISOString(),
-          doctorName: 'Nguyễn Văn An',
-          specialtyName: 'Khoa Nội tổng quát',
-          diagnosisSummary: 'Viêm mũi họng cấp / Theo dõi dị ứng thời tiết',
-        }
-      }
-
-      if (!isMounted) return
-      setSurveyVisit(latest)
-
-      if (latest.isSample || String(latest.visitId).startsWith('sample-')) {
-        if (sampleSurveys[latest.visitId]) {
-          setSurveyRecord(sampleSurveys[latest.visitId])
-        }
-      } else {
-        try {
-          const sRes = await satisfactionSurveyApi.getByVisitId(latest.visitId)
-          if (isMounted && sRes.data) {
-            setSurveyRecord(sRes.data)
-          }
-        } catch {
-          // not rated yet
-        }
+        if (!isMounted) return
+        setSurveyVisit(null)
+        setSurveyRecord(null)
       }
     }
 
@@ -469,28 +451,6 @@ function PortalDashboard() {
             </div>
           </div>
 
-          <div className="portal-dashboard-card portal-card-lookup">
-            <div className="portal-dashboard-card-top">
-              <div className="portal-dashboard-card-icon blue">
-                <SearchOutlined />
-              </div>
-              <div className="portal-card-header-text">
-                <h3>Tra cứu kết quả khám</h3>
-                <span className="portal-card-tag blue">Nhanh chóng</span>
-              </div>
-            </div>
-            <p className="portal-card-desc">
-              Tra cứu trực tuyến kết quả cận lâm sàng, xét nghiệm và chẩn đoán theo mã lịch hẹn.
-            </p>
-            <div className="portal-card-action">
-              <Link to="/portal" style={{ width: '100%', display: 'block' }}>
-                <Button type="link" className="portal-btn-link">
-                  Đến trang tra cứu <ArrowRightOutlined />
-                </Button>
-              </Link>
-            </div>
-          </div>
-
           <div className="portal-dashboard-card portal-card-patient">
             <div className="portal-dashboard-card-top">
               <div className="portal-dashboard-card-icon green">
@@ -508,6 +468,84 @@ function PortalDashboard() {
               <Link to="/portal/medical-history" style={{ width: '100%', display: 'block' }}>
                 <Button className="portal-btn-outline" block>
                   Xem lịch sử khám <ArrowRightOutlined />
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="portal-dashboard-card portal-card-survey" style={{ borderColor: '#fde68a' }}>
+            <div className="portal-dashboard-card-top">
+              <div className="portal-dashboard-card-icon amber">
+                <StarFilled />
+              </div>
+              <div className="portal-card-header-text">
+                <h3>Đánh giá sau khám</h3>
+                <span className="portal-card-tag amber">Ý kiến của bạn</span>
+              </div>
+            </div>
+            <p className="portal-card-desc">
+              {surveyVisit && !surveyRecord
+                ? `Lượt khám ngày ${surveyVisit.visitAt ? dayjs(surveyVisit.visitAt).format('DD/MM/YYYY') : 'gần nhất'} với BS. ${surveyVisit.doctorName} đang chờ bạn đánh giá chất lượng.`
+                : surveyVisit && surveyRecord
+                ? `Bạn đã gửi đánh giá (${surveyRecord.score}★) cho ca khám gần nhất. Bạn có thể xem lại hoặc gửi đánh giá cho các ca khám khác.`
+                : 'Đóng góp ý kiến và đánh giá mức độ hài lòng về chất lượng khám, sự tận tình của bác sĩ sau mỗi lượt khám bệnh.'}
+            </p>
+            <div className="portal-card-action">
+              {surveyVisit && !surveyRecord ? (
+                <Button
+                  type="primary"
+                  className="portal-btn-survey"
+                  block
+                  icon={<StarFilled />}
+                  onClick={() => handleOpenSurvey()}
+                  id="btn-portal-dashboard-survey-action"
+                >
+                  Đánh giá lượt khám ngay <ArrowRightOutlined />
+                </Button>
+              ) : surveyVisit && surveyRecord ? (
+                <Space direction="vertical" style={{ width: '100%' }} size={6}>
+                  <Button
+                    className="portal-btn-outline"
+                    block
+                    icon={<EditOutlined />}
+                    style={{ borderColor: '#fde68a', color: '#b45309', background: '#fffbeb' }}
+                    onClick={() => handleOpenSurvey()}
+                  >
+                    Xem / Sửa đánh giá gần nhất
+                  </Button>
+                  <Link to="/portal/medical-history" style={{ width: '100%', display: 'block', textAlign: 'center' }}>
+                    <Button type="link" className="portal-btn-link" style={{ padding: 0, fontSize: 13, color: '#b45309' }}>
+                      Xem tất cả đánh giá & Lịch sử khám <ArrowRightOutlined />
+                    </Button>
+                  </Link>
+                </Space>
+              ) : (
+                <Link to="/portal/medical-history" style={{ width: '100%', display: 'block' }}>
+                  <Button className="portal-btn-outline" block icon={<StarOutlined />}>
+                    Xem lịch sử khám & Đánh giá <ArrowRightOutlined />
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <div className="portal-dashboard-card portal-card-clinical-results" style={{ borderColor: '#bfdbfe' }}>
+            <div className="portal-dashboard-card-top">
+              <div className="portal-dashboard-card-icon blue" style={{ background: '#f0fdf4', color: '#16a34a' }}>
+                <ExperimentOutlined />
+              </div>
+              <div className="portal-card-header-text">
+                <h3>Kết quả cận lâm sàng</h3>
+                <span className="portal-card-tag green">Đã xác nhận</span>
+              </div>
+            </div>
+            <p className="portal-card-desc">
+              Xem lại kết quả xét nghiệm, chẩn đoán hình ảnh chính thức và tải bản đọc được (PDF) khi cần lưu trữ hoặc tái khám.
+            </p>
+            <div className="portal-card-action">
+              <Link to="/portal/my-clinical-results" style={{ width: '100%', display: 'block' }}>
+                <Button className="portal-btn-outline" block>
+                  Xem kết quả cận lâm sàng <ArrowRightOutlined />
                 </Button>
               </Link>
             </div>
@@ -535,23 +573,23 @@ function PortalDashboard() {
             </div>
           </div>
 
-          <div className="portal-dashboard-card portal-card-clinical-results" style={{ borderColor: '#bfdbfe' }}>
+          <div className="portal-dashboard-card portal-card-lookup portal-card-full-width">
             <div className="portal-dashboard-card-top">
-              <div className="portal-dashboard-card-icon blue" style={{ background: '#f0fdf4', color: '#16a34a' }}>
-                <ExperimentOutlined />
+              <div className="portal-dashboard-card-icon blue">
+                <SearchOutlined />
               </div>
               <div className="portal-card-header-text">
-                <h3>Kết quả cận lâm sàng</h3>
-                <span className="portal-card-tag green">Đã xác nhận</span>
+                <h3>Tra cứu kết quả khám</h3>
+                <span className="portal-card-tag blue">Nhanh chóng</span>
               </div>
             </div>
             <p className="portal-card-desc">
-              Xem lại kết quả xét nghiệm, chẩn đoán hình ảnh chính thức và tải bản đọc được (PDF) khi cần lưu trữ hoặc tái khám.
+              Tra cứu trực tuyến kết quả cận lâm sàng, xét nghiệm và chẩn đoán theo mã lịch hẹn.
             </p>
             <div className="portal-card-action">
-              <Link to="/portal/my-clinical-results" style={{ width: '100%', display: 'block' }}>
-                <Button className="portal-btn-outline" block>
-                  Xem kết quả cận lâm sàng <ArrowRightOutlined />
+              <Link to="/portal" style={{ width: '100%', display: 'block' }}>
+                <Button type="link" className="portal-btn-link">
+                  Đến trang tra cứu <ArrowRightOutlined />
                 </Button>
               </Link>
             </div>
