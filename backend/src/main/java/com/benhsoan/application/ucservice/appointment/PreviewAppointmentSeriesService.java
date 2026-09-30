@@ -1,8 +1,5 @@
 package com.benhsoan.application.ucservice.appointment;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,8 +46,7 @@ public class PreviewAppointmentSeriesService implements PreviewAppointmentSeries
             appointmentAccessDeniedAuditWriter.writeSeriesPreviewDenied(
                     currentUserId,
                     clockPort.now(),
-                    "User lacks RECEPTIONIST or ADMIN role to preview appointment series"
-            );
+                    "User lacks RECEPTIONIST or ADMIN role to preview appointment series");
             throw new UnauthorizedAppointmentOperationException();
         }
 
@@ -74,21 +70,21 @@ public class PreviewAppointmentSeriesService implements PreviewAppointmentSeries
             throw new DoctorInactiveException(doctor.getId());
         }
 
-        List<AppointmentSeriesValidator.SessionSlot> slots = appointmentSeriesValidator.generateSessionsSkippingDoctorOffDays(
-                command.doctorId(),
-                command.firstSessionStartTime(),
-                command.sessionDurationMinutes(),
-                command.totalSessions(),
-                command.intervalDays()
-        );
+        List<AppointmentSeriesValidator.SessionSlot> slots = appointmentSeriesValidator
+                .generateSessionsSkippingDoctorOffDays(
+                        command.doctorId(),
+                        command.firstSessionStartTime(),
+                        command.sessionDurationMinutes(),
+                        command.totalSessions(),
+                        command.intervalDays());
 
-        List<AppointmentSeriesConflictDetail> conflicts = appointmentSeriesValidator.validateSessions(command.doctorId(), slots);
+        List<AppointmentSeriesConflictDetail> conflicts = appointmentSeriesValidator
+                .validateSessions(command.doctorId(), slots);
         Map<Integer, AppointmentSeriesConflictDetail> conflictMap = conflicts.stream()
                 .collect(Collectors.toMap(
                         AppointmentSeriesConflictDetail::sequenceNumber,
                         Function.identity(),
-                        (existing, replacement) -> existing
-                ));
+                        (existing, replacement) -> existing));
 
         List<AppointmentSeriesSessionPreviewResult> sessionResults = slots.stream()
                 .map(slot -> {

@@ -27,10 +27,6 @@ import com.benhsoan.port.outbound.repository.auth.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Adapter delivering Two-Factor Authentication (2FA) SMS OTP codes via Android SMS Gateway
- * (capcom6 / sms-gate.app) for high-privilege accounts (NCL-01-CN-006).
- */
 @Slf4j
 @Component
 @Primary
@@ -49,8 +45,7 @@ public class AndroidSmsGatewayTwoFactorCodeDeliveryAdapter implements TwoFactorC
             @Value("${app.sms.gateway.android.username:LRIMS3}") String username,
             @Value("${app.sms.gateway.android.password:050jm5oro3ihgy}") String password,
             @Value("${app.sms.gateway.android.connect-timeout-ms:5000}") int connectTimeoutMs,
-            @Value("${app.sms.gateway.android.read-timeout-ms:10000}") int readTimeoutMs
-    ) {
+            @Value("${app.sms.gateway.android.read-timeout-ms:10000}") int readTimeoutMs) {
         this.userRepository = userRepository;
         this.gatewayUrl = gatewayUrl;
 
@@ -63,29 +58,29 @@ public class AndroidSmsGatewayTwoFactorCodeDeliveryAdapter implements TwoFactorC
                 .build();
 
         String credentials = (username != null ? username : "") + ":" + (password != null ? password : "");
-        this.basicAuthHeader = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+        this.basicAuthHeader = "Basic "
+                + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
     }
 
-    /**
-     * Package-private constructor for unit testing with a custom RestClient.
-     */
     AndroidSmsGatewayTwoFactorCodeDeliveryAdapter(
             RestClient restClient,
             UserRepository userRepository,
             String gatewayUrl,
             String username,
-            String password
-    ) {
+            String password) {
         this.restClient = restClient;
         this.userRepository = userRepository;
         this.gatewayUrl = gatewayUrl;
         String credentials = (username != null ? username : "") + ":" + (password != null ? password : "");
-        this.basicAuthHeader = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+        this.basicAuthHeader = "Basic "
+                + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
     }
 
     @PostConstruct
     public void init() {
-        log.info(">>> [2FA SMS ADAPTER ACTIVATED] AndroidSmsGatewayTwoFactorCodeDeliveryAdapter is ACTIVE (Gateway URL: {})", gatewayUrl);
+        log.info(
+                ">>> [2FA SMS ADAPTER ACTIVATED] AndroidSmsGatewayTwoFactorCodeDeliveryAdapter is ACTIVE (Gateway URL: {})",
+                gatewayUrl);
     }
 
     @Override
@@ -102,8 +97,11 @@ public class AndroidSmsGatewayTwoFactorCodeDeliveryAdapter implements TwoFactorC
         String phone = user.getPhone();
         if (phone == null || phone.isBlank()) {
             log.warn("================================================================================");
-            log.warn("[2FA SMS GATEWAY] Tài khoản '{}' chưa thiết lập số điện thoại trong hệ thống. Không thể gửi SMS OTP 2FA.", username);
-            log.warn("   -> Vui lòng cập nhật số điện thoại cho tài khoản '{}' trong bảng users để nhận SMS OTP.", username);
+            log.warn(
+                    "[2FA SMS GATEWAY] Tài khoản '{}' chưa thiết lập số điện thoại trong hệ thống. Không thể gửi SMS OTP 2FA.",
+                    username);
+            log.warn("   -> Vui lòng cập nhật số điện thoại cho tài khoản '{}' trong bảng users để nhận SMS OTP.",
+                    username);
             log.warn("================================================================================");
             return;
         }
@@ -113,13 +111,11 @@ public class AndroidSmsGatewayTwoFactorCodeDeliveryAdapter implements TwoFactorC
 
         String message = String.format(
                 "[BENH AN SO] Ma xac thuc 2FA dang nhap he thong cua ban la: %s. Ma co hieu luc trong %d phut.",
-                code, minutes
-        );
+                code, minutes);
 
         Map<String, Object> payload = Map.of(
                 "phoneNumbers", List.of(e164Phone),
-                "message", message
-        );
+                "message", message);
 
         try {
             log.info("--------------------------------------------------------------------------------");
@@ -172,9 +168,6 @@ public class AndroidSmsGatewayTwoFactorCodeDeliveryAdapter implements TwoFactorC
         }
     }
 
-    /**
-     * Converts a local Vietnamese phone number into E.164 international standard (+84...).
-     */
     public String formatToE164(String phone) {
         if (phone == null || phone.isBlank()) {
             return "";

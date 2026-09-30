@@ -40,10 +40,9 @@ public class AndroidSmsGatewayPatientVerificationCodeAdapter implements PatientV
             @Value("${app.sms.gateway.android.username:LRIMS3}") String username,
             @Value("${app.sms.gateway.android.password:050jm5oro3ihgy}") String password,
             @Value("${app.sms.gateway.android.connect-timeout-ms:5000}") int connectTimeoutMs,
-            @Value("${app.sms.gateway.android.read-timeout-ms:10000}") int readTimeoutMs
-    ) {
+            @Value("${app.sms.gateway.android.read-timeout-ms:10000}") int readTimeoutMs) {
         this.gatewayUrl = gatewayUrl;
-        
+
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofMillis(connectTimeoutMs));
         requestFactory.setReadTimeout(Duration.ofMillis(readTimeoutMs));
@@ -53,17 +52,20 @@ public class AndroidSmsGatewayPatientVerificationCodeAdapter implements PatientV
                 .build();
 
         String credentials = (username != null ? username : "") + ":" + (password != null ? password : "");
-        this.basicAuthHeader = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+        this.basicAuthHeader = "Basic "
+                + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
      * Package-private constructor for unit testing with a custom RestClient.
      */
-    AndroidSmsGatewayPatientVerificationCodeAdapter(RestClient restClient, String gatewayUrl, String username, String password) {
+    AndroidSmsGatewayPatientVerificationCodeAdapter(RestClient restClient, String gatewayUrl, String username,
+            String password) {
         this.restClient = restClient;
         this.gatewayUrl = gatewayUrl;
         String credentials = (username != null ? username : "") + ":" + (password != null ? password : "");
-        this.basicAuthHeader = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+        this.basicAuthHeader = "Basic "
+                + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
@@ -73,16 +75,15 @@ public class AndroidSmsGatewayPatientVerificationCodeAdapter implements PatientV
 
         String message = String.format(
                 "[BENH AN SO] Ma xac thuc khoi phuc mat khau cua ban la: %s. Ma co hieu luc trong %d phut.",
-                code, minutes
-        );
+                code, minutes);
 
         Map<String, Object> payload = Map.of(
                 "phoneNumbers", List.of(e164Phone),
-                "message", message
-        );
+                "message", message);
 
         try {
-            log.info("[SMS GATEWAY] Bắt đầu gửi SMS OTP tới SĐT: {} (chuẩn hóa E.164: {}) qua Gateway: {}", phone, e164Phone, gatewayUrl);
+            log.info("[SMS GATEWAY] Bắt đầu gửi SMS OTP tới SĐT: {} (chuẩn hóa E.164: {}) qua Gateway: {}", phone,
+                    e164Phone, gatewayUrl);
 
             org.springframework.http.ResponseEntity<String> response = restClient.post()
                     .uri(gatewayUrl)
@@ -92,10 +93,12 @@ public class AndroidSmsGatewayPatientVerificationCodeAdapter implements PatientV
                     .retrieve()
                     .toEntity(String.class);
 
-            log.info("[SMS GATEWAY THÀNH CÔNG] Đã gửi SMS OTP thành công tới SĐT: {} (E.164: {}) | HTTP Status: {} | Gateway Response: {}",
+            log.info(
+                    "[SMS GATEWAY THÀNH CÔNG] Đã gửi SMS OTP thành công tới SĐT: {} (E.164: {}) | HTTP Status: {} | Gateway Response: {}",
                     phone, e164Phone, response.getStatusCode(), response.getBody());
         } catch (org.springframework.web.client.RestClientResponseException ex) {
-            log.error("[SMS GATEWAY THẤT BẠI] Gateway trả về mã lỗi HTTP khi gửi tới SĐT: {} (E.164: {}) | HTTP Status: {} {} | Error Response: {}",
+            log.error(
+                    "[SMS GATEWAY THẤT BẠI] Gateway trả về mã lỗi HTTP khi gửi tới SĐT: {} (E.164: {}) | HTTP Status: {} {} | Error Response: {}",
                     phone, e164Phone, ex.getStatusCode().value(), ex.getStatusText(), ex.getResponseBodyAsString(), ex);
         } catch (org.springframework.web.client.ResourceAccessException ex) {
             log.error("[SMS GATEWAY THẤT BẠI] Lỗi kết nối / timeout tới SMS Gateway ({}) khi gửi tới SĐT: {}: {}",
@@ -106,9 +109,6 @@ public class AndroidSmsGatewayPatientVerificationCodeAdapter implements PatientV
         }
     }
 
-    /**
-     * Converts a local Vietnamese phone number into E.164 international standard (+84...).
-     */
     public String formatToE164(String phone) {
         if (phone == null || phone.isBlank()) {
             return "";
@@ -124,12 +124,5 @@ public class AndroidSmsGatewayPatientVerificationCodeAdapter implements PatientV
             return "+" + cleaned;
         }
         return cleaned;
-    }
-
-    private String maskPhone(String phone) {
-        if (phone == null || phone.length() < 7) {
-            return "[REDACTED]";
-        }
-        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 3);
     }
 }
