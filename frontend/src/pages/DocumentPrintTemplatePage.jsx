@@ -570,21 +570,21 @@ export default function DocumentPrintTemplatePage() {
                 </tr>
               ))}
               {vis.showDiscount && (
-                <tr>
-                  <td colSpan={5} style={{ textAlign: 'right' }}>Chiết khấu / Ưu đãi:</td>
-                  <td style={{ textAlign: 'right', color: '#16a34a' }}>- 0 đ</td>
+                <tr style={{ background: '#ffffff' }}>
+                  <td colSpan={5} style={{ textAlign: 'right', color: '#64748b' }}>Chiết khấu / Ưu đãi:</td>
+                  <td style={{ textAlign: 'right', color: '#16a34a', fontWeight: 'bold' }}>- 0 đ</td>
                 </tr>
               )}
-              <tr>
-                <td colSpan={5} style={{ textAlign: 'right', fontWeight: 'bold' }}>TỔNG CỘNG THANH TOÁN:</td>
+              <tr style={{ background: '#f8fafc' }}>
+                <td colSpan={5} style={{ textAlign: 'right', fontWeight: 'bold', color: '#0f172a' }}>TỔNG CỘNG THANH TOÁN:</td>
                 <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: 13, color: '#0284c7' }}>
                   1.520.000 đ
                 </td>
               </tr>
               {vis.showPaymentMethod !== false && (
-                <tr>
-                  <td colSpan={6} style={{ fontStyle: 'italic', fontSize: 11 }}>
-                    Hình thức thanh toán: <strong>Chuyển khoản VietQR</strong> (Đã thanh toán đủ)
+                <tr style={{ background: '#ffffff' }}>
+                  <td colSpan={6} style={{ fontStyle: 'italic', fontSize: 11, color: '#475569' }}>
+                    Hình thức thanh toán: <strong style={{ color: '#0f172a' }}>Chuyển khoản VietQR</strong> (Đã thanh toán đủ)
                   </td>
                 </tr>
               )}
@@ -650,6 +650,7 @@ export default function DocumentPrintTemplatePage() {
         <div className="paper-signatures">
           <div className="paper-sign-box">
             <strong>BỆNH NHÂN / NGƯỜI NHẬN</strong>
+            <span className="paper-sign-hint">(Ký, ghi rõ họ tên)</span>
             <div className="paper-sign-space" />
             <span className="paper-sign-name">{SAMPLE_DATA.patient.name}</span>
           </div>
@@ -658,6 +659,7 @@ export default function DocumentPrintTemplatePage() {
             {activeTab === DOCUMENT_TYPES.INVOICE && vis.showCashierSignature !== false && (
               <>
                 <strong>NGƯỜI THU TIỀN</strong>
+                <span className="paper-sign-hint">(Ký, ghi rõ họ tên)</span>
                 <div className="paper-sign-space" />
                 <span className="paper-sign-name">{SAMPLE_DATA.patient.cashierName}</span>
               </>
@@ -665,6 +667,7 @@ export default function DocumentPrintTemplatePage() {
             {activeTab !== DOCUMENT_TYPES.INVOICE && vis.showDoctorSignature !== false && (
               <>
                 <strong>BÁC SĨ ĐIỀU TRỊ</strong>
+                <span className="paper-sign-hint">(Ký, ghi rõ họ tên)</span>
                 <div className="paper-sign-space" />
                 <span className="paper-sign-name">{SAMPLE_DATA.patient.doctorName}</span>
               </>
