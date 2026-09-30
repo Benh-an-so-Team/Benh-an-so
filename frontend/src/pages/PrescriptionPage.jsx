@@ -3861,7 +3861,7 @@ function PrescriptionPage() {
 
                           <Col xs={24} md={8}>
                             <Form.Item
-                              label={<span style={{ fontWeight: 600, color: '#334155' }}>Đường dùng <span style={{ color: '#ef4444' }}>*</span></span>}
+                              label={<span style={{ fontWeight: 600, color: '#334155' }}>Cách dùng <span style={{ color: '#ef4444' }}>*</span></span>}
                               style={{ marginBottom: 0 }}
                             >
                               <Select
@@ -3872,7 +3872,7 @@ function PrescriptionPage() {
                                 value={item.route}
                                 onChange={(value) => handleItemChange(item.clientId, 'route', value)}
                                 options={ROUTE_OPTIONS}
-                                placeholder="Chọn đường dùng..."
+                                placeholder="Chọn cách dùng..."
                               />
                             </Form.Item>
                           </Col>
