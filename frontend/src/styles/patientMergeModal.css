@@ -1,0 +1,316 @@
+/**
+ * Stylesheet cho modal "Gộp hồ sơ bệnh nhân trùng" (NCL-02-CN-006)
+ * Bước: So sánh & chọn lọc từng trường thông tin cá nhân
+ */
+
+.patient-merge-modal .ant-modal-content {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.16);
+  padding: 24px 28px;
+}
+
+.merge-steps-header {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Khối thông báo từ chối do mâu thuẫn danh tính */
+.merge-identity-conflict-card {
+  border: 2px solid #ef4444;
+  border-radius: 14px;
+  background: #fef2f2;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.08);
+}
+
+.conflict-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.conflict-card-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #b91c1c;
+  letter-spacing: -0.01em;
+}
+
+.conflict-card-body {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.conflict-card-recommendation {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border-radius: 8px;
+  border-left: 4px solid #dc2626;
+  font-size: 13.5px;
+  color: #7f1d1d;
+  font-weight: 500;
+}
+
+/* Thẻ chọn hồ sơ bảo lưu mã */
+.retained-selector-container {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.retained-card-option {
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 12px 16px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+}
+
+.retained-card-option:hover {
+  border-color: #3b82f6;
+  background: #f0f7ff;
+}
+
+.retained-card-option.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12);
+}
+
+/* Bảng so sánh 2 cột */
+.merge-comparison-table-wrapper {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  margin-bottom: 20px;
+}
+
+.merge-comparison-header {
+  display: grid;
+  grid-template-columns: 220px 1fr 1fr;
+  background: #f1f5f9;
+  border-bottom: 2px solid #cbd5e1;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #1e293b;
+}
+
+.merge-comparison-header-col {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.merge-comparison-header-col.col-p1 {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-left: 1px solid #bae6fd;
+}
+
+.merge-comparison-header-col.col-p2 {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border-left: 1px solid #e9d5ff;
+}
+
+.merge-comparison-row {
+  display: grid;
+  grid-template-columns: 220px 1fr 1fr;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.15s ease;
+}
+
+.merge-comparison-row:last-child {
+  border-bottom: none;
+}
+
+/* Dòng trường giống nhau */
+.merge-comparison-row.identical-row {
+  background: #ffffff;
+}
+
+.merge-comparison-row.identical-row:hover {
+  background: #f8fafc;
+}
+
+.merge-comparison-row.identical-row .identical-content {
+  grid-column: 2 / span 2;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fcfdfd;
+  border-left: 1px solid #e2e8f0;
+}
+
+/* Dòng trường khác nhau (nổi bật) */
+.merge-comparison-row.different-row {
+  background: #fffdf5;
+  border-left: 4px solid #f59e0b;
+}
+
+.merge-comparison-row.different-row:hover {
+  background: #fffbeb;
+}
+
+.merge-field-label-cell {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.merge-field-value-cell {
+  padding: 10px 14px;
+  border-left: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Radio item chọn giá trị */
+.field-choice-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.field-choice-item:hover {
+  border-color: #3b82f6;
+  background: #f8fafc;
+}
+
+.field-choice-item.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.field-choice-item input[type='radio'] {
+  margin-top: 3px;
+  cursor: pointer;
+  accent-color: #2563eb;
+  transform: scale(1.15);
+}
+
+.field-choice-content {
+  flex: 1;
+}
+
+.field-choice-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+.field-choice-text.empty-text {
+  color: #94a3b8;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Khối xem trước hồ sơ sau khi gộp (Preview) */
+.merge-preview-card {
+  border: 1.5px solid #10b981;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+}
+
+.merge-preview-header {
+  background: #ecfdf5;
+  padding: 12px 18px;
+  border-bottom: 1px solid #a7f3d0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.merge-preview-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #065f46;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.merge-preview-body {
+  padding: 16px 18px;
+}
+
+.merge-medical-data-notice {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #0369a1;
+  line-height: 1.55;
+}
+
+/* Cửa sổ xác nhận phụ */
+.merge-confirm-dialog-content {
+  padding: 8px 0;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.merge-stat-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.merge-stat-item .stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.merge-stat-item .stat-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}

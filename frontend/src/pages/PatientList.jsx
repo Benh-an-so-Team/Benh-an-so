@@ -252,7 +252,13 @@ function PatientList() {
         onOk: () => navigate('/appointments', { state: { patientId: newPatient?.id, patientName: newPatient?.fullName } }),
       })
     } catch (err) {
-      const errorMsg = err.response?.data?.message || err.message || 'Không thể tạo hồ sơ bệnh nhân trên Backend'
+      const rawMsg = err.response?.data?.message || err.message || 'Không thể tạo hồ sơ bệnh nhân trên Backend'
+      let errorMsg = rawMsg
+      if (rawMsg.includes('Patient already exists with identity number')) {
+        errorMsg = 'Số định danh CCCD/CMND này đã tồn tại trong hệ thống cho một bệnh nhân khác. Vui lòng tra cứu hồ sơ cũ thay vì tạo mới.'
+      } else if (rawMsg.includes('Patient already exists with phone')) {
+        errorMsg = 'Số điện thoại này đã được sử dụng cho một hồ sơ bệnh nhân khác.'
+      }
       message.error(`Lỗi tạo hồ sơ: ${errorMsg}`)
     } finally {
       setSaving(false)
