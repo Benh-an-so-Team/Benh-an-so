@@ -1,6 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import dayjs from 'dayjs'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 import {
   isMinorPatient,
@@ -16,6 +22,10 @@ import {
   validatePatientMerge,
   cleanMergeErrorMessage,
   MERGE_REASON_PRESETS,
+  checkIdentityConflict,
+  comparePatientFields,
+  buildMergedPatientProfile,
+  MERGE_COMPARISON_FIELDS,
 } from '../../utils/patientMergeValidation.js'
 
 // ============================================================================
@@ -250,3 +260,274 @@ test('NCL-02-CN-006-TC-05: Chuyển đổi mã lỗi API sang thông điệp ti�
   // Danh mục lý do gộp hồ sơ gợi ý chuẩn
   assert.ok(MERGE_REASON_PRESETS.length >= 3)
 })
+
+test('NCL-02-CN-006-TC-06: Phát hiện mâu thuẫn danh tính khi cả 2 hồ sơ đều có bệnh án đã ký -> Từ chối gộp hoàn toàn', () => {
+  const patientA = {
+    id: 'p-signed-001',
+    patientCode: 'BN000001',
+    fullName: 'Nguyễn Văn Tuấn',
+    dateOfBirth: '1990-01-01',
+    gender: 'MALE',
+    hasFinalizedMedicalRecords: true,
+  }
+
+  const patientB = {
+    id: 'p-signed-002',
+    patientCode: 'BN000002',
+    fullName: 'Trần Văn Tuấn', // Khác họ tên
+    dateOfBirth: '1990-01-01',
+    gender: 'MALE',
+    hasFinalizedMedicalRecords: true,
+  }
+
+  // Kiểm tra qua checkIdentityConflict
+  const conflict = checkIdentityConflict(patientA, patientB)
+  assert.equal(conflict.hasConflict, true, 'Phải phát hiện mâu thuẫn danh tính trên bệnh án đã ký')
+  assert.equal(conflict.conflictType, 'SIGNED_RECORDS_DEMOGRAPHIC_CONFLICT')
+  assert.ok(conflict.reason.includes('đã có bệnh án đã ký'), 'Thông báo phải nêu rõ lý do bệnh án đã ký')
+  assert.ok(conflict.recommendation.includes('từ chối gộp tự động'), 'Phải có khuyến nghị an toàn y tế')
+
+  // Kiểm tra qua validatePatientMerge
+  const validation = validatePatientMerge(patientA, patientB, 'Thử gộp')
+  assert.equal(validation.allowed, false, 'Không cho phép gộp')
+  assert.equal(validation.conflictType, 'SIGNED_RECORDS_DEMOGRAPHIC_CONFLICT')
+})
+
+test('NCL-02-CN-006-TC-07: Phát hiện mâu thuẫn số CCCD/CMND giữa 2 hồ sơ -> Từ chối gộp ngay', () => {
+  const patient1 = {
+    id: 'p-cccd-001',
+    patientCode: 'BN000011',
+    fullName: 'Lê Hoàng Long',
+    identityNumber: '001090001234',
+  }
+
+  const patient2 = {
+    id: 'p-cccd-002',
+    patientCode: 'BN000012',
+    fullName: 'Lê Hoàng Long',
+    identityNumber: '001090009999', // Khác CCCD
+  }
+
+  const conflict = checkIdentityConflict(patient1, patient2)
+  assert.equal(conflict.hasConflict, true)
+  assert.equal(conflict.conflictType, 'IDENTITY_NUMBER_MISMATCH')
+  assert.ok(conflict.reason.includes('001090001234'))
+
+  const validation = validatePatientMerge(patient1, patient2, 'Gộp trùng')
+  assert.equal(validation.allowed, false)
+})
+
+test('NCL-02-CN-006-TC-08: Không mâu thuẫn khi chỉ 1 bên có bệnh án ký hoặc thông tin danh tính trùng khớp', () => {
+  const patient1 = {
+    id: 'p-ok-001',
+    patientCode: 'BN000021',
+    fullName: 'Nguyễn Thị Mai',
+    dateOfBirth: '1995-05-15',
+    gender: 'FEMALE',
+    hasFinalizedMedicalRecords: true, // Có bệnh án ký
+  }
+
+  const patient2 = {
+    id: 'p-ok-002',
+    patientCode: 'BN000022',
+    fullName: 'Nguyễn Thị Mai',
+    dateOfBirth: '1995-05-15',
+    gender: 'FEMALE',
+    hasFinalizedMedicalRecords: false, // Chưa có bệnh án ký
+  }
+
+  const conflict = checkIdentityConflict(patient1, patient2)
+  assert.equal(conflict.hasConflict, false, 'Không có mâu thuẫn danh tính')
+
+  const validation = validatePatientMerge(patient1, patient2, 'Gộp bình thường')
+  assert.equal(validation.allowed, true)
+})
+
+test('NCL-02-CN-006-TC-09: So sánh trường: Giống nhau gom 1 dòng, khác nhau làm nổi bật có radio chọn', () => {
+  const p1 = {
+    id: 'p-comp-001',
+    patientCode: 'BN000101',
+    fullName: 'Vũ Đức Đam',
+    dateOfBirth: '1985-08-20',
+    gender: 'MALE',
+    identityNumber: '001085007890',
+    phone: '0912345678', // SĐT cũ
+    address: 'Hà Nội',   // Địa chỉ đúng
+  }
+
+  const p2 = {
+    id: 'p-comp-002',
+    patientCode: 'BN000102',
+    fullName: 'Vũ Đức Đam',
+    dateOfBirth: '1985-08-20',
+    gender: 'MALE',
+    identityNumber: '001085007890',
+    phone: '0988776655', // SĐT mới
+    address: 'Hải Phòng',// Địa chỉ cũ
+  }
+
+  const result = comparePatientFields(p1, p2)
+  assert.ok(result.fields.length >= 8, 'Phải có đầy đủ các trường thông tin cá nhân cần so sánh')
+
+  // Họ tên, ngày sinh, giới tính, CCCD giống nhau
+  const nameField = result.fields.find((f) => f.key === 'fullName')
+  assert.equal(nameField.isIdentical, true, 'Họ tên trùng khớp phải có isIdentical = true')
+
+  // Số điện thoại khác nhau
+  const phoneField = result.fields.find((f) => f.key === 'phone')
+  assert.equal(phoneField.isIdentical, false, 'Số điện thoại khác nhau phải isIdentical = false')
+  assert.equal(phoneField.val1, '0912345678')
+  assert.equal(phoneField.val2, '0988776655')
+
+  // Địa chỉ khác nhau
+  const addrField = result.fields.find((f) => f.key === 'address')
+  assert.equal(addrField.isIdentical, false)
+})
+
+test('NCL-02-CN-006-TC-10: Một bên để trống trường được coi là khác nhau và mặc định chọn bên có sẵn dữ liệu', () => {
+  const p1 = {
+    id: 'p-empty-001',
+    fullName: 'Phạm Minh Chính',
+    address: '123 Ba Đình, Hà Nội', // p1 có địa chỉ
+    insuranceNumber: null,           // p1 trống BHYT
+  }
+
+  const p2 = {
+    id: 'p-empty-002',
+    fullName: 'Phạm Minh Chính',
+    address: '',                     // p2 trống địa chỉ
+    insuranceNumber: 'DN4010123456789', // p2 có BHYT
+  }
+
+  const result = comparePatientFields(p1, p2)
+
+  // Địa chỉ: p1 có, p2 trống -> Mặc định chọn p1
+  const addrField = result.fields.find((f) => f.key === 'address')
+  assert.equal(addrField.isIdentical, false)
+  assert.equal(addrField.isOneSideEmpty, true)
+  assert.equal(addrField.emptySide, 'p2')
+  assert.equal(addrField.recommendedSide, 'p1', 'Phải gợi ý bên có dữ liệu (p1)')
+  assert.equal(result.initialSelections.address, 'p1')
+
+  // BHYT: p1 trống, p2 có -> Mặc định chọn p2
+  const insField = result.fields.find((f) => f.key === 'insuranceNumber')
+  assert.equal(insField.isIdentical, false)
+  assert.equal(insField.isOneSideEmpty, true)
+  assert.equal(insField.emptySide, 'p1')
+  assert.equal(insField.recommendedSide, 'p2', 'Phải gợi ý bên có dữ liệu (p2)')
+  assert.equal(result.initialSelections.insuranceNumber, 'p2')
+})
+
+test('NCL-02-CN-006-TC-11: Cả hai bên đều có dữ liệu khác nhau -> Mặc định gợi ý bên cập nhật gần đây nhất (updatedAt)', () => {
+  const p1Old = {
+    id: 'p-old-001',
+    fullName: 'Đoàn Văn Hậu',
+    phone: '0901111111',
+    updatedAt: '2026-01-01T10:00:00Z', // Cũ hơn
+  }
+
+  const p2New = {
+    id: 'p-new-002',
+    fullName: 'Đoàn Văn Hậu',
+    phone: '0902222222',
+    updatedAt: '2026-09-20T15:30:00Z', // Mới hơn
+  }
+
+  const result = comparePatientFields(p1Old, p2New)
+  const phoneField = result.fields.find((f) => f.key === 'phone')
+  assert.equal(phoneField.isIdentical, false)
+  assert.equal(phoneField.recommendedSide, 'p2', 'Phải gợi ý p2 vì có updatedAt mới hơn')
+  assert.equal(result.initialSelections.phone, 'p2')
+})
+
+test('NCL-02-CN-006-TC-12: Tách biệt lựa chọn mã hồ sơ giữ lại và sinh preview hồ sơ bệnh nhân cuối cùng', () => {
+  const p1 = {
+    id: 'p-target-001',
+    patientCode: 'BN000001',
+    fullName: 'Nguyễn Văn An',
+    phone: '0911111111', // Cũ
+    address: 'Số 10 Phố Huế, Hà Nội', // Đúng
+    bloodType: 'O',
+  }
+
+  const p2 = {
+    id: 'p-source-002',
+    patientCode: 'BN000002',
+    fullName: 'Nguyễn Văn An',
+    phone: '0999999999', // Mới
+    address: 'Địa chỉ cũ',
+    bloodType: 'O',
+  }
+
+  // Chọn giữ lại mã của p1 (BN000001), nhưng SĐT lấy từ p2, địa chỉ lấy từ p1
+  const selections = {
+    fullName: 'p1',
+    phone: 'p2',   // Lấy từ p2
+    address: 'p1', // Lấy từ p1
+    bloodType: 'p1',
+  }
+
+  const preview = buildMergedPatientProfile(p1, p2, p1.id, selections)
+
+  // Mã hồ sơ được bảo lưu chính xác
+  assert.equal(preview.patientCode, 'BN000001')
+  assert.equal(preview.retainedPatientCode, 'BN000001')
+  assert.equal(preview.otherPatientCode, 'BN000002')
+
+  // Dữ liệu từng trường lấy đúng nguồn đã chọn
+  assert.equal(preview.phone, '0999999999', 'Số điện thoại phải lấy từ p2')
+  assert.equal(preview.phoneNumber, '0999999999')
+  assert.equal(preview.address, 'Số 10 Phố Huế, Hà Nội', 'Địa chỉ phải lấy từ p1')
+  assert.equal(preview.bloodType, 'O')
+})
+
+test('NCL-02-CN-006-TC-13: Kiểm tra cấu trúc MergePatientModal.jsx tích hợp đầy đủ bảng so sánh, chọn lọc từng trường, mâu thuẫn bệnh án đã ký và xác nhận phụ', () => {
+  const modalPath = path.resolve(__dirname, '../../components/patient/MergePatientModal.jsx')
+  assert.equal(fs.existsSync(modalPath), true, 'File MergePatientModal.jsx bắt buộc phải tồn tại')
+
+  const content = fs.readFileSync(modalPath, 'utf-8')
+
+  // 1. Phân quyền truy cập
+  assert.ok(content.includes('canUserMergePatients'), 'Phải sử dụng canUserMergePatients để kiểm tra quyền RBAC')
+  assert.ok(content.includes('Từ chối quyền truy cập gộp hồ sơ'), 'Phải có thông báo từ chối truy cập cho Bác sĩ')
+
+  // 2. Kiểm tra mâu thuẫn danh tính trên bệnh án đã ký
+  assert.ok(content.includes('checkIdentityConflict'), 'Phải gọi hàm checkIdentityConflict kiểm tra mâu thuẫn danh tính')
+  assert.ok(content.includes('TỪ CHỐI GỘP HOÀN TOÀN DO MÂU THUẪN DANH TÍNH'), 'Phải có khối cảnh báo từ chối mâu thuẫn danh tính')
+
+  // 3. Xử lý hồ sơ đã từng bị gộp trước đó
+  assert.ok(content.includes('Hồ sơ đã ở trạng thái ĐÃ GỘP'), 'Phải có cảnh báo chặn thao tác khi hồ sơ đã gộp trước đó')
+
+  // 4. Bảng so sánh 2 cột và các dòng giống/khác nhau
+  assert.ok(content.includes('comparePatientFields'), 'Phải gọi comparePatientFields để phân loại các trường')
+  assert.ok(content.includes('merge-comparison-table-wrapper'), 'Phải có bảng so sánh 2 cột')
+  assert.ok(content.includes('identical-row'), 'Phải có class style cho dòng giống nhau')
+  assert.ok(content.includes('different-row'), 'Phải có class style nổi bật cho dòng khác biệt')
+
+  // 5. Chọn mã hồ sơ giữ lại tách biệt với chọn trường
+  assert.ok(content.includes('CHỌN HỒ SƠ GIỮ LẠI (BẢO LƯU MÃ HỒ SƠ DUY NHẤT)'), 'Phải có phần chọn hồ sơ giữ lại mã định danh tách biệt')
+  assert.ok(content.includes('retained-selector-container'), 'Phải có container chọn hồ sơ giữ lại')
+
+  // 6. Khối xem trước hồ sơ sau khi gộp
+  assert.ok(content.includes('merge-preview-card'), 'Phải có card xem trước hồ sơ sau khi gộp')
+  assert.ok(content.includes('merge-medical-data-notice'), 'Phải có khối nhắc nhở toàn bộ dữ liệu y tế luôn được chuyển giao')
+
+  // 7. Xác nhận phụ
+  assert.ok(content.includes('confirmModalVisible') || content.includes('setConfirmModalVisible'), 'Phải có bước xác nhận phụ trước khi gộp')
+  assert.ok(content.includes('Xác nhận phụ: Chuyển giao toàn bộ dữ liệu y tế'), 'Tiêu đề xác nhận phụ phải nêu rõ chuyển giao dữ liệu y tế')
+})
+
+test('NCL-02-CN-006-TC-14: Kiểm tra Stylesheet patientMergeModal.css định nghĩa đầy đủ giao diện bảng so sánh và các trạng thái', () => {
+  const cssPath = path.resolve(__dirname, '../../styles/patientMergeModal.css')
+  assert.equal(fs.existsSync(cssPath), true, 'File stylesheet patientMergeModal.css phải tồn tại')
+
+  const css = fs.readFileSync(cssPath, 'utf-8')
+  assert.ok(css.includes('.merge-comparison-table-wrapper'), 'Phải có style cho bảng so sánh')
+  assert.ok(css.includes('.different-row'), 'Phải có style highlight dòng khác biệt')
+  assert.ok(css.includes('.identical-row'), 'Phải có style cho dòng trùng khớp')
+  assert.ok(css.includes('.merge-identity-conflict-card'), 'Phải có style cho card từ chối do mâu thuẫn danh tính')
+  assert.ok(css.includes('.merge-preview-card'), 'Phải có style cho preview card')
+  assert.ok(css.includes('.retained-selector-container'), 'Phải có style cho bộ chọn hồ sơ giữ lại mã')
+})
+
+
