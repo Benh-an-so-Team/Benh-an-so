@@ -874,7 +874,7 @@ export default function ReplacePrescriptionModal({
                     </Col>
 
                     <Col xs={12} md={6}>
-                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 2 }}>Đường dùng *</div>
+                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 2 }}>Cách dùng *</div>
                       <Select
                         style={{ width: '100%' }}
                         popupMatchSelectWidth={false}
